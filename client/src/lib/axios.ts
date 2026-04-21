@@ -14,7 +14,7 @@ api.interceptors.response.use(
 
     if (error.response?.status === 401 && !onPublicPage && !url.includes('/auth/me')) {
       window.location.href = '/login';
-    } else if (error.response?.status === 402 && !onPublicPage) {
+    } else if (error.response?.status === 402 && error.response?.data?.status === 'pending_payment' && !onPublicPage) {
       window.location.href = '/pending-payment';
     }
     return Promise.reject(error);

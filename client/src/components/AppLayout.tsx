@@ -190,6 +190,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </header>
 
         <main className="flex-1 overflow-auto bg-slate-50">
+          {/* Pending payment banner */}
+          {user?.payment_status === 'pending' && user?.role !== 'admin' && (
+            <div className="bg-amber-50 border-b border-amber-200 px-4 py-2.5 flex items-center justify-between gap-4">
+              <p className="text-sm text-amber-800">
+                <span className="font-semibold">{t('common.freeTierBanner')}</span>
+              </p>
+              <Link
+                to="/upgrade"
+                className="shrink-0 text-xs font-semibold text-amber-700 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-3 py-1.5 rounded-lg transition-colors"
+              >
+                {t('common.completePayment')}
+              </Link>
+            </div>
+          )}
           {children}
         </main>
       </div>

@@ -1,5 +1,7 @@
 {
   "common": {
+    "freeTierBanner": "Free tier active — you can create events and invite up to 2 guests per event.",
+    "completePayment": "Complete Payment →",
     "appName": "MyEvents",
     "save": "Save",
     "cancel": "Cancel",

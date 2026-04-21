@@ -1,5 +1,7 @@
 {
   "common": {
+    "freeTierBanner": "Gratisnivå aktiv — du kan skapa evenemang och bjuda in upp till 2 gäster per evenemang.",
+    "completePayment": "Slutför betalning →",
     "appName": "MyEvents",
     "save": "Spara",
     "cancel": "Avbryt",

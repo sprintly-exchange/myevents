@@ -5,12 +5,6 @@ import { checkEventLimit } from '../middleware/planLimit';
 
 const router = Router();
 router.use(requireAuth);
-router.use((req: Request, res: Response, next: any) => {
-  const user = (req as any).user;
-  if (user.payment_status !== 'paid' && user.role !== 'admin')
-    return res.status(402).json({ error: 'Payment required', status: 'pending_payment' });
-  return next();
-});
 
 router.get('/', async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
