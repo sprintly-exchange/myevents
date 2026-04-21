@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Users } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
 import AppLayout from '@/components/AppLayout';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { User, Plan } from '@/types';
 
 export default function AdminUsersPage() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
 
   const { data: usersData, isLoading } = useQuery({
@@ -31,9 +33,9 @@ export default function AdminUsersPage() {
     mutationFn: ({ id, data }: { id: string; data: object }) => api.patch(`/admin/users/${id}`, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-users'] });
-      toast.success('User updated');
+      toast.success(t('admin.users.userUpdated'));
     },
-    onError: () => toast.error('Update failed'),
+    onError: () => toast.error(t('admin.users.updateFailed')),
   });
 
   const resolveUpgradeMutation = useMutation({
@@ -42,9 +44,9 @@ export default function AdminUsersPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-upgrade-requests'] });
       qc.invalidateQueries({ queryKey: ['admin-users'] });
-      toast.success('Request resolved');
+      toast.success(t('admin.users.requestResolved'));
     },
-    onError: () => toast.error('Failed to resolve request'),
+    onError: () => toast.error(t('admin.users.resolveFailed')),
   });
 
   const users: User[] = usersData?.users || [];
@@ -56,8 +58,8 @@ export default function AdminUsersPage() {
     <AppLayout>
       <div className="p-4 sm:p-6 lg:p-8">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-slate-900">Users</h1>
-          <p className="text-slate-500 mt-1">Manage user accounts</p>
+          <h1 className="text-2xl font-bold text-slate-900">{t('admin.users.title')}</h1>
+          <p className="text-slate-500 mt-1">{t('admin.users.subtitle')}</p>
         </div>
 
         {/* Pending upgrade requests */}
@@ -68,7 +70,7 @@ export default function AdminUsersPage() {
                 <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-500 text-white text-xs font-bold">
                   {pendingRequests.length}
                 </span>
-                Pending Upgrade Requests
+                {t('admin.users.pendingUpgradeRequests')}
               </h2>
             </div>
             <div className="p-6">
@@ -78,12 +80,12 @@ export default function AdminUsersPage() {
                     <div>
                       <p className="font-medium text-sm text-slate-800">{req.user_name} <span className="text-slate-400 font-normal">({req.user_email})</span></p>
                       <p className="text-xs text-slate-500 mt-0.5">
-                        Wants to upgrade to <strong className="text-slate-700">{req.plan_name}</strong>
+                        {t('admin.users.wantsToUpgrade')} <strong className="text-slate-700">{req.plan_name}</strong>
                         {req.plan_price ? <span className="ml-1 text-slate-400">· {req.plan_price} SEK</span> : null}
                       </p>
                       {req.payment_reference && (
                         <div className="mt-2 flex items-center gap-2">
-                          <span className="text-xs text-amber-700 font-medium">Swish ref:</span>
+                          <span className="text-xs text-amber-700 font-medium">{t('admin.users.swishRef')}</span>
                           <span className="font-mono text-sm font-bold text-amber-900 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-md tracking-widest">
                             {req.payment_reference}
                           </span>
@@ -96,7 +98,7 @@ export default function AdminUsersPage() {
                         className="bg-emerald-600 hover:bg-emerald-700 text-white"
                         onClick={() => resolveUpgradeMutation.mutate({ id: req.id, status: 'approved' })}
                       >
-                        Approve
+                        {t('admin.users.approve')}
                       </Button>
                       <Button
                         size="sm"
@@ -104,7 +106,7 @@ export default function AdminUsersPage() {
                         className="border-slate-200 text-slate-600"
                         onClick={() => resolveUpgradeMutation.mutate({ id: req.id, status: 'rejected' })}
                       >
-                        Reject
+                        {t('admin.users.reject')}
                       </Button>
                     </div>
                   </div>
@@ -118,7 +120,7 @@ export default function AdminUsersPage() {
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-2">
             <Users className="h-4 w-4 text-slate-500" />
-            <h2 className="text-sm font-semibold text-slate-700">All Users ({users.length})</h2>
+            <h2 className="text-sm font-semibold text-slate-700">{t('admin.users.allUsers', { count: users.length })}</h2>
           </div>
 
           {isLoading ? (
@@ -129,10 +131,10 @@ export default function AdminUsersPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50/50 border-slate-100">
-                  <TableHead className="text-slate-600 font-semibold">Name / Email</TableHead>
-                  <TableHead className="text-slate-600 font-semibold">Role</TableHead>
-                  <TableHead className="text-slate-600 font-semibold">Plan</TableHead>
-                  <TableHead className="text-slate-600 font-semibold">Payment</TableHead>
+                  <TableHead className="text-slate-600 font-semibold">{t('admin.users.nameEmail')}</TableHead>
+                  <TableHead className="text-slate-600 font-semibold">{t('common.role')}</TableHead>
+                  <TableHead className="text-slate-600 font-semibold">{t('common.plan')}</TableHead>
+                  <TableHead className="text-slate-600 font-semibold">{t('admin.users.payment')}</TableHead>
                   <TableHead className="text-slate-600 font-semibold">Status</TableHead>
                   <TableHead className="text-slate-600 font-semibold">Actions</TableHead>
                 </TableRow>
@@ -175,14 +177,14 @@ export default function AdminUsersPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="paid">Paid</SelectItem>
+                          <SelectItem value="pending">{t('common.pending')}</SelectItem>
+                          <SelectItem value="paid">{t('common.paid')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </TableCell>
                     <TableCell>
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${user.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}`}>
-                        {user.is_active ? 'Active' : 'Disabled'}
+                        {user.is_active ? t('common.active') : t('common.disabled')}
                       </span>
                     </TableCell>
                     <TableCell>
@@ -192,7 +194,7 @@ export default function AdminUsersPage() {
                         className="text-xs border-slate-200 hover:bg-slate-50"
                         onClick={() => updateMutation.mutate({ id: user.id, data: { is_active: !user.is_active } })}
                       >
-                        {user.is_active ? 'Disable' : 'Enable'}
+                        {user.is_active ? t('admin.users.disable') : t('admin.users.enable')}
                       </Button>
                     </TableCell>
                   </TableRow>

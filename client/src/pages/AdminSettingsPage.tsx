@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Mail, CreditCard, Lock, Send } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function AdminSettingsPage() {
+  const { t } = useTranslation();
   const [smtpForm, setSmtpForm] = useState({
     smtp_host: '', smtp_port: '587', smtp_user: '', smtp_pass: '', smtp_from: '',
   });
@@ -64,13 +66,13 @@ export default function AdminSettingsPage() {
   const saveSettings = useMutation({
     mutationFn: (settings: { key: string; value: string }[]) =>
       api.post('/admin/settings', { settings }),
-    onSuccess: () => toast.success('Settings saved'),
+    onSuccess: () => toast.success(t('admin.settings.settingsSaved')),
     onError: () => toast.error('Failed to save settings'),
   });
 
   const testEmailMutation = useMutation({
     mutationFn: (to: string) => api.post('/admin/settings/test-email', { to }),
-    onSuccess: () => toast.success('Test email sent successfully!'),
+    onSuccess: () => toast.success(t('admin.settings.testEmailSent')),
     onError: (err: any) => toast.error(err.response?.data?.error || 'Failed to send test email'),
   });
 
@@ -90,8 +92,8 @@ export default function AdminSettingsPage() {
     <AppLayout>
       <div className="p-4 sm:p-6 lg:p-8 max-w-3xl">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
-          <p className="text-slate-500 mt-1">Configure your MyEvents platform</p>
+          <h1 className="text-2xl font-bold text-slate-900">{t('admin.settings.title')}</h1>
+          <p className="text-slate-500 mt-1">{t('admin.settings.subtitle')}</p>
         </div>
 
         <Tabs defaultValue="smtp">
@@ -116,7 +118,7 @@ export default function AdminSettingsPage() {
                     <Mail className="h-4 w-4 text-blue-600" />
                   </div>
                   <div>
-                    <h2 className="text-sm font-semibold text-slate-900">Email (SMTP) Settings</h2>
+                    <h2 className="text-sm font-semibold text-slate-900">{t('admin.settings.smtpSettings')}</h2>
                     <p className="text-xs text-slate-500">Configure SMTP server for sending invitation emails</p>
                   </div>
                 </div>
@@ -124,7 +126,7 @@ export default function AdminSettingsPage() {
               <div className="p-6 space-y-5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">SMTP Host</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t('admin.settings.smtpHost')}</Label>
                     <Input
                       placeholder="smtp.gmail.com"
                       value={smtpForm.smtp_host}
@@ -133,7 +135,7 @@ export default function AdminSettingsPage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">SMTP Port</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t('admin.settings.smtpPort')}</Label>
                     <Input
                       placeholder="587"
                       value={smtpForm.smtp_port}
@@ -142,7 +144,7 @@ export default function AdminSettingsPage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">Username</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t('admin.settings.smtpUser')}</Label>
                     <Input
                       placeholder="your@email.com"
                       value={smtpForm.smtp_user}
@@ -151,7 +153,7 @@ export default function AdminSettingsPage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">Password</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t('admin.settings.smtpPass')}</Label>
                     <Input
                       type="password"
                       placeholder="••••••••"
@@ -161,7 +163,7 @@ export default function AdminSettingsPage() {
                     />
                   </div>
                   <div className="space-y-1.5 col-span-2">
-                    <Label className="text-sm font-medium text-slate-700">From Address</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t('admin.settings.smtpFrom')}</Label>
                     <Input
                       placeholder="noreply@myevents.se"
                       value={smtpForm.smtp_from}
@@ -173,12 +175,12 @@ export default function AdminSettingsPage() {
 
                 <div className="pt-2">
                   <Button onClick={saveSmtp} disabled={saveSettings.isPending} className="bg-blue-600 hover:bg-blue-700">
-                    {saveSettings.isPending ? 'Saving...' : 'Save SMTP Settings'}
+                    {saveSettings.isPending ? t('admin.settings.saving') : 'Save SMTP Settings'}
                   </Button>
                 </div>
 
                 <div className="pt-4 border-t border-slate-100">
-                  <Label className="text-sm font-medium text-slate-700 mb-2 block">Send Test Email</Label>
+                  <Label className="text-sm font-medium text-slate-700 mb-2 block">{t('admin.settings.sendTestEmail')}</Label>
                   <div className="flex gap-2">
                     <Input
                       placeholder="test@example.com"
@@ -210,7 +212,7 @@ export default function AdminSettingsPage() {
                     <CreditCard className="h-4 w-4 text-emerald-600" />
                   </div>
                   <div>
-                    <h2 className="text-sm font-semibold text-slate-900">Swish Payment Settings</h2>
+                    <h2 className="text-sm font-semibold text-slate-900">{t('admin.settings.swishSettings')}</h2>
                     <p className="text-xs text-slate-500">Configure Swish details for user registration payment</p>
                   </div>
                 </div>
@@ -218,7 +220,7 @@ export default function AdminSettingsPage() {
               <div className="p-6 space-y-5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">Swish Number</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t('admin.settings.swishNumber')}</Label>
                     <Input
                       placeholder="1234567890"
                       value={swishForm.swish_number}
@@ -227,7 +229,7 @@ export default function AdminSettingsPage() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">Account Holder Name</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t('admin.settings.swishHolder')}</Label>
                     <Input
                       placeholder="MyEvents AB"
                       value={swishForm.swish_holder_name}
@@ -237,7 +239,7 @@ export default function AdminSettingsPage() {
                   </div>
                 </div>
                 <Button onClick={saveSwish} disabled={saveSettings.isPending} className="bg-blue-600 hover:bg-blue-700">
-                  {saveSettings.isPending ? 'Saving...' : 'Save Swish Settings'}
+                  {saveSettings.isPending ? t('admin.settings.saving') : 'Save Swish Settings'}
                 </Button>
               </div>
             </div>

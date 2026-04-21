@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Mail, Calendar, MapPin, Check, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
 import { useAuth } from '@/hooks/useAuth';
 import AppLayout from '@/components/AppLayout';
@@ -10,6 +11,7 @@ import { Invitation } from '@/types';
 
 export default function InvitationsPage() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const qc = useQueryClient();
 
   const { data, isLoading } = useQuery({
@@ -22,17 +24,17 @@ export default function InvitationsPage() {
       api.patch(`/invitations/${id}/respond`, { status }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['invitations-incoming'] });
-      toast.success('Response recorded');
+      toast.success(t('invitations.respondSuccess'));
     },
-    onError: () => toast.error('Failed to respond'),
+    onError: () => toast.error(t('invitations.respondError')),
   });
 
   const invitations: Invitation[] = data?.invitations || [];
 
   const statusBadge = (status: string) => {
-    if (status === 'accepted') return <Badge variant="success">Accepted</Badge>;
-    if (status === 'rejected') return <Badge variant="destructive">Declined</Badge>;
-    return <Badge variant="warning">Pending</Badge>;
+    if (status === 'accepted') return <Badge variant="success">{t('invitations.accepted')}</Badge>;
+    if (status === 'rejected') return <Badge variant="destructive">{t('invitations.declined')}</Badge>;
+    return <Badge variant="warning">{t('common.pending')}</Badge>;
   };
 
   const borderColor = (status: string) => {
@@ -45,8 +47,8 @@ export default function InvitationsPage() {
     <AppLayout>
       <div className="p-4 sm:p-6 lg:p-8">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-slate-900">My Invitations</h1>
-          <p className="text-slate-500 mt-1">Invitations sent to {user?.email}</p>
+          <h1 className="text-2xl font-bold text-slate-900">{t('invitations.title')}</h1>
+          <p className="text-slate-500 mt-1">{t('invitations.subtitle')}</p>
         </div>
 
         {isLoading ? (
@@ -58,8 +60,8 @@ export default function InvitationsPage() {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-slate-100 mb-5">
               <Mail className="h-8 w-8 text-slate-400" />
             </div>
-            <h3 className="text-lg font-semibold text-slate-700 mb-2">No invitations yet</h3>
-            <p className="text-slate-400 text-sm">When someone invites you to an event, it will appear here.</p>
+            <h3 className="text-lg font-semibold text-slate-700 mb-2">{t('invitations.noInvitations')}</h3>
+            <p className="text-slate-400 text-sm">{t('invitations.noInvitationsSubtitle')}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -88,7 +90,7 @@ export default function InvitationsPage() {
                         )}
                         <div className="flex items-center gap-1.5">
                           <Mail className="h-4 w-4 text-slate-400" />
-                          From {inv.sender_name}
+                          {t('invitations.invitedBy')} {inv.sender_name}
                         </div>
                       </div>
                     </div>
@@ -100,7 +102,7 @@ export default function InvitationsPage() {
                           onClick={() => respondMutation.mutate({ id: inv.id, status: 'accepted' })}
                           disabled={respondMutation.isPending}
                         >
-                          <Check className="h-4 w-4 mr-1" />Accept
+                          <Check className="h-4 w-4 mr-1" />{t('invitations.accept')}
                         </Button>
                         <Button
                           size="sm"
@@ -109,7 +111,7 @@ export default function InvitationsPage() {
                           onClick={() => respondMutation.mutate({ id: inv.id, status: 'rejected' })}
                           disabled={respondMutation.isPending}
                         >
-                          <X className="h-4 w-4 mr-1" />Decline
+                          <X className="h-4 w-4 mr-1" />{t('invitations.decline')}
                         </Button>
                       </div>
                     )}

@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Calendar, MapPin, Users, Send, Copy, Edit, ArrowLeft, Lock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
 import { useAuth } from '@/hooks/useAuth';
 import AppLayout from '@/components/AppLayout';
@@ -18,6 +19,7 @@ export default function EventDetailPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [emailInput, setEmailInput] = useState('');
   const [sending, setSending] = useState(false);
   const [limitHit, setLimitHit] = useState(false);
@@ -39,7 +41,7 @@ export default function EventDetailPage() {
     setSending(true);
     try {
       const res = await api.post('/invitations', { event_id: id, emails, template_id: event?.template_id });
-      toast.success(`Sent ${res.data.count} invitation(s)`);
+      toast.success(t('events.invitationsSent', { count: res.data.count }));
       setEmailInput('');
       setLimitHit(false);
       qc.invalidateQueries({ queryKey: ['event', id] });
@@ -57,13 +59,13 @@ export default function EventDetailPage() {
   const copyRsvpLink = (token: string) => {
     const url = `${window.location.origin}/rsvp/${token}`;
     navigator.clipboard.writeText(url);
-    toast.success('RSVP link copied!');
+    toast.success(t('events.linkCopied'));
   };
 
   const statusBadge = (status: string) => {
-    if (status === 'accepted') return <Badge variant="success">Accepted</Badge>;
-    if (status === 'rejected') return <Badge variant="destructive">Rejected</Badge>;
-    return <Badge variant="warning">Pending</Badge>;
+    if (status === 'accepted') return <Badge variant="success">{t('invitations.accepted')}</Badge>;
+    if (status === 'rejected') return <Badge variant="destructive">{t('invitations.declined')}</Badge>;
+    return <Badge variant="warning">{t('common.pending')}</Badge>;
   };
 
   if (isLoading) return (
@@ -89,7 +91,7 @@ export default function EventDetailPage() {
           onClick={() => navigate('/events')}
           className="flex items-center gap-2 text-slate-500 hover:text-slate-700 mb-6 text-sm font-medium transition-colors"
         >
-          <ArrowLeft className="h-4 w-4" />Back to Events
+          <ArrowLeft className="h-4 w-4" />{t('common.back')}
         </button>
 
         {/* Hero section */}
@@ -98,7 +100,7 @@ export default function EventDetailPage() {
             <div className="flex items-start justify-between">
               <div className="flex-1 mr-4">
                 <Badge className="mb-3 bg-white/20 text-white border-0 hover:bg-white/30">
-                  {isUpcoming ? 'Upcoming' : 'Past Event'}
+                  {isUpcoming ? t('common.upcoming') : t('common.past')}
                 </Badge>
                 <h1 className="text-2xl font-bold text-white mb-2">{event.title}</h1>
                 {event.description && (
@@ -107,7 +109,7 @@ export default function EventDetailPage() {
               </div>
               <Link to={`/events/${id}/edit`}>
                 <Button variant="outline" size="sm" className="bg-white/10 border-white/30 text-white hover:bg-white/20">
-                  <Edit className="h-4 w-4 mr-2" />Edit
+                  <Edit className="h-4 w-4 mr-2" />{t('common.edit')}
                 </Button>
               </Link>
             </div>
@@ -132,7 +134,7 @@ export default function EventDetailPage() {
                 <MapPin className="h-5 w-5 text-rose-500" />
               </div>
               <div>
-                <p className="text-xs text-slate-500 font-medium">Location</p>
+                <p className="text-xs text-slate-500 font-medium">{t('events.location')}</p>
                 <p className="font-semibold text-sm text-slate-800">{event.location}</p>
               </div>
             </div>
@@ -142,7 +144,7 @@ export default function EventDetailPage() {
                 <MapPin className="h-5 w-5 text-slate-400" />
               </div>
               <div>
-                <p className="text-xs text-slate-500 font-medium">Location</p>
+                <p className="text-xs text-slate-500 font-medium">{t('events.location')}</p>
                 <p className="text-sm text-slate-400">Not specified</p>
               </div>
             </div>
@@ -153,7 +155,7 @@ export default function EventDetailPage() {
               <Users className="h-5 w-5 text-violet-600" />
             </div>
             <div>
-              <p className="text-xs text-slate-500 font-medium">Guests</p>
+              <p className="text-xs text-slate-500 font-medium">{t('events.guests')}</p>
               <p className="font-semibold text-sm text-slate-800">{invitations.length} invited</p>
             </div>
           </div>
@@ -162,14 +164,14 @@ export default function EventDetailPage() {
         {/* Send invitations */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 p-6 mb-6">
           <div className="flex items-center justify-between mb-1">
-            <h2 className="text-base font-semibold text-slate-900">Send Invitations</h2>
+            <h2 className="text-base font-semibold text-slate-900">{t('events.sendInvitations')}</h2>
             {!isPaid && (
               <span className="text-xs font-medium text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
-                {invitations.length}/{FREE_LIMIT} free invites used
+                {t('events.freeTierLimit', { current: invitations.length, limit: FREE_LIMIT })}
               </span>
             )}
           </div>
-          <p className="text-sm text-slate-500 mb-4">Enter email addresses to send personalized invitations</p>
+          <p className="text-sm text-slate-500 mb-4">{t('events.sendInvitationsSubtitle')}</p>
 
           {(limitHit || (!isPaid && invitations.length >= FREE_LIMIT)) ? (
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 flex gap-4 items-start">
@@ -177,13 +179,13 @@ export default function EventDetailPage() {
                 <Lock className="h-5 w-5 text-amber-600" />
               </div>
               <div className="flex-1">
-                <p className="font-semibold text-amber-800 text-sm mb-1">Free tier limit reached</p>
+                <p className="font-semibold text-amber-800 text-sm mb-1">{t('events.freeTierLimitReached')}</p>
                 <p className="text-sm text-amber-700 mb-3">
-                  You've used all {FREE_LIMIT} free invites for this event. Complete your payment to invite unlimited guests.
+                  {t('events.freeTierLimitDesc', { limit: FREE_LIMIT })}
                 </p>
                 <Link to="/upgrade">
                   <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white shadow-sm">
-                    Complete Payment to Unlock
+                    {t('events.completePayment')}
                   </Button>
                 </Link>
               </div>
@@ -195,7 +197,7 @@ export default function EventDetailPage() {
                   <Label htmlFor="emails" className="sr-only">Emails</Label>
                   <Input
                     id="emails"
-                    placeholder="email1@example.com, email2@example.com"
+                    placeholder={t('events.emailsPlaceholder')}
                     value={emailInput}
                     onChange={e => setEmailInput(e.target.value)}
                     className="border-slate-200 focus:border-blue-400"
@@ -203,12 +205,12 @@ export default function EventDetailPage() {
                 </div>
                 <Button onClick={sendInvitations} disabled={sending} className="bg-blue-600 hover:bg-blue-700">
                   <Send className="h-4 w-4 mr-2" />
-                  {sending ? 'Sending...' : 'Send'}
+                  {sending ? t('events.sending') : t('events.send')}
                 </Button>
               </div>
               <p className="text-xs text-slate-400 mt-2">
-                Separate multiple emails with commas
-                {!isPaid && ` · ${FREE_LIMIT - invitations.length} invite${FREE_LIMIT - invitations.length !== 1 ? 's' : ''} remaining on free tier`}
+                {t('events.separateByCommas')}
+                {!isPaid && ` · ${FREE_LIMIT - invitations.length === 1 ? t('events.invitesRemaining', { count: FREE_LIMIT - invitations.length }) : t('events.invitesRemainingPlural', { count: FREE_LIMIT - invitations.length })}`}
               </p>
             </>
           )}
@@ -217,7 +219,7 @@ export default function EventDetailPage() {
         {/* Guest list */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70">
           <div className="p-6 pb-4 border-b border-slate-100">
-            <h2 className="text-base font-semibold text-slate-900">Guest List ({invitations.length})</h2>
+            <h2 className="text-base font-semibold text-slate-900">{t('events.guestList')} ({invitations.length})</h2>
           </div>
           <div className="p-6 pt-4">
             {invitations.length === 0 ? (
@@ -225,15 +227,15 @@ export default function EventDetailPage() {
                 <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-slate-100 mb-4">
                   <Users className="h-7 w-7 text-slate-400" />
                 </div>
-                <h3 className="font-semibold text-slate-700 mb-1">No guests invited yet</h3>
+                <h3 className="font-semibold text-slate-700 mb-1">{t('events.noGuestsYet')}</h3>
                 <p className="text-sm text-slate-400">Use the form above to send your first invitations</p>
               </div>
             ) : (
               <Table>
                 <TableHeader>
                   <TableRow className="border-slate-100">
-                    <TableHead className="text-slate-600">Email</TableHead>
-                    <TableHead className="text-slate-600">Name</TableHead>
+                    <TableHead className="text-slate-600">{t('common.email')}</TableHead>
+                    <TableHead className="text-slate-600">{t('common.name')}</TableHead>
                     <TableHead className="text-slate-600">Status</TableHead>
                     <TableHead className="text-slate-600">Sent</TableHead>
                     <TableHead className="text-slate-600">RSVP</TableHead>

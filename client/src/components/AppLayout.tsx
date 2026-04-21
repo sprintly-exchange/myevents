@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
   LayoutDashboard, Calendar, Mail, TrendingUp, LogOut,
-  Settings, Users, CreditCard, FileText, Shield, Menu, X,
+  Settings, Users, CreditCard, FileText, Shield, Menu, X, Globe,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -15,6 +16,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, logout, isAdmin } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -22,19 +24,23 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     navigate('/login');
   };
 
+  const toggleLang = () => {
+    i18n.changeLanguage(i18n.language === 'sv' ? 'en' : 'sv');
+  };
+
   const navItems: NavItem[] = [
-    { to: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="h-4 w-4" /> },
-    { to: '/events', label: 'My Events', icon: <Calendar className="h-4 w-4" /> },
-    { to: '/invitations', label: 'My Invitations', icon: <Mail className="h-4 w-4" /> },
-    { to: '/upgrade', label: 'Upgrade Plan', icon: <TrendingUp className="h-4 w-4" /> },
+    { to: '/dashboard', label: t('nav.dashboard'), icon: <LayoutDashboard className="h-4 w-4" /> },
+    { to: '/events', label: t('nav.myEvents'), icon: <Calendar className="h-4 w-4" /> },
+    { to: '/invitations', label: t('nav.myInvitations'), icon: <Mail className="h-4 w-4" /> },
+    { to: '/upgrade', label: t('nav.upgradePlan'), icon: <TrendingUp className="h-4 w-4" /> },
   ];
 
   const adminItems: NavItem[] = [
-    { to: '/admin', label: 'Admin Dashboard', icon: <Shield className="h-4 w-4" /> },
-    { to: '/admin/users', label: 'Users', icon: <Users className="h-4 w-4" /> },
-    { to: '/admin/plans', label: 'Plans', icon: <CreditCard className="h-4 w-4" /> },
-    { to: '/admin/templates', label: 'Templates', icon: <FileText className="h-4 w-4" /> },
-    { to: '/admin/settings', label: 'Settings', icon: <Settings className="h-4 w-4" /> },
+    { to: '/admin', label: t('nav.adminDashboard'), icon: <Shield className="h-4 w-4" /> },
+    { to: '/admin/users', label: t('nav.users'), icon: <Users className="h-4 w-4" /> },
+    { to: '/admin/plans', label: t('nav.plans'), icon: <CreditCard className="h-4 w-4" /> },
+    { to: '/admin/templates', label: t('nav.templates'), icon: <FileText className="h-4 w-4" /> },
+    { to: '/admin/settings', label: t('common.settings'), icon: <Settings className="h-4 w-4" /> },
   ];
 
   const isActive = (to: string) =>
@@ -81,7 +87,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <>
             <div className="my-4 px-3">
               <div className="border-t border-slate-700/60" />
-              <p className="mt-4 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-widest">Admin</p>
+              <p className="mt-4 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-widest">{t('common.admin')}</p>
             </div>
             {adminItems.map((item) => (
               <Link
@@ -123,6 +129,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </span>
           </div>
         )}
+        {/* Language toggle */}
+        <button
+          onClick={toggleLang}
+          className="w-full flex items-center gap-2 px-3 py-2 mb-1 rounded-lg text-sm text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-colors"
+        >
+          <Globe className="h-4 w-4" />
+          <span className="flex-1 text-left">{i18n.language === 'sv' ? 'Svenska' : 'English'}</span>
+          <span className="text-xs bg-slate-700 rounded px-1.5 py-0.5 font-mono">
+            {i18n.language === 'sv' ? '🇸🇪' : '🇬🇧'}
+          </span>
+        </button>
         <Button
           variant="ghost"
           size="sm"
@@ -130,7 +147,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           onClick={handleLogout}
         >
           <LogOut className="h-4 w-4 mr-2" />
-          Logout
+          {t('common.logout')}
         </Button>
       </div>
     </div>

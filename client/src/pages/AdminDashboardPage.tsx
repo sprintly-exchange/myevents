@@ -1,11 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Users, CreditCard, FileText, Settings, Bell, ArrowRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
 import AppLayout from '@/components/AppLayout';
 import { Badge } from '@/components/ui/badge';
 
 export default function AdminDashboardPage() {
+  const { t } = useTranslation();
   const { data: usersData } = useQuery({
     queryKey: ['admin-users'],
     queryFn: () => api.get('/admin/users').then(r => r.data),
@@ -27,7 +29,7 @@ export default function AdminDashboardPage() {
 
   const stats = [
     {
-      label: 'Total Users',
+      label: t('admin.dashboard.totalUsers'),
       value: users.length,
       icon: <Users className="h-5 w-5" />,
       iconBg: 'bg-gradient-to-br from-blue-500 to-blue-600',
@@ -45,7 +47,7 @@ export default function AdminDashboardPage() {
       to: '/admin/plans',
     },
     {
-      label: 'Pending Upgrades',
+      label: t('admin.dashboard.pendingPayments'),
       value: upgradeRequests.length,
       icon: <Bell className="h-5 w-5" />,
       iconBg: 'bg-gradient-to-br from-amber-500 to-amber-600',
@@ -59,8 +61,8 @@ export default function AdminDashboardPage() {
     <AppLayout>
       <div className="p-4 sm:p-6 lg:p-8">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-slate-900">Admin Dashboard</h1>
-          <p className="text-slate-500 mt-1">Manage your MyEvents platform</p>
+          <h1 className="text-2xl font-bold text-slate-900">{t('admin.dashboard.title')}</h1>
+          <p className="text-slate-500 mt-1">{t('admin.dashboard.subtitle')}</p>
         </div>
 
         {/* Stat cards */}
@@ -87,9 +89,9 @@ export default function AdminDashboardPage() {
           {/* Pending Upgrade Requests */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70">
             <div className="flex items-center justify-between p-6 pb-4 border-b border-slate-100">
-              <h2 className="text-base font-semibold text-slate-900">Pending Upgrade Requests</h2>
+              <h2 className="text-base font-semibold text-slate-900">{t('admin.users.pendingUpgradeRequests')}</h2>
               <Link to="/admin/users" className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 font-medium">
-                View all <ArrowRight className="h-3 w-3" />
+                {t('common.viewAll')} <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
             <div className="p-6 pt-4">
@@ -106,7 +108,7 @@ export default function AdminDashboardPage() {
                         <p className="text-sm font-medium text-slate-800">{req.user_name}</p>
                         <p className="text-xs text-slate-500">{req.user_email} → {req.plan_name}</p>
                       </div>
-                      <Badge variant="warning">Pending</Badge>
+                      <Badge variant="warning">{t('common.pending')}</Badge>
                     </div>
                   ))}
                 </div>

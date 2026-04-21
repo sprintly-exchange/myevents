@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Calendar, MapPin, Check, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +12,7 @@ import { Label } from '@/components/ui/label';
 
 export default function RsvpPage() {
   const { token } = useParams<{ token: string }>();
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [responded, setResponded] = useState(false);
   const [responseStatus, setResponseStatus] = useState('');
@@ -41,7 +43,7 @@ export default function RsvpPage() {
       <Card className="max-w-md w-full mx-4">
         <CardContent className="py-12 text-center">
           <X className="h-12 w-12 text-red-400 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-800 mb-2">Invitation Not Found</h2>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">{t('rsvp.invalidLink')}</h2>
           <p className="text-gray-500">This invitation link may be invalid or expired.</p>
         </CardContent>
       </Card>
@@ -79,7 +81,7 @@ export default function RsvpPage() {
         <CardHeader className="text-center border-b">
           <p className="text-sm text-gray-500 mb-1">You're invited to</p>
           <CardTitle className="text-2xl">{inv.event_title}</CardTitle>
-          <p className="text-sm text-gray-500 mt-1">From {inv.sender_name}</p>
+          <p className="text-sm text-gray-500 mt-1">{t('rsvp.hosted')} {inv.sender_name}</p>
         </CardHeader>
         <CardContent className="p-6">
           <div className="space-y-3 mb-6">
@@ -102,8 +104,8 @@ export default function RsvpPage() {
           </div>
 
           <div className="space-y-3 mb-6">
-            <Label htmlFor="name">Your Name (optional)</Label>
-            <Input id="name" placeholder="Enter your name" value={name} onChange={e => setName(e.target.value)} />
+            <Label htmlFor="name">{t('rsvp.yourName')}</Label>
+            <Input id="name" placeholder={t('rsvp.namePlaceholder')} value={name} onChange={e => setName(e.target.value)} />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -112,7 +114,7 @@ export default function RsvpPage() {
               onClick={() => respondMutation.mutate('accepted')}
               disabled={respondMutation.isPending}
             >
-              <Check className="h-4 w-4 mr-2" />Accept
+              <Check className="h-4 w-4 mr-2" />{t('invitations.accept')}
             </Button>
             <Button
               variant="outline"
@@ -120,7 +122,7 @@ export default function RsvpPage() {
               onClick={() => respondMutation.mutate('rejected')}
               disabled={respondMutation.isPending}
             >
-              <X className="h-4 w-4 mr-2" />Decline
+              <X className="h-4 w-4 mr-2" />{t('invitations.decline')}
             </Button>
           </div>
         </CardContent>

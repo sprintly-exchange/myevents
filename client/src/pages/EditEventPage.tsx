@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { ArrowLeft, Check, Sparkles } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import { cn } from '@/lib/utils';
 export default function EditEventPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const [form, setForm] = useState({ title: '', description: '', event_date: '', location: '', template_id: '' });
 
@@ -48,7 +50,7 @@ export default function EditEventPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['event', id] });
       qc.invalidateQueries({ queryKey: ['events'] });
-      toast.success('Event updated!');
+      toast.success(t('events.eventUpdated'));
       navigate(`/events/${id}`);
     },
     onError: (err: any) => toast.error(err.response?.data?.error || 'Update failed'),
@@ -66,28 +68,28 @@ export default function EditEventPage() {
           onClick={() => navigate(`/events/${id}`)}
           className="flex items-center gap-2 text-slate-500 hover:text-slate-700 mb-6 text-sm font-medium transition-colors"
         >
-          <ArrowLeft className="h-4 w-4" />Back to Event
+          <ArrowLeft className="h-4 w-4" />{t('common.back')}
         </button>
 
         <div className="mb-8">
           <h1 className="text-2xl font-bold">
             <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              Edit Event
+              {t('events.editEventTitle')}
             </span>
           </h1>
-          <p className="text-slate-500 mt-1">Update your event details</p>
+          <p className="text-slate-500 mt-1">{t('events.editEventSubtitle')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Event Details */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-              <h2 className="text-sm font-semibold text-slate-700">Event Details</h2>
+              <h2 className="text-sm font-semibold text-slate-700">{t('events.eventDetails')}</h2>
             </div>
             <div className="p-6 space-y-5">
               <div className="space-y-1.5">
                 <Label className="text-sm font-medium text-slate-700">
-                  Title <span className="text-red-500">*</span>
+                  {t('events.eventTitle')} <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   value={form.title}
@@ -98,7 +100,7 @@ export default function EditEventPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-sm font-medium text-slate-700">Description</Label>
+                <Label className="text-sm font-medium text-slate-700">{t('events.description')}</Label>
                 <Textarea
                   value={form.description}
                   onChange={e => setForm({ ...form, description: e.target.value })}
@@ -110,7 +112,7 @@ export default function EditEventPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-slate-700">
-                    Date & Time <span className="text-red-500">*</span>
+                    {t('events.date')} <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     type="datetime-local"
@@ -121,7 +123,7 @@ export default function EditEventPage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">Location</Label>
+                  <Label className="text-sm font-medium text-slate-700">{t('events.location')}</Label>
                   <Input
                     value={form.location}
                     onChange={e => setForm({ ...form, location: e.target.value })}
@@ -137,7 +139,7 @@ export default function EditEventPage() {
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 overflow-hidden">
               <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-amber-500" />
-                <h2 className="text-sm font-semibold text-slate-700">Email Template</h2>
+                <h2 className="text-sm font-semibold text-slate-700">{t('events.emailTemplate')}</h2>
               </div>
               <div className="p-6">
                 <p className="text-xs text-slate-500 mb-4">Choose a template for your invitation emails</p>
@@ -179,6 +181,7 @@ export default function EditEventPage() {
                       </div>
                     )}
                     <div className="w-full h-8 rounded bg-slate-100 mb-2" />
+                    {/* t variable shadowed by template loop — use noTemplate key directly */}
                     No template
                   </button>
                 </div>
@@ -191,7 +194,7 @@ export default function EditEventPage() {
             className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 h-11"
             disabled={mutation.isPending}
           >
-            {mutation.isPending ? 'Saving...' : 'Save Changes'}
+            {mutation.isPending ? t('events.saving') : t('events.saveEvent')}
           </Button>
         </form>
       </div>

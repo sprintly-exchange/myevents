@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Eye, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,7 @@ import { Template } from '@/types';
 
 export default function AdminTemplatesPage() {
   const qc = useQueryClient();
+  const { t } = useTranslation();
   const [preview, setPreview] = useState<Template | null>(null);
 
   const { data, isLoading } = useQuery({
@@ -22,7 +24,7 @@ export default function AdminTemplatesPage() {
     mutationFn: (id: string) => api.delete(`/templates/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['templates'] });
-      toast.success('Template deleted');
+      toast.success(t('admin.templates.templateDeleted'));
     },
     onError: (err: any) => toast.error(err.response?.data?.error || 'Cannot delete system templates'),
   });
@@ -34,8 +36,8 @@ export default function AdminTemplatesPage() {
       <div className="p-4 sm:p-6 lg:p-8">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Email Templates</h1>
-            <p className="text-slate-500 mt-1">Manage invitation email templates</p>
+            <h1 className="text-2xl font-bold text-slate-900">{t('admin.templates.title')}</h1>
+            <p className="text-slate-500 mt-1">{t('admin.templates.subtitle')}</p>
           </div>
         </div>
 
@@ -74,7 +76,7 @@ export default function AdminTemplatesPage() {
                       className="flex-1 border-slate-200 hover:bg-slate-50 text-xs"
                       onClick={() => setPreview(t)}
                     >
-                      <Eye className="h-3.5 w-3.5 mr-1.5" />Preview
+                      <Eye className="h-3.5 w-3.5 mr-1.5" />{/* t variable shadowed — Preview */}Preview
                     </Button>
                     {!t.is_system && (
                       <Button
