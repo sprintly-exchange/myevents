@@ -1,6 +1,6 @@
 {
   "common": {
-    "freeTierBanner": "Gratisnivå aktiv — du kan skapa evenemang och bjuda in upp till 2 gäster per evenemang.",
+    "freeTierBanner": "Gratisnivå aktiv — konfigurera dina evenemang, slutför betalning för att skicka inbjudningar.",
     "completePayment": "Slutför betalning →",
     "appName": "MyEvents",
     "save": "Spara",
@@ -147,6 +147,8 @@
     "freeTierLimitReached": "Gratisbegränsning uppnådd",
     "freeTierLimitDesc": "Du har använt alla {{limit}} gratis inbjudningar för det här evenemanget. Slutför betalningen för att bjuda in obegränsat antal gäster.",
     "completePayment": "Slutför betalning för att låsa upp",
+    "paymentRequiredTitle": "Betalning krävs för att skicka inbjudningar",
+    "paymentRequiredDesc": "Ditt konto är på gratisplanen. Slutför din betalning för att börja skicka inbjudningar till dina gäster.",
     "invitesRemaining": "{{count}} inbjudan kvar på gratisplanen",
     "invitesRemainingPlural": "{{count}} inbjudningar kvar på gratisplanen",
     "rsvpLink": "RSVP-länk"

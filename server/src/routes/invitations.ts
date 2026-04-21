@@ -5,8 +5,6 @@ import { sendInvitationEmail } from '../services/email';
 
 const router = Router();
 
-const FREE_INVITEE_LIMIT = 2;
-
 router.post('/', requireAuth, async (req: Request, res: Response) => {
   const user = (req as any).user;
 
@@ -14,21 +12,15 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
   if (!event_id || !Array.isArray(emails) || emails.length === 0)
     return res.status(400).json({ error: 'event_id and emails array required' });
 
+  if (user.payment_status !== 'paid' && user.role !== 'admin') {
+    return res.status(402).json({
+      error: 'Payment required to send invitations.',
+      upgrade_required: true,
+    });
+  }
+
   const event = await prisma.event.findFirst({ where: { id: event_id, creatorId: user.id, status: { not: 'deleted' } } });
   if (!event) return res.status(404).json({ error: 'Event not found' });
-
-  if (user.payment_status !== 'paid' && user.role !== 'admin') {
-    const currentCount = await prisma.invitation.count({ where: { eventId: event_id } });
-    const newEmails = emails.filter(Boolean).length;
-    if (currentCount >= FREE_INVITEE_LIMIT || currentCount + newEmails > FREE_INVITEE_LIMIT) {
-      return res.status(402).json({
-        error: `Free tier limit reached. You can invite up to ${FREE_INVITEE_LIMIT} people per event.`,
-        limit: FREE_INVITEE_LIMIT,
-        current: currentCount,
-        upgrade_required: true,
-      });
-    }
-  }
 
   let template = template_id
     ? await prisma.template.findUnique({ where: { id: template_id } })

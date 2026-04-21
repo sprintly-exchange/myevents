@@ -1,6 +1,6 @@
 {
   "common": {
-    "freeTierBanner": "Free tier active — you can create events and invite up to 2 guests per event.",
+    "freeTierBanner": "Free tier active — configure your events, complete payment to send invitations.",
     "completePayment": "Complete Payment →",
     "appName": "MyEvents",
     "save": "Save",
@@ -147,6 +147,8 @@
     "freeTierLimitReached": "Free tier limit reached",
     "freeTierLimitDesc": "You've used all {{limit}} free invites for this event. Complete your payment to invite unlimited guests.",
     "completePayment": "Complete Payment to Unlock",
+    "paymentRequiredTitle": "Payment required to send invitations",
+    "paymentRequiredDesc": "Your account is on the free tier. Complete your payment to start sending invitations to your guests.",
     "invitesRemaining": "{{count}} invite remaining on free tier",
     "invitesRemainingPlural": "{{count}} invites remaining on free tier",
     "rsvpLink": "RSVP Link"

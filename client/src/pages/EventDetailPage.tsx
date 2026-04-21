@@ -22,9 +22,7 @@ export default function EventDetailPage() {
   const { t } = useTranslation();
   const [emailInput, setEmailInput] = useState('');
   const [sending, setSending] = useState(false);
-  const [limitHit, setLimitHit] = useState(false);
 
-  const FREE_LIMIT = 2;
   const isPaid = user?.payment_status === 'paid' || user?.role === 'admin';
 
   const { data, isLoading } = useQuery({
@@ -43,14 +41,9 @@ export default function EventDetailPage() {
       const res = await api.post('/invitations', { event_id: id, emails, template_id: event?.template_id });
       toast.success(t('events.invitationsSent', { count: res.data.count }));
       setEmailInput('');
-      setLimitHit(false);
       qc.invalidateQueries({ queryKey: ['event', id] });
     } catch (err: any) {
-      if (err.response?.status === 402 && err.response?.data?.upgrade_required) {
-        setLimitHit(true);
-      } else {
-        toast.error(err.response?.data?.error || 'Failed to send invitations');
-      }
+      toast.error(err.response?.data?.error || 'Failed to send invitations');
     } finally {
       setSending(false);
     }
@@ -163,26 +156,17 @@ export default function EventDetailPage() {
 
         {/* Send invitations */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 p-6 mb-6">
-          <div className="flex items-center justify-between mb-1">
-            <h2 className="text-base font-semibold text-slate-900">{t('events.sendInvitations')}</h2>
-            {!isPaid && (
-              <span className="text-xs font-medium text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
-                {t('events.freeTierLimit', { current: invitations.length, limit: FREE_LIMIT })}
-              </span>
-            )}
-          </div>
+          <h2 className="text-base font-semibold text-slate-900 mb-1">{t('events.sendInvitations')}</h2>
           <p className="text-sm text-slate-500 mb-4">{t('events.sendInvitationsSubtitle')}</p>
 
-          {(limitHit || (!isPaid && invitations.length >= FREE_LIMIT)) ? (
+          {!isPaid ? (
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 flex gap-4 items-start">
               <div className="p-2 rounded-lg bg-amber-100 shrink-0">
                 <Lock className="h-5 w-5 text-amber-600" />
               </div>
               <div className="flex-1">
-                <p className="font-semibold text-amber-800 text-sm mb-1">{t('events.freeTierLimitReached')}</p>
-                <p className="text-sm text-amber-700 mb-3">
-                  {t('events.freeTierLimitDesc', { limit: FREE_LIMIT })}
-                </p>
+                <p className="font-semibold text-amber-800 text-sm mb-1">{t('events.paymentRequiredTitle')}</p>
+                <p className="text-sm text-amber-700 mb-3">{t('events.paymentRequiredDesc')}</p>
                 <Link to="/upgrade">
                   <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white shadow-sm">
                     {t('events.completePayment')}
@@ -208,10 +192,7 @@ export default function EventDetailPage() {
                   {sending ? t('events.sending') : t('events.send')}
                 </Button>
               </div>
-              <p className="text-xs text-slate-400 mt-2">
-                {t('events.separateByCommas')}
-                {!isPaid && ` · ${FREE_LIMIT - invitations.length === 1 ? t('events.invitesRemaining', { count: FREE_LIMIT - invitations.length }) : t('events.invitesRemainingPlural', { count: FREE_LIMIT - invitations.length })}`}
-              </p>
+              <p className="text-xs text-slate-400 mt-2">{t('events.separateByCommas')}</p>
             </>
           )}
         </div>
