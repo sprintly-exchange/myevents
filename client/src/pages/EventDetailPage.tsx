@@ -8,7 +8,6 @@ import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Invitation } from '@/types';
@@ -56,113 +55,162 @@ export default function EventDetailPage() {
     return <Badge variant="warning">Pending</Badge>;
   };
 
-  if (isLoading) return <AppLayout><div className="flex justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div></AppLayout>;
-  if (!event) return <AppLayout><div className="p-8 text-center text-gray-500">Event not found</div></AppLayout>;
+  if (isLoading) return (
+    <AppLayout>
+      <div className="flex justify-center py-16">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+      </div>
+    </AppLayout>
+  );
+  if (!event) return (
+    <AppLayout>
+      <div className="p-8 text-center text-slate-500">Event not found</div>
+    </AppLayout>
+  );
+
+  const isUpcoming = new Date(event.event_date) > new Date();
 
   return (
     <AppLayout>
-      <div className="p-8 max-w-4xl mx-auto">
-        <button onClick={() => navigate('/events')} className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
+        {/* Back button */}
+        <button
+          onClick={() => navigate('/events')}
+          className="flex items-center gap-2 text-slate-500 hover:text-slate-700 mb-6 text-sm font-medium transition-colors"
+        >
           <ArrowLeft className="h-4 w-4" />Back to Events
         </button>
 
-        <div className="flex items-start justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold">{event.title}</h1>
-            {event.description && <p className="text-gray-500 mt-1">{event.description}</p>}
+        {/* Hero section */}
+        <div className={`rounded-2xl overflow-hidden mb-6 ${isUpcoming ? 'bg-gradient-to-r from-indigo-600 to-blue-600' : 'bg-gradient-to-r from-slate-600 to-slate-700'}`}>
+          <div className="p-4 sm:p-6 lg:p-8">
+            <div className="flex items-start justify-between">
+              <div className="flex-1 mr-4">
+                <Badge className="mb-3 bg-white/20 text-white border-0 hover:bg-white/30">
+                  {isUpcoming ? 'Upcoming' : 'Past Event'}
+                </Badge>
+                <h1 className="text-2xl font-bold text-white mb-2">{event.title}</h1>
+                {event.description && (
+                  <p className="text-white/80 text-sm leading-relaxed">{event.description}</p>
+                )}
+              </div>
+              <Link to={`/events/${id}/edit`}>
+                <Button variant="outline" size="sm" className="bg-white/10 border-white/30 text-white hover:bg-white/20">
+                  <Edit className="h-4 w-4 mr-2" />Edit
+                </Button>
+              </Link>
+            </div>
           </div>
-          <Link to={`/events/${id}/edit`}>
-            <Button variant="outline" size="sm"><Edit className="h-4 w-4 mr-2" />Edit</Button>
-          </Link>
         </div>
 
+        {/* Info cards row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <Calendar className="h-5 w-5 text-blue-500" />
-              <div>
-                <p className="text-xs text-gray-500">Date & Time</p>
-                <p className="font-medium text-sm">{new Date(event.event_date).toLocaleString('sv-SE')}</p>
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 p-5 flex items-center gap-4">
+            <div className="p-2.5 rounded-xl bg-blue-50">
+              <Calendar className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 font-medium">Date & Time</p>
+              <p className="font-semibold text-sm text-slate-800">{new Date(event.event_date).toLocaleString('sv-SE')}</p>
+            </div>
+          </div>
+
+          {event.location ? (
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 p-5 flex items-center gap-4">
+              <div className="p-2.5 rounded-xl bg-rose-50">
+                <MapPin className="h-5 w-5 text-rose-500" />
               </div>
-            </CardContent>
-          </Card>
-          {event.location && (
-            <Card>
-              <CardContent className="p-4 flex items-center gap-3">
-                <MapPin className="h-5 w-5 text-green-500" />
-                <div>
-                  <p className="text-xs text-gray-500">Location</p>
-                  <p className="font-medium text-sm">{event.location}</p>
-                </div>
-              </CardContent>
-            </Card>
+              <div>
+                <p className="text-xs text-slate-500 font-medium">Location</p>
+                <p className="font-semibold text-sm text-slate-800">{event.location}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 p-5 flex items-center gap-4 opacity-50">
+              <div className="p-2.5 rounded-xl bg-slate-100">
+                <MapPin className="h-5 w-5 text-slate-400" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 font-medium">Location</p>
+                <p className="text-sm text-slate-400">Not specified</p>
+              </div>
+            </div>
           )}
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <Users className="h-5 w-5 text-purple-500" />
-              <div>
-                <p className="text-xs text-gray-500">Guests</p>
-                <p className="font-medium text-sm">{invitations.length} invited</p>
-              </div>
-            </CardContent>
-          </Card>
+
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 p-5 flex items-center gap-4">
+            <div className="p-2.5 rounded-xl bg-violet-50">
+              <Users className="h-5 w-5 text-violet-600" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-500 font-medium">Guests</p>
+              <p className="font-semibold text-sm text-slate-800">{invitations.length} invited</p>
+            </div>
+          </div>
         </div>
 
         {/* Send invitations */}
-        <Card className="mb-6">
-          <CardHeader><CardTitle className="text-base">Send Invitations</CardTitle></CardHeader>
-          <CardContent>
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <Label htmlFor="emails" className="sr-only">Emails</Label>
-                <Input
-                  id="emails"
-                  placeholder="email1@example.com, email2@example.com"
-                  value={emailInput}
-                  onChange={e => setEmailInput(e.target.value)}
-                />
-              </div>
-              <Button onClick={sendInvitations} disabled={sending}>
-                <Send className="h-4 w-4 mr-2" />
-                {sending ? 'Sending...' : 'Send'}
-              </Button>
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 p-6 mb-6">
+          <h2 className="text-base font-semibold text-slate-900 mb-1">Send Invitations</h2>
+          <p className="text-sm text-slate-500 mb-4">Enter email addresses to send personalized invitations</p>
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <Label htmlFor="emails" className="sr-only">Emails</Label>
+              <Input
+                id="emails"
+                placeholder="email1@example.com, email2@example.com"
+                value={emailInput}
+                onChange={e => setEmailInput(e.target.value)}
+                className="border-slate-200 focus:border-blue-400"
+              />
             </div>
-            <p className="text-xs text-gray-400 mt-2">Separate multiple emails with commas</p>
-          </CardContent>
-        </Card>
+            <Button onClick={sendInvitations} disabled={sending} className="bg-blue-600 hover:bg-blue-700">
+              <Send className="h-4 w-4 mr-2" />
+              {sending ? 'Sending...' : 'Send'}
+            </Button>
+          </div>
+          <p className="text-xs text-slate-400 mt-2">Separate multiple emails with commas</p>
+        </div>
 
         {/* Guest list */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Guest List ({invitations.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70">
+          <div className="p-6 pb-4 border-b border-slate-100">
+            <h2 className="text-base font-semibold text-slate-900">Guest List ({invitations.length})</h2>
+          </div>
+          <div className="p-6 pt-4">
             {invitations.length === 0 ? (
-              <div className="text-center py-8 text-gray-400">
-                <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No guests invited yet</p>
+              <div className="text-center py-10">
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-slate-100 mb-4">
+                  <Users className="h-7 w-7 text-slate-400" />
+                </div>
+                <h3 className="font-semibold text-slate-700 mb-1">No guests invited yet</h3>
+                <p className="text-sm text-slate-400">Use the form above to send your first invitations</p>
               </div>
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Sent</TableHead>
-                    <TableHead>RSVP</TableHead>
+                  <TableRow className="border-slate-100">
+                    <TableHead className="text-slate-600">Email</TableHead>
+                    <TableHead className="text-slate-600">Name</TableHead>
+                    <TableHead className="text-slate-600">Status</TableHead>
+                    <TableHead className="text-slate-600">Sent</TableHead>
+                    <TableHead className="text-slate-600">RSVP</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {invitations.map(inv => (
-                    <TableRow key={inv.id}>
-                      <TableCell className="font-mono text-sm">{inv.recipient_email}</TableCell>
-                      <TableCell>{inv.recipient_name || '—'}</TableCell>
+                    <TableRow key={inv.id} className="hover:bg-slate-50 border-slate-100">
+                      <TableCell className="font-mono text-sm text-slate-700">{inv.recipient_email}</TableCell>
+                      <TableCell className="text-slate-600">{inv.recipient_name || '—'}</TableCell>
                       <TableCell>{statusBadge(inv.status)}</TableCell>
-                      <TableCell className="text-sm text-gray-500">{new Date(inv.sent_at).toLocaleDateString()}</TableCell>
+                      <TableCell className="text-sm text-slate-400">{new Date(inv.sent_at).toLocaleDateString()}</TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="sm" onClick={() => copyRsvpLink(inv.token)}>
-                          <Copy className="h-3 w-3" />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-slate-400 hover:text-blue-600 hover:bg-blue-50"
+                          onClick={() => copyRsvpLink(inv.token)}
+                        >
+                          <Copy className="h-3.5 w-3.5" />
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -170,8 +218,8 @@ export default function EventDetailPage() {
                 </TableBody>
               </Table>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </AppLayout>
   );

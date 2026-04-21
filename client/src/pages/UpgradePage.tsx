@@ -1,11 +1,10 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Check, Zap } from 'lucide-react';
+import { Check, Zap, Star } from 'lucide-react';
 import api from '@/lib/axios';
 import { useAuth } from '@/hooks/useAuth';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plan } from '@/types';
 
@@ -33,16 +32,25 @@ export default function UpgradePage() {
 
   return (
     <AppLayout>
-      <div className="p-8">
-        <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-gray-900 mb-3">Upgrade Your Plan</h1>
-          <p className="text-gray-500 max-w-md mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-xs font-semibold mb-4">
+            <Star className="h-3.5 w-3.5" />
+            Plans & Pricing
+          </div>
+          <h1 className="text-3xl font-bold mb-3">
+            <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              Choose Your Plan
+            </span>
+          </h1>
+          <p className="text-slate-500 max-w-md mx-auto">
             Choose the plan that works best for you. All plans include unlimited invitations per event.
           </p>
           {user?.plan_name && (
-            <p className="mt-3 text-sm text-blue-600">
-              Current plan: <strong>{user.plan_name}</strong>
-            </p>
+            <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 text-sm text-slate-600">
+              Current plan: <strong className="text-slate-800">{user.plan_name}</strong>
+            </div>
           )}
         </div>
 
@@ -53,37 +61,62 @@ export default function UpgradePage() {
             const planFeatures = features[plan.name] || [];
 
             return (
-              <Card key={plan.id} className={`relative ${isPopular ? 'border-primary shadow-lg ring-2 ring-primary' : ''}`}>
+              <div
+                key={plan.id}
+                className={`relative bg-white rounded-2xl shadow-sm border transition-all ${
+                  isPopular
+                    ? 'border-blue-300 ring-2 ring-blue-500/30 shadow-lg shadow-blue-500/10 bg-gradient-to-b from-blue-50/50 to-white'
+                    : 'border-slate-200/70 hover:shadow-md'
+                }`}
+              >
                 {isPopular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <Badge className="px-3 py-1"><Zap className="h-3 w-3 mr-1" />Most Popular</Badge>
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
+                    <Badge className="px-3 py-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-0 shadow-md">
+                      <Zap className="h-3 w-3 mr-1" />Most Popular
+                    </Badge>
                   </div>
                 )}
-                <CardHeader className="text-center pb-2">
-                  <CardTitle className="text-xl">{plan.name}</CardTitle>
-                  <CardDescription>{plan.description}</CardDescription>
-                  <div className="mt-4">
-                    <span className="text-4xl font-bold">{plan.price_sek}</span>
-                    <span className="text-gray-500"> SEK/mo</span>
+
+                <div className="p-6 pb-4 text-center border-b border-slate-100">
+                  <h2 className="text-xl font-bold text-slate-900 mb-1">{plan.name}</h2>
+                  {plan.description && (
+                    <p className="text-sm text-slate-500 mb-4">{plan.description}</p>
+                  )}
+                  <div className="flex items-baseline justify-center gap-1 mb-1">
+                    <span className="text-4xl font-bold text-slate-900">{plan.price_sek}</span>
+                    <span className="text-slate-500 text-sm">SEK/mo</span>
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-xs text-slate-400">
                     {plan.event_limit === -1 ? 'Unlimited events' : `Up to ${plan.event_limit} events`}
                   </p>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <ul className="space-y-2">
+                </div>
+
+                <div className="p-6 space-y-5">
+                  <ul className="space-y-3">
                     {planFeatures.map((f) => (
-                      <li key={f} className="flex items-center gap-2 text-sm">
-                        <Check className="h-4 w-4 text-green-500 shrink-0" />
+                      <li key={f} className="flex items-center gap-2.5 text-sm text-slate-600">
+                        <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                          <Check className="h-3 w-3 text-emerald-600" />
+                        </div>
                         {f}
                       </li>
                     ))}
                   </ul>
+
                   {isCurrentPlan ? (
-                    <Button className="w-full" variant="outline" disabled>Current Plan</Button>
+                    <Button
+                      className="w-full bg-slate-100 text-slate-500 hover:bg-slate-100 cursor-default"
+                      disabled
+                    >
+                      <Check className="h-4 w-4 mr-2" />Current Plan
+                    </Button>
                   ) : (
                     <Button
-                      className="w-full"
+                      className={`w-full ${
+                        isPopular
+                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md shadow-blue-500/20'
+                          : ''
+                      }`}
                       variant={isPopular ? 'default' : 'outline'}
                       onClick={() => upgradeMutation.mutate(plan.id)}
                       disabled={upgradeMutation.isPending}
@@ -91,8 +124,8 @@ export default function UpgradePage() {
                       {upgradeMutation.isPending ? 'Requesting...' : `Upgrade to ${plan.name}`}
                     </Button>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             );
           })}
         </div>

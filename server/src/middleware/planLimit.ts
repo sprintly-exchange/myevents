@@ -1,47 +1,21 @@
 import { Request, Response, NextFunction } from 'express';
-import db from '../db';
+import prisma from '../db';
 
-export function checkEventLimit(req: Request, res: Response, next: NextFunction): void {
+export async function checkEventLimit(req: Request, res: Response, next: NextFunction): Promise<void> {
   const user = (req as any).user;
-  if (!user) {
-    res.status(401).json({ error: 'Not authenticated' });
-    return;
-  }
+  if (!user) { res.status(401).json({ error: 'Not authenticated' }); return; }
 
-  const userRow = db.prepare(`
-    SELECT u.id, u.plan_id, p.event_limit, p.name as plan_name
-    FROM users u
-    LEFT JOIN plans p ON u.plan_id = p.id
-    WHERE u.id = ?
-  `).get(user.id) as { id: string; plan_id: string; event_limit: number; plan_name: string } | undefined;
+  const userRow = await prisma.user.findUnique({ where: { id: user.id }, include: { plan: true } });
+  if (!userRow) { res.status(404).json({ error: 'User not found' }); return; }
 
-  if (!userRow) {
-    res.status(404).json({ error: 'User not found' });
-    return;
-  }
+  const eventLimit = userRow.plan?.eventLimit ?? 5;
+  if (eventLimit === -1) { next(); return; }
 
-  const eventLimit = userRow.event_limit;
-  if (eventLimit === -1) {
-    // Unlimited
-    next();
-    return;
-  }
-
-  const eventCount = (db.prepare(
-    "SELECT COUNT(*) as count FROM events WHERE creator_id = ? AND status != 'deleted'"
-  ).get(user.id) as { count: number }).count;
-
+  const eventCount = await prisma.event.count({ where: { creatorId: user.id, status: { not: 'deleted' } } });
   if (eventCount >= eventLimit) {
-    const plans = db.prepare("SELECT * FROM plans WHERE is_active = 1 ORDER BY price_sek ASC").all();
-    res.status(403).json({
-      error: 'Event limit reached',
-      currentPlan: userRow.plan_name,
-      eventLimit,
-      eventCount,
-      availablePlans: plans,
-    });
+    const plans = await prisma.plan.findMany({ where: { isActive: true }, orderBy: { priceSek: 'asc' } });
+    res.status(403).json({ error: 'Event limit reached', currentPlan: userRow.plan?.name, eventLimit, eventCount, availablePlans: plans });
     return;
   }
-
   next();
 }

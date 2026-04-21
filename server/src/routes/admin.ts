@@ -1,31 +1,28 @@
 import { Router, Request, Response } from 'express';
-import db from '../db';
+import bcrypt from 'bcryptjs';
+import prisma from '../db';
 import { requireAdmin, requireAuth } from '../middleware/auth';
 import { sendTestEmail } from '../services/email';
 
 const router = Router();
 
-// Settings
-router.get('/settings', requireAdmin, (req: Request, res: Response) => {
-  const rows = db.prepare('SELECT key, value FROM app_settings').all() as { key: string; value: string }[];
+router.get('/settings', requireAdmin, async (_req: Request, res: Response) => {
+  const rows = await prisma.appSetting.findMany();
   const settings: Record<string, string> = {};
-  for (const row of rows) {
-    settings[row.key] = row.value || '';
-  }
+  for (const row of rows) settings[row.key] = row.value || '';
   return res.json({ settings });
 });
 
-router.post('/settings', requireAdmin, (req: Request, res: Response) => {
+router.post('/settings', requireAdmin, async (req: Request, res: Response) => {
   const { key, value, settings } = req.body;
   if (settings && Array.isArray(settings)) {
-    const upsert = db.prepare("INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, datetime('now'))");
     for (const s of settings) {
-      upsert.run(s.key, s.value);
+      await prisma.appSetting.upsert({ where: { key: s.key }, update: { value: s.value }, create: { key: s.key, value: s.value } });
     }
     return res.json({ message: 'Settings updated' });
   }
   if (key) {
-    db.prepare("INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, ?, datetime('now'))").run(key, value);
+    await prisma.appSetting.upsert({ where: { key }, update: { value }, create: { key, value } });
     return res.json({ message: 'Setting updated' });
   }
   return res.status(400).json({ error: 'key/value or settings array required' });
@@ -42,87 +39,93 @@ router.post('/settings/test-email', requireAdmin, async (req: Request, res: Resp
   }
 });
 
-// Users
-router.get('/users', requireAdmin, (req: Request, res: Response) => {
-  const users = db.prepare(`
-    SELECT u.id, u.email, u.name, u.role, u.payment_status, u.is_active, u.created_at, u.plan_id,
-           p.name as plan_name
-    FROM users u
-    LEFT JOIN plans p ON u.plan_id = p.id
-    ORDER BY u.created_at DESC
-  `).all();
+router.post('/change-password', requireAdmin, async (req: Request, res: Response) => {
+  const adminUser = (req as any).user;
+  const { current_password, new_password } = req.body;
+  if (!current_password || !new_password)
+    return res.status(400).json({ error: 'current_password and new_password are required' });
+  if (new_password.length < 6)
+    return res.status(400).json({ error: 'New password must be at least 6 characters' });
+
+  const user = await prisma.user.findUnique({ where: { id: adminUser.id } });
+  if (!user) return res.status(404).json({ error: 'User not found' });
+
+  if (!bcrypt.compareSync(current_password, user.passwordHash))
+    return res.status(401).json({ error: 'Current password is incorrect' });
+
+  const passwordHash = bcrypt.hashSync(new_password, 10);
+  await prisma.user.update({ where: { id: adminUser.id }, data: { passwordHash } });
+  return res.json({ message: 'Password changed successfully' });
+});
+
+
+router.get('/users', requireAdmin, async (_req: Request, res: Response) => {
+  const users = await prisma.user.findMany({
+    select: { id: true, email: true, name: true, role: true, paymentStatus: true, isActive: true, createdAt: true, planId: true, plan: { select: { name: true } } },
+    orderBy: { createdAt: 'desc' },
+  });
   return res.json({ users });
 });
 
-router.patch('/users/:id', requireAdmin, (req: Request, res: Response) => {
+router.patch('/users/:id', requireAdmin, async (req: Request, res: Response) => {
   const { role, is_active, payment_status, plan_id } = req.body;
-  const user = db.prepare('SELECT id FROM users WHERE id = ?').get(req.params.id);
+  const user = await prisma.user.findUnique({ where: { id: req.params.id } });
   if (!user) return res.status(404).json({ error: 'User not found' });
 
-  if (role !== undefined) db.prepare('UPDATE users SET role=? WHERE id=?').run(role, req.params.id);
-  if (is_active !== undefined) db.prepare('UPDATE users SET is_active=? WHERE id=?').run(is_active ? 1 : 0, req.params.id);
-  if (payment_status !== undefined) db.prepare('UPDATE users SET payment_status=? WHERE id=?').run(payment_status, req.params.id);
-  if (plan_id !== undefined) db.prepare('UPDATE users SET plan_id=? WHERE id=?').run(plan_id, req.params.id);
-
-  const updated = db.prepare(`
-    SELECT u.id, u.email, u.name, u.role, u.payment_status, u.is_active, u.created_at, u.plan_id,
-           p.name as plan_name
-    FROM users u LEFT JOIN plans p ON u.plan_id = p.id WHERE u.id = ?
-  `).get(req.params.id);
+  const updated = await prisma.user.update({
+    where: { id: req.params.id },
+    data: {
+      ...(role !== undefined ? { role } : {}),
+      ...(is_active !== undefined ? { isActive: !!is_active } : {}),
+      ...(payment_status !== undefined ? { paymentStatus: payment_status } : {}),
+      ...(plan_id !== undefined ? { planId: plan_id } : {}),
+    },
+    include: { plan: { select: { name: true } } },
+  });
   return res.json({ user: updated });
 });
 
-// Upgrade requests for admin
-router.get('/upgrade-requests', requireAdmin, (req: Request, res: Response) => {
-  const requests = db.prepare(`
-    SELECT ur.*, u.name as user_name, u.email as user_email, p.name as plan_name
-    FROM upgrade_requests ur
-    JOIN users u ON ur.user_id = u.id
-    JOIN plans p ON ur.plan_id = p.id
-    ORDER BY ur.requested_at DESC
-  `).all();
+router.get('/upgrade-requests', requireAdmin, async (_req: Request, res: Response) => {
+  const requests = await prisma.upgradeRequest.findMany({
+    include: { user: { select: { name: true, email: true } }, plan: { select: { name: true } } },
+    orderBy: { requestedAt: 'desc' },
+  });
   return res.json({ requests });
 });
 
-router.patch('/upgrade-requests/:id', requireAdmin, (req: Request, res: Response) => {
+router.patch('/upgrade-requests/:id', requireAdmin, async (req: Request, res: Response) => {
   const { status } = req.body;
-  if (!['approved', 'rejected'].includes(status)) {
+  if (!['approved', 'rejected'].includes(status))
     return res.status(400).json({ error: 'Status must be approved or rejected' });
-  }
-  const request = db.prepare('SELECT * FROM upgrade_requests WHERE id = ?').get(req.params.id) as any;
+
+  const request = await prisma.upgradeRequest.findUnique({ where: { id: req.params.id } });
   if (!request) return res.status(404).json({ error: 'Request not found' });
 
-  db.prepare("UPDATE upgrade_requests SET status=?, resolved_at=datetime('now') WHERE id=?").run(status, req.params.id);
-
+  await prisma.upgradeRequest.update({ where: { id: req.params.id }, data: { status, resolvedAt: new Date() } });
   if (status === 'approved') {
-    db.prepare('UPDATE users SET plan_id=?, payment_status=? WHERE id=?').run(request.plan_id, 'paid', request.user_id);
+    await prisma.user.update({ where: { id: request.userId }, data: { planId: request.planId, paymentStatus: 'paid' } });
   }
-
   return res.json({ message: 'Request updated' });
 });
 
-// Upgrade requests for users
-router.get('/upgrade-requests/mine', requireAuth, (req: Request, res: Response) => {
+router.get('/upgrade-requests/mine', requireAuth, async (req: Request, res: Response) => {
   const user = (req as any).user;
-  const requests = db.prepare(`
-    SELECT ur.*, p.name as plan_name, p.price_sek
-    FROM upgrade_requests ur
-    JOIN plans p ON ur.plan_id = p.id
-    WHERE ur.user_id = ?
-    ORDER BY ur.requested_at DESC
-  `).all(user.id);
+  const requests = await prisma.upgradeRequest.findMany({
+    where: { userId: user.id },
+    include: { plan: { select: { name: true, priceSek: true } } },
+    orderBy: { requestedAt: 'desc' },
+  });
   return res.json({ requests });
 });
 
-router.post('/upgrade-requests', requireAuth, (req: Request, res: Response) => {
+router.post('/upgrade-requests', requireAuth, async (req: Request, res: Response) => {
   const user = (req as any).user;
   const { plan_id } = req.body;
   if (!plan_id) return res.status(400).json({ error: 'plan_id required' });
-  const plan = db.prepare('SELECT id FROM plans WHERE id = ? AND is_active = 1').get(plan_id);
+  const plan = await prisma.plan.findFirst({ where: { id: plan_id, isActive: true } });
   if (!plan) return res.status(404).json({ error: 'Plan not found' });
-  const result = db.prepare('INSERT INTO upgrade_requests (user_id, plan_id) VALUES (?, ?)').run(user.id, plan_id);
-  const reqRow = db.prepare('SELECT * FROM upgrade_requests WHERE rowid = ?').get(result.lastInsertRowid);
-  return res.status(201).json({ request: reqRow });
+  const request = await prisma.upgradeRequest.create({ data: { userId: user.id, planId: plan_id } });
+  return res.status(201).json({ request });
 });
 
 export default router;

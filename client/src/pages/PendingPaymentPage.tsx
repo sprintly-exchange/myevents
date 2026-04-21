@@ -5,7 +5,6 @@ import { toast } from 'sonner';
 import api from '@/lib/axios';
 import AuthLayout from '@/components/AuthLayout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
 
 interface PaymentData {
@@ -48,53 +47,61 @@ export default function PendingPaymentPage() {
 
   return (
     <AuthLayout>
-      <div className="text-center">
-        <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100 mb-4">
-          <span className="text-2xl">💳</span>
+      {/* Header */}
+      <div className="text-center mb-6">
+        <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 mb-4">
+          <span className="text-3xl">💳</span>
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment Required</h2>
-        <p className="text-gray-500 mb-6">
-          Complete your registration by paying for the <strong>{planName}</strong> plan.
+        <h2 className="text-2xl font-bold text-slate-900 mb-2">Complete Your Payment</h2>
+        <p className="text-slate-500 text-sm">
+          Complete your registration by paying for the{' '}
+          <span className="font-semibold text-slate-700">{planName}</span> plan.
         </p>
       </div>
 
-      <Card className="mb-6 border-blue-200 bg-blue-50">
-        <CardContent className="p-4 space-y-3">
+      {/* Payment details card */}
+      <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 mb-5">
+        <h3 className="text-sm font-semibold text-blue-800 mb-3">Payment Details</h3>
+        <div className="space-y-2.5">
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Plan</span>
-            <span className="font-semibold">{planName}</span>
+            <span className="text-blue-700">Plan</span>
+            <span className="font-semibold text-blue-900">{planName}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Amount</span>
-            <span className="font-bold text-lg text-blue-700">{price} SEK</span>
+            <span className="text-blue-700">Amount</span>
+            <span className="font-bold text-xl text-blue-700">{price} SEK</span>
           </div>
           {swishNumber && (
             <>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Swish Number</span>
-                <span className="font-mono font-semibold">{swishNumber}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Recipient</span>
-                <span className="font-semibold">{swishHolder}</span>
+              <div className="border-t border-blue-200 pt-2.5 mt-2.5">
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-blue-700">Swish Number</span>
+                  <span className="font-mono font-semibold text-blue-900">{swishNumber}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-blue-700">Recipient</span>
+                  <span className="font-semibold text-blue-900">{swishHolder}</span>
+                </div>
               </div>
             </>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
+      {/* QR code */}
       {swishQrData && (
-        <div className="flex flex-col items-center mb-6">
-          <p className="text-sm text-gray-500 mb-3">Scan QR code to pay with Swish</p>
-          <div className="p-3 bg-white rounded-lg border">
-            <QRCodeSVG value={swishQrData} size={180} />
+        <div className="flex flex-col items-center mb-5">
+          <p className="text-sm text-slate-500 mb-3">Scan to pay with Swish</p>
+          <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
+            <QRCodeSVG value={swishQrData} size={160} />
           </div>
         </div>
       )}
 
-      <div className="bg-amber-50 rounded-lg p-4 mb-6 text-sm text-amber-800">
-        <p className="font-medium mb-1">Instructions:</p>
-        <ol className="list-decimal list-inside space-y-1">
+      {/* Instructions */}
+      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-5">
+        <p className="text-sm font-semibold text-amber-800 mb-2">Instructions</p>
+        <ol className="list-decimal list-inside space-y-1.5 text-sm text-amber-700">
           <li>Open Swish on your phone</li>
           <li>Scan the QR code or enter number manually</li>
           <li>Send <strong>{price} SEK</strong> with message "MyEvents Registration"</li>
@@ -102,7 +109,11 @@ export default function PendingPaymentPage() {
         </ol>
       </div>
 
-      <Button className="w-full" onClick={handleCheckStatus} disabled={checking}>
+      <Button
+        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white h-11 shadow-md shadow-blue-500/20"
+        onClick={handleCheckStatus}
+        disabled={checking}
+      >
         {checking ? 'Checking...' : 'Check Payment Status'}
       </Button>
     </AuthLayout>

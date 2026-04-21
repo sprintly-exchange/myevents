@@ -7,6 +7,20 @@ import { requireAuth } from '../middleware/auth';
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_change_me';
 
+const formatUser = (user: any) => ({
+  id: user.id,
+  email: user.email,
+  name: user.name,
+  role: user.role,
+  payment_status: user.paymentStatus,
+  plan_id: user.planId,
+  plan_name: user.plan?.name ?? null,
+  event_limit: user.plan?.eventLimit ?? null,
+  price_sek: user.plan?.priceSek ?? null,
+  is_active: user.isActive ? 1 : 0,
+  created_at: user.createdAt,
+});
+
 router.post('/register', async (req: Request, res: Response) => {
   const { name, email, password } = req.body;
   if (!name || !email || !password)
@@ -22,9 +36,9 @@ router.post('/register', async (req: Request, res: Response) => {
 
   const user = await prisma.user.create({
     data: { email, passwordHash, name, role: 'user', planId: defaultPlan?.id ?? null, paymentStatus: 'pending', isActive: true },
-    select: { id: true, email: true, name: true, role: true, paymentStatus: true, planId: true },
+    include: { plan: true },
   });
-  return res.status(201).json({ user });
+  return res.status(201).json({ user: formatUser(user) });
 });
 
 router.post('/login', async (req: Request, res: Response) => {
@@ -32,10 +46,17 @@ router.post('/login', async (req: Request, res: Response) => {
   if (!email || !password)
     return res.status(400).json({ error: 'Email and password are required' });
 
-  const user = await prisma.user.findUnique({
-    where: { email },
+  const lower = email.toLowerCase();
+  const candidates = await prisma.user.findMany({
+    where: { OR: [{ email }, { email: lower }] },
     include: { plan: true },
   });
+  let user = candidates[0] ?? null;
+
+  if (!user) {
+    const byName = await prisma.user.findMany({ include: { plan: true } });
+    user = byName.find(u => u.name.toLowerCase() === lower || u.email.toLowerCase() === lower) ?? null;
+  }
 
   if (!user || !bcrypt.compareSync(password, user.passwordHash))
     return res.status(401).json({ error: 'Invalid email or password' });
@@ -65,8 +86,7 @@ router.post('/login', async (req: Request, res: Response) => {
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 
-  const { passwordHash: _, ...safeUser } = user;
-  return res.json({ user: safeUser });
+  return res.json({ user: formatUser(user) });
 });
 
 router.post('/logout', (_req: Request, res: Response) => {
@@ -78,10 +98,11 @@ router.get('/me', requireAuth, async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, email: true, name: true, role: true, paymentStatus: true, planId: true, isActive: true, createdAt: true, plan: true },
+    include: { plan: true },
   });
   if (!user) return res.status(404).json({ error: 'User not found' });
-  return res.json({ user });
+  return res.json({ user: formatUser(user) });
 });
 
 export default router;
+

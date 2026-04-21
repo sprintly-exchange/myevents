@@ -4,7 +4,8 @@
   "private": true,
   "workspaces": ["server", "client"],
   "scripts": {
-    "dev": "concurrently \"npm run dev --workspace=server\" \"npm run dev --workspace=client\"",
+    "dev": "npm run dev --workspace=server",
+    "dev:clean": "lsof -ti :3000 | xargs kill -9 2>/dev/null; npm run dev",
     "build": "npm run build --workspace=server && npm run build --workspace=client",
     "install:all": "npm install"
   },

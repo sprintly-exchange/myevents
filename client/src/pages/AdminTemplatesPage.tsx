@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Eye, Trash2, Plus } from 'lucide-react';
+import { Eye, Trash2 } from 'lucide-react';
 import api from '@/lib/axios';
 import AppLayout from '@/components/AppLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -32,48 +31,64 @@ export default function AdminTemplatesPage() {
 
   return (
     <AppLayout>
-      <div className="p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Email Templates</h1>
-            <p className="text-gray-500 mt-1">Manage invitation email templates</p>
+            <h1 className="text-2xl font-bold text-slate-900">Email Templates</h1>
+            <p className="text-slate-500 mt-1">Manage invitation email templates</p>
           </div>
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center py-8"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>
+          <div className="flex justify-center py-10">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+          </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {templates.map((t: Template) => (
-              <Card key={t.id}>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">{t.name}</CardTitle>
-                    {t.is_system ? <Badge variant="secondary">System</Badge> : <Badge variant="outline">Custom</Badge>}
+              <div key={t.id} className="bg-white rounded-2xl shadow-sm border border-slate-200/70 overflow-hidden hover:shadow-md transition-shadow group">
+                {/* Mini preview */}
+                <div className="h-40 overflow-hidden bg-slate-50 relative border-b border-slate-100">
+                  <div
+                    className="absolute inset-0 transform scale-[0.25] origin-top-left pointer-events-none"
+                    style={{ width: '400%', height: '400%' }}
+                    dangerouslySetInnerHTML={{ __html: t.html_content }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-50/80 to-transparent" />
+                </div>
+
+                <div className="p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-slate-900">{t.name}</h3>
+                    {t.is_system ? (
+                      <Badge variant="secondary" className="text-xs">System</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs">Custom</Badge>
+                    )}
                   </div>
-                </CardHeader>
-                <CardContent>
-                  {/* Mini preview */}
-                  <div className="h-32 overflow-hidden rounded border bg-gray-50 mb-4 relative">
-                    <div
-                      className="absolute inset-0 transform scale-[0.25] origin-top-left pointer-events-none"
-                      style={{ width: '400%', height: '400%' }}
-                      dangerouslySetInnerHTML={{ __html: t.html_content }}
-                    />
-                  </div>
+
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" className="flex-1" onClick={() => setPreview(t)}>
-                      <Eye className="h-3 w-3 mr-1" />Preview
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 border-slate-200 hover:bg-slate-50 text-xs"
+                      onClick={() => setPreview(t)}
+                    >
+                      <Eye className="h-3.5 w-3.5 mr-1.5" />Preview
                     </Button>
                     {!t.is_system && (
-                      <Button size="sm" variant="outline" className="text-red-500"
-                        onClick={() => { if (confirm('Delete template?')) deleteMutation.mutate(t.id); }}>
-                        <Trash2 className="h-3 w-3" />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-red-400 hover:text-red-600 hover:bg-red-50"
+                        onClick={() => { if (confirm('Delete template?')) deleteMutation.mutate(t.id); }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     )}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             ))}
           </div>
         )}
@@ -84,7 +99,7 @@ export default function AdminTemplatesPage() {
           <DialogHeader>
             <DialogTitle>Preview: {preview?.name}</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-auto border rounded">
+          <div className="flex-1 overflow-auto border rounded-xl">
             <iframe
               srcDoc={preview?.html_content
                 ?.replace(/{{event_title}}/g, 'Sample Event')

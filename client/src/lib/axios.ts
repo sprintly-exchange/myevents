@@ -8,9 +8,13 @@ const api = axios.create({
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const url: string = error.config?.url || '';
+    const publicPaths = ['/login', '/register', '/rsvp'];
+    const onPublicPage = publicPaths.some(p => window.location.pathname.startsWith(p));
+
+    if (error.response?.status === 401 && !onPublicPage && !url.includes('/auth/me')) {
       window.location.href = '/login';
-    } else if (error.response?.status === 402) {
+    } else if (error.response?.status === 402 && !onPublicPage) {
       window.location.href = '/pending-payment';
     }
     return Promise.reject(error);

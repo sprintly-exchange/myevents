@@ -79,6 +79,6 @@ Default IDs use SQLite's `lower(hex(randomblob(8)))` — text PKs, not integers.
 
 ### Default Seed Data
 
-- Admin account: `admin@myevents.se` / `Admin1234!`
+- Admin account: `admin` / `changeme`
 - Plans: Basic (5 events, 99 SEK), Pro (20 events, 199 SEK), Unlimited (-1 events, 399 SEK)
 - Email templates: Elegant, Party, Corporate

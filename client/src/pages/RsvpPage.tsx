@@ -106,7 +106,7 @@ export default function RsvpPage() {
             <Input id="name" placeholder="Enter your name" value={name} onChange={e => setName(e.target.value)} />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Button
               className="w-full bg-green-600 hover:bg-green-700"
               onClick={() => respondMutation.mutate('accepted')}

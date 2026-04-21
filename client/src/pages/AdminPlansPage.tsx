@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Plus, Trash2, Check } from 'lucide-react';
+import { Plus, Trash2, Check, Star } from 'lucide-react';
 import api from '@/lib/axios';
 import AppLayout from '@/components/AppLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -54,82 +53,138 @@ export default function AdminPlansPage() {
 
   return (
     <AppLayout>
-      <div className="p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Plans</h1>
-            <p className="text-gray-500 mt-1">Manage subscription plans</p>
+            <h1 className="text-2xl font-bold text-slate-900">Plans</h1>
+            <p className="text-slate-500 mt-1">Manage subscription plans</p>
           </div>
-          <Button onClick={() => setShowForm(!showForm)}>
+          <Button
+            onClick={() => setShowForm(!showForm)}
+            className="bg-blue-600 hover:bg-blue-700 shadow-sm"
+          >
             <Plus className="h-4 w-4 mr-2" />Add Plan
           </Button>
         </div>
 
+        {/* Add Plan form */}
         {showForm && (
-          <Card className="mb-6">
-            <CardHeader><CardTitle className="text-base">New Plan</CardTitle></CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div className="space-y-1">
-                  <Label>Name</Label>
-                  <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 overflow-hidden mb-6">
+            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+              <h2 className="text-sm font-semibold text-slate-700">New Plan</h2>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Name</Label>
+                  <Input
+                    value={form.name}
+                    onChange={e => setForm({ ...form, name: e.target.value })}
+                    className="border-slate-200 focus:border-blue-400"
+                    placeholder="Enterprise"
+                  />
                 </div>
-                <div className="space-y-1">
-                  <Label>Event Limit (-1 = unlimited)</Label>
-                  <Input type="number" value={form.event_limit} onChange={e => setForm({ ...form, event_limit: parseInt(e.target.value) })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Event Limit (-1 = unlimited)</Label>
+                  <Input
+                    type="number"
+                    value={form.event_limit}
+                    onChange={e => setForm({ ...form, event_limit: parseInt(e.target.value) })}
+                    className="border-slate-200 focus:border-blue-400"
+                  />
                 </div>
-                <div className="space-y-1">
-                  <Label>Price (SEK)</Label>
-                  <Input type="number" value={form.price_sek} onChange={e => setForm({ ...form, price_sek: parseFloat(e.target.value) })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Price (SEK/mo)</Label>
+                  <Input
+                    type="number"
+                    value={form.price_sek}
+                    onChange={e => setForm({ ...form, price_sek: parseFloat(e.target.value) })}
+                    className="border-slate-200 focus:border-blue-400"
+                  />
                 </div>
-                <div className="space-y-1">
-                  <Label>Description</Label>
-                  <Input value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium text-slate-700">Description</Label>
+                  <Input
+                    value={form.description}
+                    onChange={e => setForm({ ...form, description: e.target.value })}
+                    className="border-slate-200 focus:border-blue-400"
+                    placeholder="Short description"
+                  />
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button onClick={() => createMutation.mutate(form)} disabled={createMutation.isPending}>
+                <Button
+                  onClick={() => createMutation.mutate(form)}
+                  disabled={createMutation.isPending}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
                   {createMutation.isPending ? 'Creating...' : 'Create Plan'}
                 </Button>
                 <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
 
         {isLoading ? (
-          <div className="flex justify-center py-8"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>
+          <div className="flex justify-center py-10">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+          </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {plans.map((plan: Plan) => (
-              <Card key={plan.id} className={plan.is_default ? 'border-primary' : ''}>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{plan.name}</CardTitle>
-                    <div className="flex gap-1">
-                      {plan.is_default ? <Badge>Default</Badge> : null}
-                    </div>
+              <div
+                key={plan.id}
+                className={`bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-md transition-shadow ${
+                  plan.is_default ? 'border-blue-300 ring-1 ring-blue-200' : 'border-slate-200/70'
+                }`}
+              >
+                <div className={`h-1.5 w-full ${plan.is_default ? 'bg-gradient-to-r from-blue-500 to-indigo-600' : 'bg-gradient-to-r from-slate-300 to-slate-400'}`} />
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold text-slate-900">{plan.name}</h3>
+                    {plan.is_default && (
+                      <Badge className="bg-blue-100 text-blue-700 border-0">
+                        <Star className="h-3 w-3 mr-1" />Default
+                      </Badge>
+                    )}
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-3xl font-bold">{plan.price_sek} <span className="text-sm font-normal text-gray-500">SEK/mo</span></p>
-                  <p className="text-sm text-gray-500">{plan.description}</p>
-                  <p className="text-sm text-gray-500">
-                    {plan.event_limit === -1 ? 'Unlimited events' : `${plan.event_limit} events`}
+
+                  <div className="flex items-baseline gap-1 mb-2">
+                    <span className="text-3xl font-bold text-slate-900">{plan.price_sek}</span>
+                    <span className="text-sm text-slate-400">SEK/mo</span>
+                  </div>
+
+                  <p className="text-sm text-slate-500 mb-1">{plan.description}</p>
+                  <p className="text-sm text-slate-500 mb-5">
+                    <span className="font-medium text-slate-700">
+                      {plan.event_limit === -1 ? 'Unlimited' : plan.event_limit}
+                    </span>{' '}
+                    events
                   </p>
-                  <div className="flex gap-2 pt-2">
+
+                  <div className="flex gap-2 pt-4 border-t border-slate-100">
                     {!plan.is_default && (
-                      <Button size="sm" variant="outline" onClick={() => setDefaultMutation.mutate(plan.id)}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-slate-200 hover:bg-slate-50 text-xs"
+                        onClick={() => setDefaultMutation.mutate(plan.id)}
+                      >
                         <Check className="h-3 w-3 mr-1" />Set Default
                       </Button>
                     )}
-                    <Button size="sm" variant="outline" className="text-red-500"
-                      onClick={() => { if (confirm('Deactivate this plan?')) deleteMutation.mutate(plan.id); }}>
-                      <Trash2 className="h-3 w-3" />
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-red-400 hover:text-red-600 hover:bg-red-50 ml-auto"
+                      onClick={() => { if (confirm('Deactivate this plan?')) deleteMutation.mutate(plan.id); }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             ))}
           </div>
         )}

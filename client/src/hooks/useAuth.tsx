@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
 import { User } from '@/types';
 
@@ -14,36 +15,31 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const fetchMe = useCallback(async () => {
-    try {
-      const res = await api.get('/auth/me');
-      setUser(res.data.user);
-    } catch {
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchMe();
-  }, [fetchMe]);
+  const { data: user = null, isLoading } = useQuery<User | null>({
+    queryKey: ['auth', 'me'],
+    queryFn: () => api.get('/auth/me').then(r => r.data.user).catch(() => null),
+    staleTime: Infinity,
+    retry: false,
+  });
 
   const login = async (email: string, password: string) => {
     const res = await api.post('/auth/login', { email, password });
-    setUser(res.data.user);
+    queryClient.setQueryData(['auth', 'me'], res.data.user);
   };
 
   const logout = async () => {
     await api.post('/auth/logout');
-    setUser(null);
+    queryClient.setQueryData(['auth', 'me'], null);
   };
 
+  const refetch = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
+  }, [queryClient]);
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, isAdmin: user?.role === 'admin', login, logout, refetch: fetchMe }}>
+    <AuthContext.Provider value={{ user, isLoading, isAdmin: user?.role === 'admin', login, logout, refetch }}>
       {children}
     </AuthContext.Provider>
   );
