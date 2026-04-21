@@ -42,12 +42,13 @@ model User {
 }
 
 model UpgradeRequest {
-  id          String    @id @default(cuid())
-  userId      String    @map("user_id")
-  planId      String    @map("plan_id")
-  status      String    @default("pending")
-  requestedAt DateTime  @default(now()) @map("requested_at")
-  resolvedAt  DateTime? @map("resolved_at")
+  id               String    @id @default(cuid())
+  userId           String    @map("user_id")
+  planId           String    @map("plan_id")
+  status           String    @default("pending")
+  paymentReference String?   @map("payment_reference")
+  requestedAt      DateTime  @default(now()) @map("requested_at")
+  resolvedAt       DateTime? @map("resolved_at")
 
   user User @relation(fields: [userId], references: [id])
   plan Plan @relation(fields: [planId], references: [id])

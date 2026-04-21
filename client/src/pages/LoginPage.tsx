@@ -1,18 +1,24 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import AuthLayout from '@/components/AuthLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import axios from 'axios';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login } = useAuth();
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('registered') === '1') {
+      toast.success('Account created! Please sign in.');
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,11 +27,7 @@ export default function LoginPage() {
       await login(form.email, form.password);
       navigate('/dashboard');
     } catch (err: unknown) {
-      if (axios.isAxiosError(err) && err.response?.status === 402) {
-        navigate('/pending-payment', { state: err.response.data });
-        return;
-      }
-      const message = axios.isAxiosError(err) ? err.response?.data?.error : 'Login failed';
+      const message = (err as any)?.response?.data?.error;
       toast.error(message || 'Login failed');
     } finally {
       setLoading(false);

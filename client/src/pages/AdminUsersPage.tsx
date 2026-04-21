@@ -79,9 +79,18 @@ export default function AdminUsersPage() {
                       <p className="font-medium text-sm text-slate-800">{req.user_name} <span className="text-slate-400 font-normal">({req.user_email})</span></p>
                       <p className="text-xs text-slate-500 mt-0.5">
                         Wants to upgrade to <strong className="text-slate-700">{req.plan_name}</strong>
+                        {req.plan_price ? <span className="ml-1 text-slate-400">· {req.plan_price} SEK</span> : null}
                       </p>
+                      {req.payment_reference && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <span className="text-xs text-amber-700 font-medium">Swish ref:</span>
+                          <span className="font-mono text-sm font-bold text-amber-900 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-md tracking-widest">
+                            {req.payment_reference}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 ml-4 shrink-0">
                       <Button
                         size="sm"
                         className="bg-emerald-600 hover:bg-emerald-700 text-white"
@@ -172,9 +181,9 @@ export default function AdminUsersPage() {
                       </Select>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={user.is_active ? 'success' : 'destructive'} className="text-xs">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${user.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}`}>
                         {user.is_active ? 'Active' : 'Disabled'}
-                      </Badge>
+                      </span>
                     </TableCell>
                     <TableCell>
                       <Button

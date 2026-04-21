@@ -21,10 +21,6 @@ export default function ProtectedRoute({ children, adminOnly }: ProtectedRoutePr
     return <Navigate to="/login" replace />;
   }
 
-  if (user.payment_status === 'pending' && user.role !== 'admin') {
-    return <Navigate to="/pending-payment" replace />;
-  }
-
   if (adminOnly && user.role !== 'admin') {
     return <Navigate to="/dashboard" replace />;
   }

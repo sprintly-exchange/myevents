@@ -63,20 +63,6 @@ router.post('/login', async (req: Request, res: Response) => {
   if (!user.isActive)
     return res.status(403).json({ error: 'Account is disabled' });
 
-  if (user.paymentStatus === 'pending' && user.role === 'user') {
-    const [swishNumber, swishHolder] = await Promise.all([
-      prisma.appSetting.findUnique({ where: { key: 'swish_number' } }),
-      prisma.appSetting.findUnique({ where: { key: 'swish_holder_name' } }),
-    ]);
-    return res.status(402).json({
-      status: 'pending_payment',
-      swishNumber: swishNumber?.value || '',
-      swishHolder: swishHolder?.value || '',
-      price: user.plan?.priceSek,
-      planName: user.plan?.name,
-    });
-  }
-
   const payload = { id: user.id, email: user.email, role: user.role, payment_status: user.paymentStatus };
   const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
   res.cookie('token', token, {

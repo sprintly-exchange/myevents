@@ -22,7 +22,7 @@ export default function RegisterPage() {
     try {
       await api.post('/auth/register', { name: form.name, email: form.email, password: form.password });
       toast.success('Account created! Please complete payment to continue.');
-      navigate('/pending-payment');
+      navigate('/login?registered=1');
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Registration failed');
     } finally {

@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Calendar, MapPin, Users, Send, Copy, Edit, ArrowLeft } from 'lucide-react';
+import { Calendar, MapPin, Users, Send, Copy, Edit, ArrowLeft, Lock } from 'lucide-react';
 import api from '@/lib/axios';
+import { useAuth } from '@/hooks/useAuth';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,8 +17,13 @@ export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { user } = useAuth();
   const [emailInput, setEmailInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [limitHit, setLimitHit] = useState(false);
+
+  const FREE_LIMIT = 2;
+  const isPaid = user?.payment_status === 'paid' || user?.role === 'admin';
 
   const { data, isLoading } = useQuery({
     queryKey: ['event', id],
@@ -35,9 +41,14 @@ export default function EventDetailPage() {
       const res = await api.post('/invitations', { event_id: id, emails, template_id: event?.template_id });
       toast.success(`Sent ${res.data.count} invitation(s)`);
       setEmailInput('');
+      setLimitHit(false);
       qc.invalidateQueries({ queryKey: ['event', id] });
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to send invitations');
+      if (err.response?.status === 402 && err.response?.data?.upgrade_required) {
+        setLimitHit(true);
+      } else {
+        toast.error(err.response?.data?.error || 'Failed to send invitations');
+      }
     } finally {
       setSending(false);
     }
@@ -150,25 +161,57 @@ export default function EventDetailPage() {
 
         {/* Send invitations */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 p-6 mb-6">
-          <h2 className="text-base font-semibold text-slate-900 mb-1">Send Invitations</h2>
-          <p className="text-sm text-slate-500 mb-4">Enter email addresses to send personalized invitations</p>
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <Label htmlFor="emails" className="sr-only">Emails</Label>
-              <Input
-                id="emails"
-                placeholder="email1@example.com, email2@example.com"
-                value={emailInput}
-                onChange={e => setEmailInput(e.target.value)}
-                className="border-slate-200 focus:border-blue-400"
-              />
-            </div>
-            <Button onClick={sendInvitations} disabled={sending} className="bg-blue-600 hover:bg-blue-700">
-              <Send className="h-4 w-4 mr-2" />
-              {sending ? 'Sending...' : 'Send'}
-            </Button>
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-base font-semibold text-slate-900">Send Invitations</h2>
+            {!isPaid && (
+              <span className="text-xs font-medium text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
+                {invitations.length}/{FREE_LIMIT} free invites used
+              </span>
+            )}
           </div>
-          <p className="text-xs text-slate-400 mt-2">Separate multiple emails with commas</p>
+          <p className="text-sm text-slate-500 mb-4">Enter email addresses to send personalized invitations</p>
+
+          {(limitHit || (!isPaid && invitations.length >= FREE_LIMIT)) ? (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 flex gap-4 items-start">
+              <div className="p-2 rounded-lg bg-amber-100 shrink-0">
+                <Lock className="h-5 w-5 text-amber-600" />
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-amber-800 text-sm mb-1">Free tier limit reached</p>
+                <p className="text-sm text-amber-700 mb-3">
+                  You've used all {FREE_LIMIT} free invites for this event. Complete your payment to invite unlimited guests.
+                </p>
+                <Link to="/upgrade">
+                  <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white shadow-sm">
+                    Complete Payment to Unlock
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <Label htmlFor="emails" className="sr-only">Emails</Label>
+                  <Input
+                    id="emails"
+                    placeholder="email1@example.com, email2@example.com"
+                    value={emailInput}
+                    onChange={e => setEmailInput(e.target.value)}
+                    className="border-slate-200 focus:border-blue-400"
+                  />
+                </div>
+                <Button onClick={sendInvitations} disabled={sending} className="bg-blue-600 hover:bg-blue-700">
+                  <Send className="h-4 w-4 mr-2" />
+                  {sending ? 'Sending...' : 'Send'}
+                </Button>
+              </div>
+              <p className="text-xs text-slate-400 mt-2">
+                Separate multiple emails with commas
+                {!isPaid && ` · ${FREE_LIMIT - invitations.length} invite${FREE_LIMIT - invitations.length !== 1 ? 's' : ''} remaining on free tier`}
+              </p>
+            </>
+          )}
         </div>
 
         {/* Guest list */}
