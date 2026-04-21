@@ -1,13 +1,18 @@
-import { Calendar, Users, Mail, Star } from 'lucide-react';
-
-const features = [
-  { icon: <Calendar className="h-5 w-5" />, text: 'Create & manage events effortlessly' },
-  { icon: <Mail className="h-5 w-5" />, text: 'Send beautiful email invitations' },
-  { icon: <Users className="h-5 w-5" />, text: 'Track RSVPs in real time' },
-  { icon: <Star className="h-5 w-5" />, text: 'Professional templates included' },
-];
+import { useTranslation } from 'react-i18next';
+import { Calendar, Users, Mail, Star, Globe } from 'lucide-react';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
+  const { t, i18n } = useTranslation();
+
+  const toggleLang = () => i18n.changeLanguage(i18n.language === 'sv' ? 'en' : 'sv');
+
+  const features = [
+    { icon: <Calendar className="h-5 w-5" />, text: t('auth.feature1') },
+    { icon: <Mail className="h-5 w-5" />, text: t('auth.feature2') },
+    { icon: <Users className="h-5 w-5" />, text: t('auth.feature3') },
+    { icon: <Star className="h-5 w-5" />, text: 'Professional templates included' },
+  ];
+
   return (
     <div className="min-h-screen flex">
       {/* Left panel */}
@@ -30,11 +35,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         {/* Hero text */}
         <div className="relative">
           <h2 className="text-4xl font-bold text-white leading-tight mb-4">
-            Manage your events<br />
-            <span className="text-blue-200">like a professional</span>
+            {t('auth.heroTitle')}
           </h2>
           <p className="text-blue-100 text-lg mb-10 leading-relaxed">
-            Create events, send stunning invitations, and track your guests — all in one place.
+            {t('auth.heroSubtitle')}
           </p>
           <div className="space-y-4">
             {features.map((f, i) => (
@@ -56,12 +60,22 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
       {/* Right panel */}
       <div className="flex w-full lg:w-1/2 flex-col items-center justify-center bg-gray-50 p-8">
-        {/* Mobile logo */}
-        <div className="flex lg:hidden items-center gap-2 mb-8">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
-            <Calendar className="h-5 w-5 text-white" />
+        {/* Mobile logo + language toggle */}
+        <div className="flex items-center justify-between w-full max-w-sm mb-8 lg:mb-0">
+          <div className="flex lg:hidden items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
+              <Calendar className="h-5 w-5 text-white" />
+            </div>
+            <span className="text-xl font-bold text-gray-900">MyEvents</span>
           </div>
-          <span className="text-xl font-bold text-gray-900">MyEvents</span>
+          {/* Language toggle — visible on all screen sizes in right panel */}
+          <button
+            onClick={toggleLang}
+            className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-sm text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors shadow-sm"
+          >
+            <Globe className="h-3.5 w-3.5" />
+            <span>{i18n.language === 'sv' ? '🇸🇪 Svenska' : '🇬🇧 English'}</span>
+          </button>
         </div>
 
         <div className="w-full max-w-sm">
