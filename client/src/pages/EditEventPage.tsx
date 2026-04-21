@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { ArrowLeft, Check, Sparkles } from 'lucide-react';
+import { ArrowLeft, Sparkles, Check, Ban } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
 import AppLayout from '@/components/AppLayout';
@@ -12,6 +12,77 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Template } from '@/types';
 import { cn } from '@/lib/utils';
+
+function TemplateSelector({
+  templates,
+  value,
+  onChange,
+}: {
+  templates: Template[];
+  value: string;
+  onChange: (id: string) => void;
+}) {
+  const templateColors: Record<string, string> = {
+    Elegant: 'from-purple-400 to-indigo-500',
+    Party: 'from-pink-400 to-rose-500',
+    Corporate: 'from-blue-400 to-cyan-500',
+  };
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <button
+        type="button"
+        onClick={() => onChange('')}
+        className={cn(
+          'relative p-4 rounded-xl border-2 text-left transition-all',
+          !value
+            ? 'border-blue-500 bg-blue-50'
+            : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+        )}
+      >
+        {!value && (
+          <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
+            <Check className="h-3 w-3 text-white" />
+          </div>
+        )}
+        <div className="w-full h-8 rounded bg-slate-100 flex items-center justify-center mb-2">
+          <Ban className="h-4 w-4 text-slate-300" />
+        </div>
+        <span className={cn('text-sm font-medium', !value ? 'text-blue-700' : 'text-slate-500')}>
+          No template
+        </span>
+      </button>
+
+      {templates.map(tmpl => {
+        const selected = value === tmpl.id;
+        const gradient = templateColors[tmpl.name] ?? 'from-slate-300 to-slate-400';
+        return (
+          <button
+            key={tmpl.id}
+            type="button"
+            onClick={() => onChange(tmpl.id)}
+            className={cn(
+              'relative p-4 rounded-xl border-2 text-left transition-all',
+              selected
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+            )}
+          >
+            {selected && (
+              <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
+                <Check className="h-3 w-3 text-white" />
+              </div>
+            )}
+            <div className={cn('w-full h-8 rounded bg-gradient-to-r mb-2 opacity-75', gradient)} />
+            <span className={cn('text-sm font-medium', selected ? 'text-blue-700' : 'text-slate-600')}>
+              {tmpl.name}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function EditEventPage() {
   const { id } = useParams<{ id: string }>();
@@ -63,7 +134,7 @@ export default function EditEventPage() {
 
   return (
     <AppLayout>
-      <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-xl mx-auto">
         <button
           onClick={() => navigate(`/events/${id}`)}
           className="flex items-center gap-2 text-slate-500 hover:text-slate-700 mb-6 text-sm font-medium transition-colors"
@@ -72,126 +143,76 @@ export default function EditEventPage() {
         </button>
 
         <div className="mb-8">
-          <h1 className="text-2xl font-bold">
-            <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              {t('events.editEventTitle')}
-            </span>
-          </h1>
+          <h1 className="text-2xl font-bold text-slate-900">{t('events.editEventTitle')}</h1>
           <p className="text-slate-500 mt-1">{t('events.editEventSubtitle')}</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Event Details */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-              <h2 className="text-sm font-semibold text-slate-700">{t('events.eventDetails')}</h2>
-            </div>
-            <div className="p-6 space-y-5">
-              <div className="space-y-1.5">
-                <Label className="text-sm font-medium text-slate-700">
-                  {t('events.eventTitle')} <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  value={form.title}
-                  onChange={e => setForm({ ...form, title: e.target.value })}
-                  required
-                  className="border-slate-200 focus:border-blue-400"
-                />
-              </div>
+        <form onSubmit={handleSubmit} className="space-y-5">
 
-              <div className="space-y-1.5">
-                <Label className="text-sm font-medium text-slate-700">{t('events.description')}</Label>
-                <Textarea
-                  value={form.description}
-                  onChange={e => setForm({ ...form, description: e.target.value })}
-                  rows={3}
-                  className="border-slate-200 focus:border-blue-400 resize-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">
-                    {t('events.date')} <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    type="datetime-local"
-                    value={form.event_date}
-                    onChange={e => setForm({ ...form, event_date: e.target.value })}
-                    required
-                    className="border-slate-200 focus:border-blue-400"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-medium text-slate-700">{t('events.location')}</Label>
-                  <Input
-                    value={form.location}
-                    onChange={e => setForm({ ...form, location: e.target.value })}
-                    className="border-slate-200 focus:border-blue-400"
-                  />
-                </div>
-              </div>
-            </div>
+          {/* Title */}
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-slate-700">
+              {t('events.eventTitle')} <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              value={form.title}
+              onChange={e => setForm({ ...form, title: e.target.value })}
+              required
+              className="border-slate-200 focus:border-blue-400"
+            />
           </div>
 
-          {/* Email Template */}
-          {templates.length > 0 && (
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-amber-500" />
-                <h2 className="text-sm font-semibold text-slate-700">{t('events.emailTemplate')}</h2>
-              </div>
-              <div className="p-6">
-                <p className="text-xs text-slate-500 mb-4">Choose a template for your invitation emails</p>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {templates.map(t => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      onClick={() => setForm({ ...form, template_id: t.id })}
-                      className={cn(
-                        'relative p-4 rounded-xl border-2 text-sm font-medium transition-all text-left',
-                        form.template_id === t.id
-                          ? 'border-blue-500 bg-blue-50 text-blue-700'
-                          : 'border-slate-200 hover:border-slate-300 text-slate-600 hover:bg-slate-50'
-                      )}
-                    >
-                      {form.template_id === t.id && (
-                        <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
-                          <Check className="h-3 w-3 text-white" />
-                        </div>
-                      )}
-                      <div className="w-full h-8 rounded bg-gradient-to-r from-slate-200 to-slate-300 mb-2 opacity-60" />
-                      {t.name}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => setForm({ ...form, template_id: '' })}
-                    className={cn(
-                      'relative p-4 rounded-xl border-2 text-sm font-medium transition-all text-left',
-                      !form.template_id
-                        ? 'border-blue-500 bg-blue-50 text-blue-700'
-                        : 'border-slate-200 hover:border-slate-300 text-slate-500 hover:bg-slate-50'
-                    )}
-                  >
-                    {!form.template_id && (
-                      <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
-                        <Check className="h-3 w-3 text-white" />
-                      </div>
-                    )}
-                    <div className="w-full h-8 rounded bg-slate-100 mb-2" />
-                    {/* t variable shadowed by template loop — use noTemplate key directly */}
-                    No template
-                  </button>
-                </div>
-              </div>
+          {/* Date */}
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-slate-700">
+              {t('events.date')} <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              type="datetime-local"
+              value={form.event_date}
+              onChange={e => setForm({ ...form, event_date: e.target.value })}
+              required
+              className="border-slate-200 focus:border-blue-400"
+            />
+          </div>
+
+          {/* Location */}
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-slate-700">{t('events.location')}</Label>
+            <Input
+              value={form.location}
+              onChange={e => setForm({ ...form, location: e.target.value })}
+              className="border-slate-200 focus:border-blue-400"
+            />
+          </div>
+
+          {/* Description */}
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-slate-700">{t('events.description')}</Label>
+            <Textarea
+              value={form.description}
+              onChange={e => setForm({ ...form, description: e.target.value })}
+              rows={3}
+              className="border-slate-200 focus:border-blue-400 resize-none"
+            />
+          </div>
+
+          {/* Template selector */}
+          <div className="space-y-3 pt-1">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-amber-500" />
+              <Label className="text-sm font-medium text-slate-700">{t('events.emailTemplate')}</Label>
             </div>
-          )}
+            <TemplateSelector
+              templates={templates}
+              value={form.template_id}
+              onChange={id => setForm(f => ({ ...f, template_id: id }))}
+            />
+          </div>
 
           <Button
             type="submit"
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-500/25 h-11"
+            className="w-full bg-blue-600 hover:bg-blue-700 h-11 mt-2"
             disabled={mutation.isPending}
           >
             {mutation.isPending ? t('events.saving') : t('events.saveEvent')}
@@ -201,3 +222,4 @@ export default function EditEventPage() {
     </AppLayout>
   );
 }
+

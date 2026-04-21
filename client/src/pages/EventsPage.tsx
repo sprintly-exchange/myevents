@@ -1,19 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { Plus, Calendar, MapPin, Users, Trash2, Edit, Eye } from 'lucide-react';
+import { Plus, Calendar, MapPin, Users, Trash2, Edit, ArrowRight, PartyPopper } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
 import { useAuth } from '@/hooks/useAuth';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Event } from '@/types';
+import { cn } from '@/lib/utils';
 
 export default function EventsPage() {
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const qc = useQueryClient();
 
   const { data, isLoading } = useQuery({
@@ -32,12 +31,11 @@ export default function EventsPage() {
 
   const events: Event[] = data?.events || [];
   const eventLimit = user?.event_limit ?? 5;
-  const limitLabel = eventLimit === -1 ? t('common.unlimited') : `${events.length} / ${eventLimit}`;
-  const progressVal = eventLimit === -1 ? 0 : Math.min((events.length / eventLimit) * 100, 100);
 
   return (
     <AppLayout>
       <div className="p-4 sm:p-6 lg:p-8">
+
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -52,26 +50,19 @@ export default function EventsPage() {
           </Link>
         </div>
 
-        {/* Usage bar */}
-        {eventLimit !== -1 && (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 p-5 mb-6">
-            <div className="flex justify-between items-center mb-3">
-              <div>
-                <p className="text-sm font-medium text-slate-700">{t('dashboard.planUsage')}</p>
-                <p className="text-xs text-slate-400 mt-0.5">Events used this period</p>
-              </div>
-              <span className="text-sm font-semibold text-slate-700">{limitLabel}</span>
-            </div>
-            <Progress value={progressVal} className="h-2" />
+        {/* Plan usage pill */}
+        {eventLimit !== -1 && events.length > 0 && (
+          <div className="flex items-center justify-between bg-slate-100 rounded-xl px-4 py-2.5 mb-6">
+            <p className="text-sm text-slate-600">
+              <span className="font-semibold text-slate-800">{events.length}</span>
+              <span className="text-slate-400"> / {eventLimit} events used</span>
+            </p>
             {events.length >= eventLimit && (
-              <div className="mt-3 flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
-                <p className="text-sm text-amber-700 font-medium">You've reached your plan limit.</p>
-                <Link to="/upgrade">
-                  <Button variant="outline" size="sm" className="border-amber-300 text-amber-700 hover:bg-amber-100">
-                    {t('nav.upgradePlan')}
-                  </Button>
-                </Link>
-              </div>
+              <Link to="/upgrade">
+                <Button variant="outline" size="sm" className="text-amber-700 border-amber-300 hover:bg-amber-50 h-7 text-xs">
+                  {t('nav.upgradePlan')}
+                </Button>
+              </Link>
             )}
           </div>
         )}
@@ -81,72 +72,99 @@ export default function EventsPage() {
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
           </div>
         ) : events.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 flex flex-col items-center py-20">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-slate-100 mb-5">
-              <Calendar className="h-8 w-8 text-slate-400" />
+          /* ── Empty state ── */
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-blue-50 mb-6">
+              <PartyPopper className="h-10 w-10 text-blue-500" />
             </div>
-            <h3 className="text-lg font-semibold text-slate-700 mb-2">{t('events.noEventsYet')}</h3>
-            <p className="text-slate-400 mb-6">{t('events.noEventsSubtitle')}</p>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">{t('events.createFirst')}</h3>
+            <p className="text-slate-400 mb-8 max-w-xs">{t('events.noEventsSubtitle')}</p>
             <Link to="/events/new">
-              <Button className="bg-blue-600 hover:bg-blue-700">
+              <Button size="lg" className="bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-500/20">
                 <Plus className="h-4 w-4 mr-2" />{t('events.createEvent')}
               </Button>
             </Link>
           </div>
         ) : (
+          /* ── Card grid ── */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {events.map((event: Event) => {
               const isUpcoming = new Date(event.event_date) > new Date();
+              const dateDisplay = new Date(event.event_date).toLocaleDateString(
+                i18n.language === 'sv' ? 'sv-SE' : 'en-US',
+                { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }
+              );
               return (
-                <div key={event.id} className="bg-white rounded-2xl shadow-sm border border-slate-200/70 overflow-hidden hover:shadow-md transition-shadow group">
-                  {/* Colored top strip */}
-                  <div className={`h-2 w-full ${isUpcoming ? 'bg-gradient-to-r from-indigo-500 to-blue-600' : 'bg-gradient-to-r from-slate-300 to-slate-400'}`} />
-                  <div className="p-5">
-                    <div className="flex items-start justify-between mb-3">
-                      <h3 className="font-semibold text-slate-900 line-clamp-2 group-hover:text-blue-600 transition-colors flex-1 mr-2">
+                <div
+                  key={event.id}
+                  className="bg-white rounded-2xl shadow-sm border border-slate-200/70 overflow-hidden hover:shadow-md transition-shadow group flex flex-col"
+                >
+                  {/* Accent strip */}
+                  <div className={cn(
+                    'h-1.5 w-full',
+                    isUpcoming
+                      ? 'bg-gradient-to-r from-indigo-500 to-blue-500'
+                      : 'bg-slate-200'
+                  )} />
+
+                  <div className="p-5 flex flex-col flex-1">
+                    {/* Title + status chip */}
+                    <div className="flex items-start gap-2 mb-4">
+                      <h3 className="font-bold text-slate-900 text-lg leading-tight line-clamp-2 flex-1 group-hover:text-blue-600 transition-colors">
                         {event.title}
                       </h3>
-                      <Badge
-                        variant={isUpcoming ? 'default' : 'secondary'}
-                        className={`shrink-0 ${isUpcoming ? 'bg-emerald-100 text-emerald-700 border-0' : 'bg-slate-100 text-slate-500 border-0'}`}
-                      >
+                      <span className={cn(
+                        'shrink-0 mt-0.5 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
+                        isUpcoming
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : 'bg-slate-100 text-slate-500'
+                      )}>
                         {isUpcoming ? t('common.upcoming') : t('common.past')}
-                      </Badge>
+                      </span>
                     </div>
 
-                    <div className="space-y-2 mb-4">
+                    {/* Meta */}
+                    <div className="space-y-1.5 mb-5 flex-1">
                       <div className="flex items-center gap-2 text-sm text-slate-500">
-                        <Calendar className="h-4 w-4 text-blue-400 shrink-0" />
-                        {new Date(event.event_date).toLocaleDateString('sv-SE', { dateStyle: 'medium' })}
+                        <Calendar className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                        <span>{dateDisplay}</span>
                       </div>
                       {event.location && (
                         <div className="flex items-center gap-2 text-sm text-slate-500">
-                          <MapPin className="h-4 w-4 text-rose-400 shrink-0" />
+                          <MapPin className="h-3.5 w-3.5 text-rose-400 shrink-0" />
                           <span className="truncate">{event.location}</span>
                         </div>
                       )}
                       <div className="flex items-center gap-2 text-sm text-slate-500">
-                        <Users className="h-4 w-4 text-violet-400 shrink-0" />
-                        {event.invitation_count || 0} invited · {event.accepted_count || 0} accepted
+                        <Users className="h-3.5 w-3.5 text-violet-400 shrink-0" />
+                        <span>
+                          <span className="font-medium text-slate-700">{event.invitation_count || 0}</span> invited
+                          {(event.accepted_count ?? 0) > 0 && (
+                            <span className="text-emerald-600 ml-1.5">· {event.accepted_count} accepted</span>
+                          )}
+                        </span>
                       </div>
                     </div>
 
-                    <div className="flex gap-2 pt-3 border-t border-slate-100">
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
                       <Link to={`/events/${event.id}`} className="flex-1">
-                        <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-                          <Eye className="h-3.5 w-3.5 mr-1.5" />View
+                        <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700">
+                          Open <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
                         </Button>
                       </Link>
                       <Link to={`/events/${event.id}/edit`}>
-                        <Button variant="outline" size="sm" className="border-slate-200 hover:bg-slate-50">
+                        <Button variant="outline" size="sm" className="border-slate-200 text-slate-600 hover:bg-slate-50 px-2.5">
                           <Edit className="h-3.5 w-3.5" />
                         </Button>
                       </Link>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-red-400 hover:text-red-600 hover:bg-red-50"
-                        onClick={() => { if (confirm(t('events.deleteConfirm'))) deleteMutation.mutate(event.id); }}
+                        className="text-slate-400 hover:text-red-500 hover:bg-red-50 px-2.5"
+                        onClick={() => {
+                          if (window.confirm(t('events.deleteConfirm'))) deleteMutation.mutate(event.id);
+                        }}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>

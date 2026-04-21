@@ -2,16 +2,15 @@ import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Calendar, MapPin, Users, Send, Copy, Edit, ArrowLeft, Lock } from 'lucide-react';
+import { Calendar, MapPin, Users, Send, Copy, Edit, ArrowLeft, Lock, X, UserPlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
 import { useAuth } from '@/hooks/useAuth';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { cn } from '@/lib/utils';
 import { Invitation } from '@/types';
 
 export default function EventDetailPage() {
@@ -19,9 +18,11 @@ export default function EventDetailPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+
+  const [stagingGuests, setStagingGuests] = useState<{ email: string; name: string }[]>([]);
   const [emailInput, setEmailInput] = useState('');
-  const [sending, setSending] = useState(false);
+  const [nameInput, setNameInput] = useState('');
 
   const isPaid = user?.payment_status === 'paid' || user?.role === 'admin';
 
@@ -30,35 +31,48 @@ export default function EventDetailPage() {
     queryFn: () => api.get(`/events/${id}`).then(r => r.data),
   });
 
+  const sendMutation = useMutation({
+    mutationFn: (emails: string[]) =>
+      api.post('/invitations', { event_id: id, emails, template_id: event?.template_id }),
+    onSuccess: (res) => {
+      toast.success(t('events.invitationsSent', { count: res.data.count }));
+      setStagingGuests([]);
+      qc.invalidateQueries({ queryKey: ['event', id] });
+    },
+    onError: (err: any) => toast.error(err.response?.data?.error || 'Failed to send invitations'),
+  });
+
   const event = data?.event;
   const invitations: Invitation[] = data?.invitations || [];
 
-  const sendInvitations = async () => {
-    const emails = emailInput.split(',').map(e => e.trim()).filter(Boolean);
-    if (emails.length === 0) { toast.error('Enter at least one email'); return; }
-    setSending(true);
-    try {
-      const res = await api.post('/invitations', { event_id: id, emails, template_id: event?.template_id });
-      toast.success(t('events.invitationsSent', { count: res.data.count }));
-      setEmailInput('');
-      qc.invalidateQueries({ queryKey: ['event', id] });
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to send invitations');
-    } finally {
-      setSending(false);
-    }
+  const addGuest = () => {
+    const email = emailInput.trim().toLowerCase();
+    if (!email || !email.includes('@')) return;
+    if (stagingGuests.find(g => g.email === email)) return;
+    setStagingGuests(prev => [...prev, { email, name: nameInput.trim() }]);
+    setEmailInput('');
+    setNameInput('');
+  };
+
+  const removeGuest = (email: string) =>
+    setStagingGuests(prev => prev.filter(g => g.email !== email));
+
+  const sendInvitations = () => {
+    if (stagingGuests.length === 0) return;
+    sendMutation.mutate(stagingGuests.map(g => g.email));
   };
 
   const copyRsvpLink = (token: string) => {
-    const url = `${window.location.origin}/rsvp/${token}`;
-    navigator.clipboard.writeText(url);
+    navigator.clipboard.writeText(`${window.location.origin}/rsvp/${token}`);
     toast.success(t('events.linkCopied'));
   };
 
   const statusBadge = (status: string) => {
-    if (status === 'accepted') return <Badge variant="success">{t('invitations.accepted')}</Badge>;
-    if (status === 'rejected') return <Badge variant="destructive">{t('invitations.declined')}</Badge>;
-    return <Badge variant="warning">{t('common.pending')}</Badge>;
+    if (status === 'accepted')
+      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">{t('invitations.accepted')}</span>;
+    if (status === 'rejected')
+      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-600">{t('invitations.declined')}</span>;
+    return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">{t('common.pending')}</span>;
   };
 
   if (isLoading) return (
@@ -75,11 +89,16 @@ export default function EventDetailPage() {
   );
 
   const isUpcoming = new Date(event.event_date) > new Date();
+  const dateDisplay = new Date(event.event_date).toLocaleDateString(
+    i18n.language === 'sv' ? 'sv-SE' : 'en-US',
+    { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }
+  );
 
   return (
     <AppLayout>
-      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
-        {/* Back button */}
+      <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto">
+
+        {/* Back */}
         <button
           onClick={() => navigate('/events')}
           className="flex items-center gap-2 text-slate-500 hover:text-slate-700 mb-6 text-sm font-medium transition-colors"
@@ -87,88 +106,83 @@ export default function EventDetailPage() {
           <ArrowLeft className="h-4 w-4" />{t('common.back')}
         </button>
 
-        {/* Hero section */}
-        <div className={`rounded-2xl overflow-hidden mb-6 ${isUpcoming ? 'bg-gradient-to-r from-indigo-600 to-blue-600' : 'bg-gradient-to-r from-slate-600 to-slate-700'}`}>
-          <div className="p-4 sm:p-6 lg:p-8">
-            <div className="flex items-start justify-between">
-              <div className="flex-1 mr-4">
-                <Badge className="mb-3 bg-white/20 text-white border-0 hover:bg-white/30">
-                  {isUpcoming ? t('common.upcoming') : t('common.past')}
-                </Badge>
-                <h1 className="text-2xl font-bold text-white mb-2">{event.title}</h1>
-                {event.description && (
-                  <p className="text-white/80 text-sm leading-relaxed">{event.description}</p>
-                )}
-              </div>
-              <Link to={`/events/${id}/edit`}>
-                <Button variant="outline" size="sm" className="bg-white/10 border-white/30 text-white hover:bg-white/20">
-                  <Edit className="h-4 w-4 mr-2" />{t('common.edit')}
-                </Button>
-              </Link>
+        {/* ── Event Header ── */}
+        <div className={cn(
+          'rounded-2xl p-6 mb-6',
+          isUpcoming
+            ? 'bg-gradient-to-r from-indigo-600 to-blue-600'
+            : 'bg-gradient-to-r from-slate-600 to-slate-700'
+        )}>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white mb-3">
+                {isUpcoming ? t('common.upcoming') : t('common.past')}
+              </span>
+              <h1 className="text-2xl font-bold text-white mb-1 truncate">{event.title}</h1>
+              {event.description && (
+                <p className="text-white/75 text-sm leading-relaxed line-clamp-2">{event.description}</p>
+              )}
+            </div>
+            <Link to={`/events/${id}/edit`} className="shrink-0">
+              <Button variant="outline" size="sm" className="bg-white/10 border-white/30 text-white hover:bg-white/20">
+                <Edit className="h-3.5 w-3.5 mr-1.5" />{t('common.edit')}
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+        {/* ── Quick Stats ── */}
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="bg-white rounded-xl border border-slate-200/70 shadow-sm p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-blue-50 shrink-0">
+              <Calendar className="h-4 w-4 text-blue-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-slate-400 font-medium">Date</p>
+              <p className="text-sm font-semibold text-slate-800 truncate">{dateDisplay}</p>
+            </div>
+          </div>
+
+          <div className={cn(
+            'bg-white rounded-xl border border-slate-200/70 shadow-sm p-4 flex items-center gap-3',
+            !event.location && 'opacity-50'
+          )}>
+            <div className="p-2 rounded-lg bg-rose-50 shrink-0">
+              <MapPin className="h-4 w-4 text-rose-500" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-slate-400 font-medium">{t('events.location')}</p>
+              <p className="text-sm font-semibold text-slate-800 truncate">{event.location || 'Not set'}</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-slate-200/70 shadow-sm p-4 flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-violet-50 shrink-0">
+              <Users className="h-4 w-4 text-violet-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-slate-400 font-medium">{t('events.guests')}</p>
+              <p className="text-sm font-semibold text-slate-800">{invitations.length} invited</p>
             </div>
           </div>
         </div>
 
-        {/* Info cards row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 p-5 flex items-center gap-4">
-            <div className="p-2.5 rounded-xl bg-blue-50">
-              <Calendar className="h-5 w-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-500 font-medium">Date & Time</p>
-              <p className="font-semibold text-sm text-slate-800">{new Date(event.event_date).toLocaleString('sv-SE')}</p>
-            </div>
-          </div>
-
-          {event.location ? (
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 p-5 flex items-center gap-4">
-              <div className="p-2.5 rounded-xl bg-rose-50">
-                <MapPin className="h-5 w-5 text-rose-500" />
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 font-medium">{t('events.location')}</p>
-                <p className="font-semibold text-sm text-slate-800">{event.location}</p>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 p-5 flex items-center gap-4 opacity-50">
-              <div className="p-2.5 rounded-xl bg-slate-100">
-                <MapPin className="h-5 w-5 text-slate-400" />
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 font-medium">{t('events.location')}</p>
-                <p className="text-sm text-slate-400">Not specified</p>
-              </div>
-            </div>
-          )}
-
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 p-5 flex items-center gap-4">
-            <div className="p-2.5 rounded-xl bg-violet-50">
-              <Users className="h-5 w-5 text-violet-600" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-500 font-medium">{t('events.guests')}</p>
-              <p className="font-semibold text-sm text-slate-800">{invitations.length} invited</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Send invitations */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 p-6 mb-6">
+        {/* ── Invite Guests Card ── */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 p-6 mb-5">
           <h2 className="text-base font-semibold text-slate-900 mb-1">{t('events.sendInvitations')}</h2>
-          <p className="text-sm text-slate-500 mb-4">{t('events.sendInvitationsSubtitle')}</p>
+          <p className="text-sm text-slate-500 mb-5">Add guests below, then send all at once.</p>
 
           {!isPaid ? (
+            /* Lock panel */
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 flex gap-4 items-start">
               <div className="p-2 rounded-lg bg-amber-100 shrink-0">
                 <Lock className="h-5 w-5 text-amber-600" />
               </div>
-              <div className="flex-1">
+              <div>
                 <p className="font-semibold text-amber-800 text-sm mb-1">{t('events.paymentRequiredTitle')}</p>
                 <p className="text-sm text-amber-700 mb-3">{t('events.paymentRequiredDesc')}</p>
                 <Link to="/upgrade">
-                  <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white shadow-sm">
+                  <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white">
                     {t('events.completePayment')}
                   </Button>
                 </Link>
@@ -176,76 +190,115 @@ export default function EventDetailPage() {
             </div>
           ) : (
             <>
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <Label htmlFor="emails" className="sr-only">Emails</Label>
-                  <Input
-                    id="emails"
-                    placeholder={t('events.emailsPlaceholder')}
-                    value={emailInput}
-                    onChange={e => setEmailInput(e.target.value)}
-                    className="border-slate-200 focus:border-blue-400"
-                  />
-                </div>
-                <Button onClick={sendInvitations} disabled={sending} className="bg-blue-600 hover:bg-blue-700">
-                  <Send className="h-4 w-4 mr-2" />
-                  {sending ? t('events.sending') : t('events.send')}
+              {/* Input row */}
+              <div className="flex gap-2 mb-4">
+                <Input
+                  type="email"
+                  placeholder="guest@example.com"
+                  value={emailInput}
+                  onChange={e => setEmailInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addGuest())}
+                  className="flex-1 border-slate-200 focus:border-blue-400"
+                />
+                <Input
+                  placeholder="Name (optional)"
+                  value={nameInput}
+                  onChange={e => setNameInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addGuest())}
+                  className="w-40 border-slate-200 focus:border-blue-400"
+                />
+                <Button
+                  type="button"
+                  onClick={addGuest}
+                  variant="outline"
+                  className="border-blue-200 text-blue-600 hover:bg-blue-50 shrink-0"
+                >
+                  <UserPlus className="h-4 w-4 mr-1.5" />Add
                 </Button>
               </div>
-              <p className="text-xs text-slate-400 mt-2">{t('events.separateByCommas')}</p>
+
+              {/* Staging list */}
+              {stagingGuests.length > 0 && (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 divide-y divide-slate-100 mb-4">
+                  {stagingGuests.map(g => (
+                    <div key={g.email} className="flex items-center justify-between px-4 py-2.5">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-slate-800 truncate">{g.email}</p>
+                        {g.name && <p className="text-xs text-slate-400">{g.name}</p>}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeGuest(g.email)}
+                        className="ml-3 text-slate-400 hover:text-red-500 transition-colors shrink-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Send button */}
+              <Button
+                onClick={sendInvitations}
+                disabled={stagingGuests.length === 0 || sendMutation.isPending}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+              >
+                <Send className="h-4 w-4 mr-2" />
+                {sendMutation.isPending
+                  ? t('events.sending')
+                  : `Send ${stagingGuests.length > 0 ? `${stagingGuests.length} ` : ''}Invitation${stagingGuests.length !== 1 ? 's' : ''}`}
+              </Button>
             </>
           )}
         </div>
 
-        {/* Guest list */}
+        {/* ── Guest List Card ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70">
-          <div className="p-6 pb-4 border-b border-slate-100">
-            <h2 className="text-base font-semibold text-slate-900">{t('events.guestList')} ({invitations.length})</h2>
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+            <h2 className="text-base font-semibold text-slate-900">
+              {t('events.guestList')}
+              <span className="ml-2 text-sm font-normal text-slate-400">({invitations.length})</span>
+            </h2>
           </div>
-          <div className="p-6 pt-4">
-            {invitations.length === 0 ? (
-              <div className="text-center py-10">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-slate-100 mb-4">
-                  <Users className="h-7 w-7 text-slate-400" />
-                </div>
-                <h3 className="font-semibold text-slate-700 mb-1">{t('events.noGuestsYet')}</h3>
-                <p className="text-sm text-slate-400">Use the form above to send your first invitations</p>
+
+          {invitations.length === 0 ? (
+            <div className="flex flex-col items-center py-14 px-6 text-center">
+              <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-slate-100 mb-4">
+                <Users className="h-7 w-7 text-slate-400" />
               </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-slate-100">
-                    <TableHead className="text-slate-600">{t('common.email')}</TableHead>
-                    <TableHead className="text-slate-600">{t('common.name')}</TableHead>
-                    <TableHead className="text-slate-600">Status</TableHead>
-                    <TableHead className="text-slate-600">Sent</TableHead>
-                    <TableHead className="text-slate-600">RSVP</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {invitations.map(inv => (
-                    <TableRow key={inv.id} className="hover:bg-slate-50 border-slate-100">
-                      <TableCell className="font-mono text-sm text-slate-700">{inv.recipient_email}</TableCell>
-                      <TableCell className="text-slate-600">{inv.recipient_name || '—'}</TableCell>
-                      <TableCell>{statusBadge(inv.status)}</TableCell>
-                      <TableCell className="text-sm text-slate-400">{new Date(inv.sent_at).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-slate-400 hover:text-blue-600 hover:bg-blue-50"
-                          onClick={() => copyRsvpLink(inv.token)}
-                        >
-                          <Copy className="h-3.5 w-3.5" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </div>
+              <h3 className="font-semibold text-slate-700 mb-1">{t('events.noGuestsYet')}</h3>
+              <p className="text-sm text-slate-400">Add guests above to send your first invitations</p>
+            </div>
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {invitations.map(inv => (
+                <li key={inv.id} className="flex items-center justify-between px-6 py-3.5 hover:bg-slate-50 transition-colors">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-slate-800 truncate">{inv.recipient_email}</p>
+                    {inv.recipient_name && (
+                      <p className="text-xs text-slate-400">{inv.recipient_name}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 ml-4 shrink-0">
+                    {statusBadge(inv.status)}
+                    <span className="text-xs text-slate-400 hidden sm:inline">
+                      {new Date(inv.sent_at).toLocaleDateString()}
+                    </span>
+                    <button
+                      onClick={() => copyRsvpLink(inv.token)}
+                      className="text-slate-300 hover:text-blue-500 transition-colors"
+                      title={t('events.copyLink')}
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
+
       </div>
     </AppLayout>
   );
