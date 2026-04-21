@@ -168,6 +168,7 @@ async function main() {
     { key: 'swish_number', value: '' },
     { key: 'swish_holder_name', value: '' },
     { key: 'app_name', value: 'MyEvents' },
+    { key: 'free_tier_invite_limit', value: '1' },
   ];
   for (const s of defaultSettings) {
     await prisma.appSetting.upsert({ where: { key: s.key }, update: {}, create: s });

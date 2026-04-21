@@ -31,6 +31,13 @@ export default function EventDetailPage() {
     queryFn: () => api.get(`/events/${id}`).then(r => r.data),
   });
 
+  const { data: settingsData } = useQuery({
+    queryKey: ['public-settings'],
+    queryFn: () => api.get('/admin/public-settings').then(r => r.data),
+    enabled: !isPaid,
+  });
+  const freeLimit = parseInt(settingsData?.free_tier_invite_limit || '1', 10);
+
   const sendMutation = useMutation({
     mutationFn: (emails: string[]) =>
       api.post('/invitations', { event_id: id, emails, template_id: event?.template_id }),
@@ -39,11 +46,18 @@ export default function EventDetailPage() {
       setStagingGuests([]);
       qc.invalidateQueries({ queryKey: ['event', id] });
     },
-    onError: (err: any) => toast.error(err.response?.data?.error || 'Failed to send invitations'),
+    onError: (err: any) => {
+      if (err.response?.status === 402 && err.response?.data?.upgrade_required) {
+        qc.invalidateQueries({ queryKey: ['event', id] });
+      }
+      toast.error(err.response?.data?.error || 'Failed to send invitations');
+    },
   });
 
   const event = data?.event;
   const invitations: Invitation[] = data?.invitations || [];
+  const usedInvites = invitations.length;
+  const limitReached = !isPaid && freeLimit > 0 && usedInvites >= freeLimit;
 
   const addGuest = () => {
     const email = emailInput.trim().toLowerCase();
@@ -169,18 +183,36 @@ export default function EventDetailPage() {
 
         {/* ── Invite Guests Card ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 p-6 mb-5">
-          <h2 className="text-base font-semibold text-slate-900 mb-1">{t('events.sendInvitations')}</h2>
+          <div className="flex items-start justify-between mb-1">
+            <h2 className="text-base font-semibold text-slate-900">{t('events.sendInvitations')}</h2>
+            {!isPaid && freeLimit > 0 && (
+              <span className={cn(
+                'text-xs font-medium px-2.5 py-1 rounded-full border',
+                limitReached
+                  ? 'text-red-600 bg-red-50 border-red-200'
+                  : 'text-amber-600 bg-amber-50 border-amber-200'
+              )}>
+                {usedInvites}/{freeLimit} free {freeLimit === 1 ? 'invite' : 'invites'} used
+              </span>
+            )}
+          </div>
           <p className="text-sm text-slate-500 mb-5">Add guests below, then send all at once.</p>
 
-          {!isPaid ? (
+          {(!isPaid && freeLimit === 0) || limitReached ? (
             /* Lock panel */
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 flex gap-4 items-start">
               <div className="p-2 rounded-lg bg-amber-100 shrink-0">
                 <Lock className="h-5 w-5 text-amber-600" />
               </div>
               <div>
-                <p className="font-semibold text-amber-800 text-sm mb-1">{t('events.paymentRequiredTitle')}</p>
-                <p className="text-sm text-amber-700 mb-3">{t('events.paymentRequiredDesc')}</p>
+                <p className="font-semibold text-amber-800 text-sm mb-1">
+                  {limitReached ? `Free invite limit reached (${usedInvites}/${freeLimit})` : t('events.paymentRequiredTitle')}
+                </p>
+                <p className="text-sm text-amber-700 mb-3">
+                  {limitReached
+                    ? `You've used all ${freeLimit} free invite${freeLimit !== 1 ? 's' : ''} for this event. Complete your payment to invite unlimited guests.`
+                    : t('events.paymentRequiredDesc')}
+                </p>
                 <Link to="/upgrade">
                   <Button size="sm" className="bg-amber-500 hover:bg-amber-600 text-white">
                     {t('events.completePayment')}

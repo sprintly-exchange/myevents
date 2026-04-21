@@ -13,10 +13,17 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
     return res.status(400).json({ error: 'event_id and emails array required' });
 
   if (user.payment_status !== 'paid' && user.role !== 'admin') {
-    return res.status(402).json({
-      error: 'Payment required to send invitations.',
-      upgrade_required: true,
-    });
+    const limitSetting = await prisma.appSetting.findUnique({ where: { key: 'free_tier_invite_limit' } });
+    const freeLimit = parseInt(limitSetting?.value || '1', 10);
+    const currentCount = await prisma.invitation.count({ where: { eventId: event_id } });
+    if (currentCount >= freeLimit) {
+      return res.status(402).json({
+        error: `Free tier limit reached. You can invite up to ${freeLimit} guest${freeLimit !== 1 ? 's' : ''} per event.`,
+        upgrade_required: true,
+        limit: freeLimit,
+        current: currentCount,
+      });
+    }
   }
 
   const event = await prisma.event.findFirst({ where: { id: event_id, creatorId: user.id, status: { not: 'deleted' } } });

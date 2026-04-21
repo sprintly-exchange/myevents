@@ -51,7 +51,7 @@ router.post('/login', async (req: Request, res: Response) => {
     where: { OR: [{ email }, { email: lower }] },
     include: { plan: true },
   });
-  let user = candidates[0] ?? null;
+  let user: typeof candidates[0] | null = candidates[0] ?? null;
 
   if (!user) {
     const byName = await prisma.user.findMany({ include: { plan: true } });

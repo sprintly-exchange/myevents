@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Mail, CreditCard, Lock, Send } from 'lucide-react';
+import { Mail, CreditCard, Lock, Send, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
 import AppLayout from '@/components/AppLayout';
@@ -18,6 +18,7 @@ export default function AdminSettingsPage() {
   const [swishForm, setSwishForm] = useState({
     swish_number: '', swish_holder_name: '',
   });
+  const [freeTierForm, setFreeTierForm] = useState({ free_tier_invite_limit: '1' });
   const [testEmail, setTestEmail] = useState('');
 
   const { data } = useQuery({
@@ -39,6 +40,7 @@ export default function AdminSettingsPage() {
         swish_number: s.swish_number || '',
         swish_holder_name: s.swish_holder_name || '',
       });
+      setFreeTierForm({ free_tier_invite_limit: s.free_tier_invite_limit || '1' });
     }
   }, [data]);
 
@@ -86,6 +88,10 @@ export default function AdminSettingsPage() {
     saveSettings.mutate(settings);
   };
 
+  const saveFreeTier = () => {
+    saveSettings.mutate([{ key: 'free_tier_invite_limit', value: freeTierForm.free_tier_invite_limit }]);
+  };
+
   const fieldClass = "border-slate-200 focus:border-blue-400 h-10";
 
   return (
@@ -103,6 +109,9 @@ export default function AdminSettingsPage() {
             </TabsTrigger>
             <TabsTrigger value="swish" className="flex items-center gap-1.5 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
               <CreditCard className="h-3.5 w-3.5" />Swish Payment
+            </TabsTrigger>
+            <TabsTrigger value="freetier" className="flex items-center gap-1.5 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
+              <Users className="h-3.5 w-3.5" />Free Tier
             </TabsTrigger>
             <TabsTrigger value="password" className="flex items-center gap-1.5 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
               <Lock className="h-3.5 w-3.5" />Change Password
@@ -240,6 +249,52 @@ export default function AdminSettingsPage() {
                 </div>
                 <Button onClick={saveSwish} disabled={saveSettings.isPending} className="bg-blue-600 hover:bg-blue-700">
                   {saveSettings.isPending ? t('admin.settings.saving') : 'Save Swish Settings'}
+                </Button>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Free Tier Tab */}
+          <TabsContent value="freetier">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 overflow-hidden">
+              <div className="px-6 py-5 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-amber-50">
+                    <Users className="h-4 w-4 text-amber-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-semibold text-slate-900">Free Tier Limits</h2>
+                    <p className="text-xs text-slate-500">Configure what unconfirmed (free tier) users can do</p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-6 space-y-6">
+                <div className="space-y-1.5 max-w-xs">
+                  <Label className="text-sm font-medium text-slate-700">Free invitations per event</Label>
+                  <div className="flex items-center gap-3">
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={freeTierForm.free_tier_invite_limit}
+                      onChange={e => setFreeTierForm({ free_tier_invite_limit: e.target.value })}
+                      className={fieldClass + ' w-24 text-center text-lg font-semibold'}
+                    />
+                    <span className="text-sm text-slate-500">guests per event (0 = none until paid)</span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Pending users can send up to this many invitations per event before payment is required.
+                    Set to <strong>0</strong> to block all invitations until payment is confirmed.
+                  </p>
+                </div>
+
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+                  <p className="font-semibold mb-1">Current behaviour</p>
+                  <p>Free tier users can invite up to <strong>{freeTierForm.free_tier_invite_limit || '1'}</strong> guest{freeTierForm.free_tier_invite_limit !== '1' ? 's' : ''} per event. After that, they see an upgrade prompt.</p>
+                </div>
+
+                <Button onClick={saveFreeTier} disabled={saveSettings.isPending} className="bg-blue-600 hover:bg-blue-700">
+                  {saveSettings.isPending ? t('admin.settings.saving') : 'Save Free Tier Settings'}
                 </Button>
               </div>
             </div>

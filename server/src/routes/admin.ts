@@ -6,6 +6,12 @@ import { sendTestEmail } from '../services/email';
 
 const router = Router();
 
+// Public endpoint — exposes only non-sensitive public settings
+router.get('/public-settings', requireAuth, async (_req: Request, res: Response) => {
+  const limitSetting = await prisma.appSetting.findUnique({ where: { key: 'free_tier_invite_limit' } });
+  return res.json({ free_tier_invite_limit: limitSetting?.value || '1' });
+});
+
 router.get('/settings', requireAdmin, async (_req: Request, res: Response) => {
   const rows = await prisma.appSetting.findMany();
   const settings: Record<string, string> = {};

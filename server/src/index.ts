@@ -48,6 +48,13 @@ upgradeRouter.get('/mine', requireAuth, async (req, res) => {
 app.use('/api/upgrade-requests', upgradeRouter);
 
 async function start() {
+  // Ensure default app settings exist (migration-safe upsert)
+  await prisma.appSetting.upsert({
+    where: { key: 'free_tier_invite_limit' },
+    update: {},
+    create: { key: 'free_tier_invite_limit', value: '1' },
+  });
+
   if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.join(__dirname, '../public')));
     app.get('*', (_req, res) => res.sendFile(path.join(__dirname, '../public', 'index.html')));
