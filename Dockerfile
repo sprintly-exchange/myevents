@@ -33,4 +33,4 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV DATABASE_URL="file:/app/data/myevents.db"
 EXPOSE 3000
-CMD ["node", "dist/index.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy --schema=server/prisma/schema.prisma && node dist/index.js"]
