@@ -52,7 +52,7 @@ export default function UpgradePage() {
   };
 
   const swishQrData = paymentInfo?.swishNumber
-    ? `swish://payment?data={"version":1,"payee":{"value":"${paymentInfo.swishNumber}","editable":false},"amount":{"value":${paymentInfo.planPrice},"editable":false},"message":{"value":"${paymentInfo.reference}","editable":false}}`
+    ? `swish://payment?version=1&payee=${paymentInfo.swishNumber}&amount=${paymentInfo.planPrice}&message=${encodeURIComponent(paymentInfo.reference || 'MyEvents')}&editable=false`
     : '';
 
   const baseFeatures: Record<string, string[]> = {

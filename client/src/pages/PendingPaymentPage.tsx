@@ -36,7 +36,7 @@ export default function PendingPaymentPage() {
   const reference = pendingData?.request?.payment_reference || '';
 
   const swishQrData = swishNumber
-    ? `swish://payment?data={"version":1,"payee":{"value":"${swishNumber}","editable":false},"amount":{"value":${price},"editable":false},"message":{"value":"${reference || 'MyEvents Registration'}","editable":false}}`
+    ? `swish://payment?version=1&payee=${swishNumber}&amount=${price}&message=${encodeURIComponent(reference || 'MyEvents')}&editable=false`
     : '';
 
   const handleCheckStatus = async () => {
