@@ -49,6 +49,7 @@ upgradeRouter.get('/mine', requireAuth, async (req, res) => {
 });
 app.use('/api/upgrade-requests', upgradeRouter);
 
+app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 async function start() {
   // Migration: add missing columns (safe — ignores errors if column already exists)
   const safeMigrations = [
