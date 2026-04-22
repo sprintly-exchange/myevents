@@ -1,72 +1,87 @@
 name: Deploy to Fly.io
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       environment:
         description: "Target environment"
-        required: false
+        required: true
         default: "production"
+        type: choice
+        options:
+          - production
+          - development
+      fly_app_name:
+        description: "Fly.io app name (overrides environment default)"
+        required: false
+        default: ""
+      fly_region:
+        description: "Primary region (arn=Stockholm, cdg=Paris, lhr=London)"
+        required: false
+        default: "arn"
+      app_url:
+        description: "Public URL — e.g. https://myevents.fly.dev (overrides environment default)"
+        required: false
+        default: ""
+
+env:
+  # If fly_app_name input is blank, fall back to the environment-scoped variable
+  FLY_APP:    ${{ inputs.fly_app_name != '' && inputs.fly_app_name || vars.FLY_APP_NAME }}
+  FLY_REGION: ${{ inputs.fly_region || 'arn' }}
+  APP_URL:    ${{ inputs.app_url != '' && inputs.app_url || vars.APP_URL }}
 
 jobs:
   deploy:
-    name: Deploy
+    name: Deploy to ${{ inputs.environment }}
     runs-on: ubuntu-latest
-    environment: production
+    environment: ${{ inputs.environment }}   # ← loads secrets/vars scoped to chosen env
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ── Install flyctl ────────────────────────────────────────────────────
       - name: Set up flyctl
         uses: superfly/flyctl-actions/setup-flyctl@master
 
-      # ── Create app if it doesn't exist yet ───────────────────────────────
       - name: Create Fly app (first-time only)
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
-          flyctl apps list | grep -q "${{ vars.FLY_APP_NAME }}" \
-            || flyctl apps create "${{ vars.FLY_APP_NAME }}" --org personal
+          flyctl apps list | grep -q "${{ env.FLY_APP }}" \
+            || flyctl apps create "${{ env.FLY_APP }}" --org personal
         continue-on-error: true
 
-      # ── Create persistent volume (first-time only) ────────────────────────
-      # Volume must exist before deploy; this is a no-op if it already exists.
       - name: Ensure data volume exists
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
-          flyctl volumes list \
-            --app "${{ vars.FLY_APP_NAME }}" \
+          flyctl volumes list --app "${{ env.FLY_APP }}" \
             | grep -q "myevents_data" \
             || flyctl volumes create myevents_data \
-                --app "${{ vars.FLY_APP_NAME }}" \
-                --region "${{ vars.FLY_REGION || 'arn' }}" \
-                --size 1
+                --app    "${{ env.FLY_APP }}" \
+                --region "${{ env.FLY_REGION }}" \
+                --size   1
         continue-on-error: true
 
-      # ── Push secrets to Fly (idempotent) ──────────────────────────────────
       - name: Set Fly secrets
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
           flyctl secrets set \
             JWT_SECRET="${{ secrets.JWT_SECRET }}" \
-            APP_URL="${{ vars.APP_URL }}" \
-            --app "${{ vars.FLY_APP_NAME }}" \
-            --stage   # --stage: queues secrets, applied atomically at deploy
+            APP_URL="${{ env.APP_URL }}" \
+            --app "${{ env.FLY_APP }}" \
+            --stage
 
-      # ── Deploy ────────────────────────────────────────────────────────────
       - name: Deploy
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
           flyctl deploy \
-            --app "${{ vars.FLY_APP_NAME }}" \
-            --region "${{ vars.FLY_REGION || 'arn' }}" \
+            --app            "${{ env.FLY_APP }}" \
+            --region         "${{ env.FLY_REGION }}" \
             --remote-builder \
-            --strategy rolling \
-            --wait-timeout 120
+            --strategy       rolling \
+            --wait-timeout   120
+
+
