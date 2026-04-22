@@ -2,6 +2,7 @@ import express from 'express';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import { Router } from 'express';
+import bcrypt from 'bcryptjs';
 
 import authRoutes from './routes/auth';
 import eventsRoutes from './routes/events';
@@ -51,31 +52,33 @@ app.use('/api/upgrade-requests', upgradeRouter);
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 async function start() {
-  // Migration: add missing columns (safe — ignores errors if column already exists)
-  const safeMigrations = [
-    `ALTER TABLE events ADD COLUMN share_token TEXT`,
-    `ALTER TABLE events ADD COLUMN theme_settings TEXT`,
-    `ALTER TABLE events ADD COLUMN end_date TEXT`,
-    `ALTER TABLE plans ADD COLUMN currency TEXT NOT NULL DEFAULT 'SEK'`,
+  // Seed: plans
+  const planDefs = [
+    { id: 'basic',     name: 'Basic',     eventLimit: 5,  priceSek: 99,  description: 'Up to 5 events',   isDefault: true,  isActive: true },
+    { id: 'pro',       name: 'Pro',       eventLimit: 20, priceSek: 199, description: 'Up to 20 events',  isDefault: false, isActive: true },
+    { id: 'unlimited', name: 'Unlimited', eventLimit: -1, priceSek: 399, description: 'Unlimited events', isDefault: false, isActive: true },
   ];
-  for (const sql of safeMigrations) {
-    try { await prisma.$executeRawUnsafe(sql); } catch { /* already exists */ }
+  for (const p of planDefs) {
+    await prisma.plan.upsert({ where: { id: p.id }, update: {}, create: p });
   }
-  // Backfill share_token for existing events
-  await prisma.$executeRawUnsafe(`UPDATE events SET share_token = lower(hex(randomblob(16))) WHERE share_token IS NULL`);
 
-  // Ensure default app settings exist (migration-safe upsert)
+  // Seed: admin user
+  const adminExists = await prisma.user.findFirst({ where: { role: 'admin' } });
+  if (!adminExists) {
+    const passwordHash = bcrypt.hashSync('changeme', 10);
+    await prisma.user.create({
+      data: { email: 'admin', passwordHash, name: 'Admin', role: 'admin', planId: 'basic', paymentStatus: 'paid', isActive: true },
+    });
+  }
+
+  // Seed: default app settings
   const defaultSettings: [string, string][] = [
-    ['free_tier_invite_limit', '1'],
-    ['smtp_host', 'smtp.strato.de'],
-    ['smtp_port', '465'],
+    ['smtp_host', ''], ['smtp_port', '587'], ['smtp_user', ''], ['smtp_pass', ''],
+    ['smtp_from', ''], ['swish_number', ''], ['swish_holder_name', ''],
+    ['app_name', 'MyEvents'], ['free_tier_invite_limit', '1'],
   ];
   for (const [key, value] of defaultSettings) {
-    await prisma.appSetting.upsert({
-      where: { key },
-      update: {},
-      create: { key, value },
-    });
+    await prisma.appSetting.upsert({ where: { key }, update: {}, create: { key, value } });
   }
 
   if (process.env.NODE_ENV === 'production') {
