@@ -195,6 +195,7 @@ export default function UpgradePage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
           {plans.map((plan) => {
             const isCurrentPlan = plan.id === user?.plan_id;
+            const isPaid = user?.payment_status === 'paid';
             const isPopular = plan.name === 'Pro';
             const planFeatures = getPlanFeatures(plan);
 
@@ -238,7 +239,7 @@ export default function UpgradePage() {
                     ))}
                   </ul>
 
-                  {isCurrentPlan ? (
+                  {isCurrentPlan && isPaid ? (
                     <Button
                       className="w-full bg-slate-100 text-slate-500 hover:bg-slate-100 cursor-default"
                       disabled
@@ -248,15 +249,21 @@ export default function UpgradePage() {
                   ) : (
                     <Button
                       className={`w-full ${
-                        isPopular
+                        isCurrentPlan
+                          ? 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white'
+                          : isPopular
                           ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md shadow-blue-500/20'
                           : ''
                       }`}
-                      variant={isPopular ? 'default' : 'outline'}
+                      variant={isCurrentPlan || isPopular ? 'default' : 'outline'}
                       onClick={() => upgradeMutation.mutate(plan.id)}
                       disabled={upgradeMutation.isPending}
                     >
-                      {upgradeMutation.isPending ? t('upgrade.requesting') : t('upgrade.selectPlan', { name: plan.name })}
+                      {upgradeMutation.isPending
+                        ? t('upgrade.requesting')
+                        : isCurrentPlan
+                        ? 'Pay Now'
+                        : t('upgrade.selectPlan', { name: plan.name })}
                     </Button>
                   )}
                 </div>
