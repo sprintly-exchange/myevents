@@ -14,7 +14,7 @@ RUN npm run build --workspace=client
 # Stage 3: Build server
 FROM deps AS server-builder
 COPY server/ ./server/
-RUN npx prisma generate --schema=server/prisma/schema.prisma
+RUN cd server && npx prisma generate
 RUN npm run build --workspace=server
 
 # Stage 4: Production
@@ -26,11 +26,12 @@ COPY client/package.json ./client/
 COPY server/package.json ./server/
 RUN npm ci --omit=dev
 COPY server/prisma ./server/prisma
-RUN npx prisma generate --schema=server/prisma/schema.prisma
+COPY server/prisma.config.ts ./server/
+RUN cd server && npx prisma generate
 COPY --from=server-builder /app/server/dist ./dist
 COPY --from=client-builder /app/client/dist ./public
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV DATABASE_URL="file:/app/data/myevents.db"
 EXPOSE 3000
-CMD ["sh", "-c", "npx prisma migrate deploy --schema=server/prisma/schema.prisma && node dist/index.js"]
+CMD ["sh", "-c", "cd /app/server && npx prisma migrate deploy && node /app/dist/index.js"]
