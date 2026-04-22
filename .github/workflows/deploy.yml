@@ -14,7 +14,7 @@ on:
       fly_app_name:
         description: "Fly.io app name (overrides environment default)"
         required: false
-        default: ""
+        default: "spritnly-events"
       fly_region:
         description: "Primary region (arn=Stockholm, cdg=Paris, lhr=London)"
         required: false
@@ -62,8 +62,6 @@ jobs:
                 --region "${{ env.FLY_REGION }}" \
                 --size   1 \
                 --yes
-                --size   1 \
-                --yes
         continue-on-error: true
 
       - name: Set Fly secrets
@@ -82,8 +80,6 @@ jobs:
         run: |
           flyctl deploy \
             --app            "${{ env.FLY_APP }}" \
-            --region         "${{ env.FLY_REGION }}" \
-            --remote-builder \
             --strategy       rolling \
             --wait-timeout   120
 
