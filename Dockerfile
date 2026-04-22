@@ -34,4 +34,4 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV DATABASE_URL="file:/app/data/myevents.db"
 EXPOSE 3000
-CMD ["sh", "-c", "cd /app/server && npx prisma migrate deploy && node /app/dist/index.js"]
+CMD ["sh", "-c", "cd /app/server && npx prisma migrate deploy && npx prisma db seed && node /app/dist/index.js"]
