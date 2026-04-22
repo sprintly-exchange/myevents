@@ -59,7 +59,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="h-9 w-9 rounded-xl bg-blue-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
               <Calendar className="h-5 w-5 text-white" />
             </div>
-            <span className="font-bold text-lg text-white tracking-tight">MyEvents</span>
+            <span className="font-bold text-lg text-white tracking-tight">{t('common.appName')}</span>
           </Link>
           <button className="lg:hidden text-slate-400 hover:text-white" onClick={() => setSidebarOpen(false)}>
             <X className="h-5 w-5" />
@@ -188,7 +188,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="h-7 w-7 rounded-lg bg-blue-500 flex items-center justify-center">
               <Calendar className="h-4 w-4 text-white" />
             </div>
-            <span className="font-bold text-slate-900">MyEvents</span>
+            <span className="font-bold text-slate-900">{t('common.appName')}</span>
           </div>
         </header>
 

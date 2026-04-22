@@ -63,6 +63,11 @@ Default IDs use SQLite's `lower(hex(randomblob(8)))` — text PKs, not integers.
 
 **UI components**: Radix UI primitives wrapped with `cn()` (from `@/lib/utils`) using `clsx` + `tailwind-merge`. Follow the existing shadcn/ui-style component pattern in `client/src/components/ui/`.
 
+**Multi-language support (i18n)**: The app supports English and Swedish via `react-i18next`. Locale files are at `client/src/i18n/locales/en.json` and `sv.json`. **Any time you add or change user-facing text in the client, you must:**
+1. Add the string to **both** `en.json` and `sv.json` under an appropriate key.
+2. Reference it via `const { t } = useTranslation()` and `{t('key')}` — never hardcode UI strings.
+3. Brand/proper names (e.g. "MyEvents", "Swish") stay the same in both locales but must still go through `t()` using the existing `common.appName` pattern.
+
 **All shared TypeScript types** are in `client/src/types/index.ts`. Add new shared types there.
 
 **Route protection**: Wrap protected pages with `<ProtectedRoute>`. For admin-only routes use `<ProtectedRoute adminOnly>`.
