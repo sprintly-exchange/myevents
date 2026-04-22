@@ -9,6 +9,7 @@ import invitationsRoutes from './routes/invitations';
 import templatesRoutes from './routes/templates';
 import plansRoutes from './routes/plans';
 import adminRoutes from './routes/admin';
+import publicRoutes from './routes/public';
 import { requireAuth } from './middleware/auth';
 import prisma from './db';
 
@@ -24,6 +25,7 @@ app.use('/api/invitations', invitationsRoutes);
 app.use('/api/templates', templatesRoutes);
 app.use('/api/plans', plansRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/public', publicRoutes);
 
 // Upgrade requests (user-facing)
 const upgradeRouter = Router();
@@ -48,6 +50,18 @@ upgradeRouter.get('/mine', requireAuth, async (req, res) => {
 app.use('/api/upgrade-requests', upgradeRouter);
 
 async function start() {
+  // Migration: add missing columns (safe — ignores errors if column already exists)
+  const safeMigrations = [
+    `ALTER TABLE events ADD COLUMN share_token TEXT`,
+    `ALTER TABLE plans ADD COLUMN guest_limit INTEGER NOT NULL DEFAULT -1`,
+    `ALTER TABLE plans ADD COLUMN currency TEXT NOT NULL DEFAULT 'SEK'`,
+  ];
+  for (const sql of safeMigrations) {
+    try { await prisma.$executeRawUnsafe(sql); } catch { /* already exists */ }
+  }
+  // Backfill share_token for existing events
+  await prisma.$executeRawUnsafe(`UPDATE events SET share_token = lower(hex(randomblob(16))) WHERE share_token IS NULL`);
+
   // Ensure default app settings exist (migration-safe upsert)
   await prisma.appSetting.upsert({
     where: { key: 'free_tier_invite_limit' },

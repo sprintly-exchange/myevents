@@ -24,6 +24,24 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
         current: currentCount,
       });
     }
+  } else if (user.payment_status === 'paid' && user.role !== 'admin') {
+    // Enforce plan guest limit for paid users
+    const userRecord = await prisma.user.findUnique({ where: { id: user.id }, select: { planId: true } });
+    if (userRecord?.planId) {
+      const plan = await prisma.plan.findUnique({ where: { id: userRecord.planId } });
+      const guestLimit = (plan as any)?.guestLimit ?? -1;
+      if (guestLimit !== -1) {
+        const currentCount = await prisma.invitation.count({ where: { eventId: event_id } });
+        if (currentCount >= guestLimit) {
+          return res.status(402).json({
+            error: `Your plan allows up to ${guestLimit} guests per event.`,
+            upgrade_required: true,
+            limit: guestLimit,
+            current: currentCount,
+          });
+        }
+      }
+    }
   }
 
   const event = await prisma.event.findFirst({ where: { id: event_id, creatorId: user.id, status: { not: 'deleted' } } });

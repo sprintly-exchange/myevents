@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Calendar, MapPin, Users, Send, Copy, Edit, ArrowLeft, Lock, X, UserPlus } from 'lucide-react';
+import { Calendar, MapPin, Users, Send, Copy, Edit, ArrowLeft, Lock, X, UserPlus, Share2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
 import { useAuth } from '@/hooks/useAuth';
@@ -137,11 +137,26 @@ export default function EventDetailPage() {
                 <p className="text-white/75 text-sm leading-relaxed line-clamp-2">{event.description}</p>
               )}
             </div>
-            <Link to={`/events/${id}/edit`} className="shrink-0">
-              <Button variant="outline" size="sm" className="bg-white/10 border-white/30 text-white hover:bg-white/20">
-                <Edit className="h-3.5 w-3.5 mr-1.5" />{t('common.edit')}
-              </Button>
-            </Link>
+            <div className="flex items-center gap-2 shrink-0">
+              {event.share_token && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-white/10 border-white/30 text-white hover:bg-white/20"
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/e/${event.share_token}`);
+                    toast.success('Share link copied!');
+                  }}
+                >
+                  <Share2 className="h-3.5 w-3.5 mr-1.5" />Share
+                </Button>
+              )}
+              <Link to={`/events/${id}/edit`}>
+                <Button variant="outline" size="sm" className="bg-white/10 border-white/30 text-white hover:bg-white/20">
+                  <Edit className="h-3.5 w-3.5 mr-1.5" />{t('common.edit')}
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
 

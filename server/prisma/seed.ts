@@ -123,6 +123,48 @@ const corporateTemplate = `<!DOCTYPE html>
 </body>
 </html>`;
 
+const studentfestTemplate = `<!DOCTYPE html>
+<html lang="sv">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>{{event_title}}</title></head>
+<body style="margin:0;padding:0;background:#003f6b;font-family:'Arial',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:linear-gradient(160deg,#005B99,#003060);min-height:100vh;">
+    <tr><td align="center" style="padding:40px 20px;">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+        <tr><td style="background:linear-gradient(135deg,#005B99,#003f6b);padding:48px 40px;text-align:center;">
+          <div style="font-size:56px;margin-bottom:12px;">🎓</div>
+          <div style="font-size:11px;letter-spacing:4px;color:#FECC02;text-transform:uppercase;font-weight:700;margin-bottom:12px;">Du är inbjuden!</div>
+          <h1 style="color:#ffffff;font-size:32px;margin:0;font-weight:800;">{{event_title}}</h1>
+          <div style="margin-top:20px;height:3px;background:linear-gradient(90deg,transparent,#FECC02,transparent);"></div>
+        </td></tr>
+        <tr><td style="padding:36px 40px;">
+          <p style="color:#334155;font-size:15px;line-height:1.7;margin:0 0 28px;">Hej! Du har blivit inbjuden av <strong style="color:#005B99;">{{sender_name}}</strong>. Vi hoppas att du kan komma och fira med oss!</p>
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
+            <tr><td style="padding:16px 20px;background:#f0f7ff;border-radius:10px;border-left:4px solid #005B99;">
+              <div style="color:#005B99;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;">📅 Datum &amp; Tid</div>
+              <div style="color:#1e293b;font-size:16px;font-weight:600;">{{event_date}}</div>
+            </td></tr>
+          </table>
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
+            <tr><td style="padding:16px 20px;background:#fffbeb;border-radius:10px;border-left:4px solid #FECC02;">
+              <div style="color:#92400e;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;">📍 Plats</div>
+              <div style="color:#1e293b;font-size:16px;font-weight:600;">{{event_location}}</div>
+            </td></tr>
+          </table>
+          <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
+            <tr><td style="border-radius:10px;background:#FECC02;">
+              <a href="{{rsvp_url}}" style="display:inline-block;color:#1a1a1a;text-decoration:none;padding:16px 40px;font-size:16px;font-weight:800;letter-spacing:0.5px;">🎉 Anmäl dig här!</a>
+            </td></tr>
+          </table>
+        </td></tr>
+        <tr><td style="background:#005B99;padding:20px 40px;text-align:center;">
+          <p style="color:#93c5fd;font-size:12px;margin:0;">Skickat via MyEvents • <a href="#" style="color:#FECC02;text-decoration:none;">myevents.se</a></p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
 async function main() {
   // Plans
   const basicPlan = await prisma.plan.upsert({
@@ -174,16 +216,20 @@ async function main() {
     await prisma.appSetting.upsert({ where: { key: s.key }, update: {}, create: s });
   }
 
-  // Templates
-  const tmplCount = await prisma.template.count();
-  if (tmplCount === 0) {
-    await prisma.template.createMany({
-      data: [
-        { name: 'Elegant', htmlContent: elegantTemplate, isSystem: true },
-        { name: 'Party', htmlContent: partyTemplate, isSystem: true },
-        { name: 'Corporate', htmlContent: corporateTemplate, isSystem: true },
-      ],
-    });
+  // Templates — upsert so new themes are added on re-seed without wiping data
+  const templateDefs = [
+    { name: 'Elegant', htmlContent: elegantTemplate },
+    { name: 'Party', htmlContent: partyTemplate },
+    { name: 'Corporate', htmlContent: corporateTemplate },
+    { name: 'Studentfest', htmlContent: studentfestTemplate },
+  ];
+  for (const tmpl of templateDefs) {
+    const existing = await prisma.template.findFirst({ where: { name: tmpl.name } });
+    if (existing) {
+      await prisma.template.update({ where: { id: existing.id }, data: { htmlContent: tmpl.htmlContent, isSystem: true } });
+    } else {
+      await prisma.template.create({ data: { name: tmpl.name, htmlContent: tmpl.htmlContent, isSystem: true } });
+    }
   }
 
   console.log('Seed completed.');

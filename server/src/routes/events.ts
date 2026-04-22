@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { randomBytes } from 'crypto';
 import prisma from '../db';
 import { requireAuth } from '../middleware/auth';
 import { checkEventLimit } from '../middleware/planLimit';
@@ -34,6 +35,7 @@ function formatEvent(e: any, extra: Record<string, any> = {}) {
     location: e.location || null,
     template_id: e.templateId || null,
     template_name: e.template?.name || null,
+    share_token: e.shareToken || null,
     status: e.status,
     created_at: e.createdAt,
     ...extra,
@@ -67,7 +69,11 @@ router.post('/', checkEventLimit, async (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Title and event_date are required' });
 
   const event = await prisma.event.create({
-    data: { creatorId: userId, title, description: description || null, eventDate: event_date, location: location || null, templateId: template_id || null },
+    data: {
+      creatorId: userId, title, description: description || null, eventDate: event_date,
+      location: location || null, templateId: template_id || null,
+      shareToken: randomBytes(12).toString('hex'),
+    },
     include: { template: { select: { name: true } } },
   });
   return res.status(201).json({ event: formatEvent(event) });

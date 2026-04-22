@@ -10,7 +10,9 @@ function formatPlan(p: any) {
     name: p.name,
     description: p.description,
     event_limit: p.eventLimit,
+    guest_limit: p.guestLimit ?? -1,
     price_sek: p.priceSek,
+    currency: p.currency ?? 'SEK',
     is_active: p.isActive,
     is_default: p.isDefault,
     created_at: p.createdAt,
@@ -23,11 +25,18 @@ router.get('/', async (_req: Request, res: Response) => {
 });
 
 router.post('/', requireAdmin, async (req: Request, res: Response) => {
-  const { name, event_limit, price_sek, description } = req.body;
+  const { name, event_limit, guest_limit, price_sek, currency, description } = req.body;
   if (!name || event_limit === undefined || price_sek === undefined)
     return res.status(400).json({ error: 'name, event_limit, and price_sek required' });
   const plan = await prisma.plan.create({
-    data: { name, eventLimit: Number(event_limit), priceSek: Number(price_sek), description: description || null },
+    data: {
+      name,
+      eventLimit: Number(event_limit),
+      guestLimit: guest_limit !== undefined ? Number(guest_limit) : -1,
+      priceSek: Number(price_sek),
+      currency: currency || 'SEK',
+      description: description || null,
+    },
   });
   return res.status(201).json({ plan: formatPlan(plan) });
 });
@@ -35,10 +44,17 @@ router.post('/', requireAdmin, async (req: Request, res: Response) => {
 router.put('/:id', requireAdmin, async (req: Request, res: Response) => {
   const existing = await prisma.plan.findUnique({ where: { id: req.params.id } });
   if (!existing) return res.status(404).json({ error: 'Plan not found' });
-  const { name, event_limit, price_sek, description } = req.body;
+  const { name, event_limit, guest_limit, price_sek, currency, description } = req.body;
   const plan = await prisma.plan.update({
     where: { id: req.params.id },
-    data: { name, eventLimit: Number(event_limit), priceSek: Number(price_sek), description },
+    data: {
+      name,
+      eventLimit: Number(event_limit),
+      guestLimit: guest_limit !== undefined ? Number(guest_limit) : existing.guestLimit,
+      priceSek: Number(price_sek),
+      currency: currency || existing.currency,
+      description,
+    },
   });
   return res.json({ plan: formatPlan(plan) });
 });

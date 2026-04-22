@@ -2,7 +2,9 @@ export interface Plan {
   id: string;
   name: string;
   event_limit: number;
+  guest_limit: number;
   price_sek: number;
+  currency: string;
   description?: string;
   is_active: number;
   is_default: number;
@@ -32,6 +34,7 @@ export interface Event {
   location?: string;
   template_id?: string;
   template_name?: string;
+  share_token?: string;
   status: string;
   created_at: string;
   invitation_count?: number;

@@ -10,7 +10,9 @@ model Plan {
   id          String   @id @default(cuid())
   name        String
   eventLimit  Int      @default(5) @map("event_limit")
+  guestLimit  Int      @default(-1) @map("guest_limit")
   priceSek    Float    @default(0) @map("price_sek")
+  currency    String   @default("SEK") @map("currency")
   description String?
   isActive    Boolean  @default(true) @map("is_active")
   isDefault   Boolean  @default(false) @map("is_default")
@@ -76,6 +78,7 @@ model Event {
   eventDate   String   @map("event_date")
   location    String?
   templateId  String?  @map("template_id")
+  shareToken  String   @unique @default(cuid()) @map("share_token")
   status      String   @default("active")
   createdAt   DateTime @default(now()) @map("created_at")
 

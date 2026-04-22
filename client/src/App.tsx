@@ -16,6 +16,7 @@ import EditEventPage from '@/pages/EditEventPage';
 import InvitationsPage from '@/pages/InvitationsPage';
 import UpgradePage from '@/pages/UpgradePage';
 import RsvpPage from '@/pages/RsvpPage';
+import PublicEventPage from '@/pages/PublicEventPage';
 import AdminDashboardPage from '@/pages/AdminDashboardPage';
 import AdminUsersPage from '@/pages/AdminUsersPage';
 import AdminPlansPage from '@/pages/AdminPlansPage';
@@ -33,6 +34,7 @@ export default function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/pending-payment" element={<PendingPaymentPage />} />
             <Route path="/rsvp/:token" element={<RsvpPage />} />
+            <Route path="/e/:shareToken" element={<PublicEventPage />} />
 
             {/* Protected */}
             <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
