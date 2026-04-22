@@ -62,6 +62,8 @@ jobs:
                 --region "${{ env.FLY_REGION }}" \
                 --size   1 \
                 --yes
+                --size   1 \
+                --yes
         continue-on-error: true
 
       - name: Set Fly secrets
@@ -80,6 +82,8 @@ jobs:
         run: |
           flyctl deploy \
             --app            "${{ env.FLY_APP }}" \
+            --region         "${{ env.FLY_REGION }}" \
+            --remote-builder \
             --strategy       rolling \
             --wait-timeout   120
 
