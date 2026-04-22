@@ -55,10 +55,17 @@ export default function UpgradePage() {
     ? `swish://payment?data={"version":1,"payee":{"value":"${paymentInfo.swishNumber}","editable":false},"amount":{"value":${paymentInfo.planPrice},"editable":false},"message":{"value":"${paymentInfo.reference}","editable":false}}`
     : '';
 
-  const features: Record<string, string[]> = {
-    Basic: ['Up to 5 events', 'Email invitations', 'RSVP tracking', 'Email templates'],
-    Pro: ['Up to 20 events', 'Everything in Basic', 'Priority support', 'Advanced analytics'],
-    Unlimited: ['Unlimited events', 'Everything in Pro', 'Custom templates', 'Dedicated support'],
+  const baseFeatures: Record<string, string[]> = {
+    Basic: ['Email invitations', 'RSVP tracking', 'Email templates'],
+    Pro: ['Everything in Basic', 'Priority support', 'Advanced analytics'],
+    Unlimited: ['Everything in Pro', 'Custom templates', 'Dedicated support'],
+  };
+
+  const getPlanFeatures = (plan: Plan) => {
+    const eventLine = plan.event_limit === -1
+      ? 'Unlimited events'
+      : `Up to ${plan.event_limit} event${plan.event_limit !== 1 ? 's' : ''}`;
+    return [eventLine, ...(baseFeatures[plan.name] || [])];
   };
 
   if (paymentInfo) {
@@ -189,7 +196,7 @@ export default function UpgradePage() {
           {plans.map((plan) => {
             const isCurrentPlan = plan.id === user?.plan_id;
             const isPopular = plan.name === 'Pro';
-            const planFeatures = features[plan.name] || [];
+            const planFeatures = getPlanFeatures(plan);
 
             return (
               <div
@@ -217,9 +224,6 @@ export default function UpgradePage() {
                     <span className="text-4xl font-bold text-slate-900">{plan.price_sek}</span>
                     <span className="text-slate-500 text-sm">{t('upgrade.sek')}</span>
                   </div>
-                  <p className="text-xs text-slate-400">
-                    {plan.event_limit === -1 ? t('upgrade.unlimitedEvents') : t('upgrade.upToEvents', { count: plan.event_limit })}
-                  </p>
                 </div>
 
                 <div className="p-6 space-y-5">

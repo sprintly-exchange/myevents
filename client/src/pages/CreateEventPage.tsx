@@ -56,7 +56,7 @@ function ThemeSelector({ templates, value, onChange }: {
 export default function CreateEventPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const [form, setForm] = useState({ title: '', description: '', event_date: '', location: '', template_id: '' });
+  const [form, setForm] = useState({ title: '', description: '', event_date: '', end_date: '', location: '', template_id: '' });
 
   const { data: tmplData } = useQuery({ queryKey: ['templates'], queryFn: () => api.get('/templates').then(r => r.data) });
   const templates: Template[] = tmplData?.templates || [];
@@ -73,7 +73,7 @@ export default function CreateEventPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.title || !form.event_date) { toast.error('Title and date are required'); return; }
-    mutation.mutate(form);
+    mutation.mutate({ ...form, end_date: form.end_date || null });
   };
 
   return (
@@ -94,6 +94,10 @@ export default function CreateEventPage() {
           <div className="space-y-1.5">
             <Label htmlFor="event_date" className="text-sm font-medium text-slate-700">{t('events.date')} <span className="text-red-500">*</span></Label>
             <Input id="event_date" type="datetime-local" value={form.event_date} onChange={e => setForm({ ...form, event_date: e.target.value })} required className="border-slate-200 focus:border-blue-400" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="end_date" className="text-sm font-medium text-slate-700">End Date & Time <span className="text-slate-400 font-normal text-xs">(optional)</span></Label>
+            <Input id="end_date" type="datetime-local" value={form.end_date} onChange={e => setForm({ ...form, end_date: e.target.value })} className="border-slate-200 focus:border-blue-400" min={form.event_date || undefined} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="location" className="text-sm font-medium text-slate-700">{t('events.location')}</Label>

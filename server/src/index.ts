@@ -3,6 +3,7 @@ import cookieParser from 'cookie-parser';
 import path from 'path';
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
+import { TEMPLATES } from './seed-templates';
 
 import authRoutes from './routes/auth';
 import eventsRoutes from './routes/events';
@@ -30,15 +31,41 @@ app.use('/api/public', publicRoutes);
 
 // Upgrade requests (user-facing)
 const upgradeRouter = Router();
+
+async function getSwishSettings() {
+  const rows = await prisma.appSetting.findMany({
+    where: { key: { in: ['swish_number', 'swish_holder_name'] } },
+  });
+  return {
+    number: rows.find(r => r.key === 'swish_number')?.value || '',
+    holder: rows.find(r => r.key === 'swish_holder_name')?.value || '',
+  };
+}
+
 upgradeRouter.post('/', requireAuth, async (req, res) => {
   const user = (req as any).user;
   const { plan_id } = req.body;
   if (!plan_id) return res.status(400).json({ error: 'plan_id required' });
   const plan = await prisma.plan.findFirst({ where: { id: plan_id, isActive: true } });
   if (!plan) return res.status(404).json({ error: 'Plan not found' });
-  const request = await prisma.upgradeRequest.create({ data: { userId: user.id, planId: plan_id } });
-  return res.status(201).json({ request });
+  const paymentReference = Math.random().toString(36).substring(2, 8).toUpperCase();
+  const request = await prisma.upgradeRequest.create({ data: { userId: user.id, planId: plan_id, paymentReference } });
+  const swish = await getSwishSettings();
+  return res.status(201).json({ request: { ...request, plan_name: plan.name, plan_price: plan.priceSek }, swish });
 });
+
+upgradeRouter.get('/pending', requireAuth, async (req, res) => {
+  const user = (req as any).user;
+  const request = await prisma.upgradeRequest.findFirst({
+    where: { userId: user.id, status: 'pending' },
+    include: { plan: true },
+    orderBy: { requestedAt: 'desc' },
+  });
+  if (!request) return res.json({ request: null, swish: null });
+  const swish = await getSwishSettings();
+  return res.json({ request: { ...request, plan_name: request.plan.name, plan_price: request.plan.priceSek }, swish });
+});
+
 upgradeRouter.get('/mine', requireAuth, async (req, res) => {
   const user = (req as any).user;
   const requests = await prisma.upgradeRequest.findMany({
@@ -52,14 +79,29 @@ app.use('/api/upgrade-requests', upgradeRouter);
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 async function start() {
+  // Apply any missing schema columns (safe for both fresh and existing DBs)
+  const migrations = [
+    `ALTER TABLE upgrade_requests ADD COLUMN payment_reference TEXT`,
+    `ALTER TABLE events ADD COLUMN end_date TEXT`,
+    `ALTER TABLE events ADD COLUMN share_token TEXT`,
+    `ALTER TABLE events ADD COLUMN theme_settings TEXT`,
+    `ALTER TABLE plans ADD COLUMN guest_limit INTEGER NOT NULL DEFAULT -1`,
+    `ALTER TABLE plans ADD COLUMN currency TEXT NOT NULL DEFAULT 'SEK'`,
+    `ALTER TABLE plans ADD COLUMN description TEXT`,
+    `ALTER TABLE users ADD COLUMN payment_reference TEXT`,
+  ];
+  for (const sql of migrations) {
+    try { await prisma.$executeRawUnsafe(sql); } catch { /* column already exists */ }
+  }
+
   // Seed: plans
   const planDefs = [
-    { id: 'basic',     name: 'Basic',     eventLimit: 5,  priceSek: 99,  description: 'Up to 5 events',   isDefault: true,  isActive: true },
-    { id: 'pro',       name: 'Pro',       eventLimit: 20, priceSek: 199, description: 'Up to 20 events',  isDefault: false, isActive: true },
-    { id: 'unlimited', name: 'Unlimited', eventLimit: -1, priceSek: 399, description: 'Unlimited events', isDefault: false, isActive: true },
+    { id: 'basic',     name: 'Basic',     eventLimit: 1,  priceSek: 30,  description: 'Up to 1 event',    isDefault: true,  isActive: true },
+    { id: 'pro',       name: 'Pro',       eventLimit: 5,  priceSek: 99,  description: 'Up to 5 events',   isDefault: false, isActive: true },
+    { id: 'unlimited', name: 'Unlimited', eventLimit: -1, priceSek: 199, description: 'Unlimited events', isDefault: false, isActive: true },
   ];
   for (const p of planDefs) {
-    await prisma.plan.upsert({ where: { id: p.id }, update: {}, create: p });
+    await prisma.plan.upsert({ where: { id: p.id }, update: { eventLimit: p.eventLimit, priceSek: p.priceSek, description: p.description }, create: p });
   }
 
   // Seed: admin user
@@ -79,6 +121,16 @@ async function start() {
   ];
   for (const [key, value] of defaultSettings) {
     await prisma.appSetting.upsert({ where: { key }, update: {}, create: { key, value } });
+  }
+
+  // Seed: templates
+  for (const t of TEMPLATES) {
+    const existing = await prisma.template.findFirst({ where: { name: t.name } });
+    if (existing) {
+      await prisma.template.update({ where: { id: existing.id }, data: { htmlContent: t.html, isSystem: true } });
+    } else {
+      await prisma.template.create({ data: { name: t.name, htmlContent: t.html, isSystem: true } });
+    }
   }
 
   if (process.env.NODE_ENV === 'production') {

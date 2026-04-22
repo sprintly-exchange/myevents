@@ -74,14 +74,46 @@ router.post('/:id/set-default', requireAdmin, async (req: Request, res: Response
   return res.json({ message: 'Default plan updated' });
 });
 
+async function getSwishSettings() {
+  const rows = await prisma.appSetting.findMany({
+    where: { key: { in: ['swish_number', 'swish_holder_name'] } },
+  });
+  return {
+    number: rows.find(r => r.key === 'swish_number')?.value || '',
+    holder: rows.find(r => r.key === 'swish_holder_name')?.value || '',
+  };
+}
+
+router.get('/upgrade-requests/pending', requireAuth, async (req: Request, res: Response) => {
+  const user = (req as any).user;
+  const request = await prisma.upgradeRequest.findFirst({
+    where: { userId: user.id, status: 'pending' },
+    include: { plan: true },
+    orderBy: { requestedAt: 'desc' },
+  });
+  if (!request) return res.json({ request: null, swish: null });
+  const swish = await getSwishSettings();
+  return res.json({
+    request: { ...request, plan_name: request.plan.name, plan_price: request.plan.priceSek },
+    swish,
+  });
+});
+
 router.post('/upgrade-requests', requireAuth, async (req: Request, res: Response) => {
   const user = (req as any).user;
   const { plan_id } = req.body;
   if (!plan_id) return res.status(400).json({ error: 'plan_id required' });
   const plan = await prisma.plan.findFirst({ where: { id: plan_id, isActive: true } });
   if (!plan) return res.status(404).json({ error: 'Plan not found' });
-  const request = await prisma.upgradeRequest.create({ data: { userId: user.id, planId: plan_id } });
-  return res.status(201).json({ request });
+  const paymentReference = Math.random().toString(36).substring(2, 8).toUpperCase();
+  const request = await prisma.upgradeRequest.create({
+    data: { userId: user.id, planId: plan_id, paymentReference },
+  });
+  const swish = await getSwishSettings();
+  return res.status(201).json({
+    request: { ...request, plan_name: plan.name, plan_price: plan.priceSek },
+    swish,
+  });
 });
 
 export default router;

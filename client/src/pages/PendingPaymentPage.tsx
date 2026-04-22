@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -19,13 +20,23 @@ export default function PendingPaymentPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const data = (location.state as PaymentData) || {};
+  const stateData = (location.state as PaymentData) || {};
   const [checking, setChecking] = useState(false);
 
-  const { swishNumber = '', swishHolder = '', price = 0, planName = 'Basic' } = data;
+  const { data: pendingData } = useQuery({
+    queryKey: ['upgrade-request-pending'],
+    queryFn: () => api.get('/upgrade-requests/pending').then(r => r.data),
+    retry: false,
+  });
+
+  const swishNumber = stateData.swishNumber || pendingData?.swish?.number || '';
+  const swishHolder = stateData.swishHolder || pendingData?.swish?.holder || '';
+  const price = stateData.price || pendingData?.request?.plan_price || 0;
+  const planName = stateData.planName || pendingData?.request?.plan_name || 'Basic';
+  const reference = pendingData?.request?.payment_reference || '';
 
   const swishQrData = swishNumber
-    ? `swish://payment?data={"version":1,"payee":{"value":"${swishNumber}","editable":false},"amount":{"value":${price},"editable":false},"message":{"value":"MyEvents Registration","editable":false}}`
+    ? `swish://payment?data={"version":1,"payee":{"value":"${swishNumber}","editable":false},"amount":{"value":${price},"editable":false},"message":{"value":"${reference || 'MyEvents Registration'}","editable":false}}`
     : '';
 
   const handleCheckStatus = async () => {
@@ -73,6 +84,12 @@ export default function PendingPaymentPage() {
             <span className="text-blue-700">{t('upgrade.amount')}</span>
             <span className="font-bold text-xl text-blue-700">{price} SEK</span>
           </div>
+          {reference && (
+            <div className="flex justify-between text-sm">
+              <span className="text-blue-700">{t('upgrade.paymentReference')}</span>
+              <span className="font-mono font-semibold text-blue-900">{reference}</span>
+            </div>
+          )}
           {swishNumber && (
             <>
               <div className="border-t border-blue-200 pt-2.5 mt-2.5">
@@ -107,6 +124,7 @@ export default function PendingPaymentPage() {
           <li>{t('pendingPayment.step1')}</li>
           <li>{t('pendingPayment.step2')}</li>
           <li>{t('pendingPayment.step3', { price })}</li>
+          {reference && <li>In the message field, enter your reference: <strong>{reference}</strong></li>}
           <li>{t('pendingPayment.step4')}</li>
         </ol>
       </div>
