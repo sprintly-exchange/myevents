@@ -14,7 +14,7 @@ on:
       fly_app_name:
         description: "Fly.io app name (overrides environment default)"
         required: false
-        default: "spritnly-events"
+        default: "sprintly-events"
       fly_region:
         description: "Primary region (arn=Stockholm, cdg=Paris, lhr=London)"
         required: false
