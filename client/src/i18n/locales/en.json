@@ -79,7 +79,9 @@
     "heroSubtitle": "Create beautiful events, send personalized email invitations, and track RSVPs — all in one place.",
     "feature1": "Beautiful email invitations",
     "feature2": "RSVP tracking in real time",
-    "feature3": "Simple event management"
+    "feature3": "Simple event management",
+    "feature4": "Professional templates included",
+    "quote": "The easiest way to plan events and keep guests informed."
   },
   "dashboard": {
     "goodMorning": "Good morning",

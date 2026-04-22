@@ -25,7 +25,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   const toggleLang = () => {
-    i18n.changeLanguage(i18n.language === 'sv' ? 'en' : 'sv');
+    const next = i18n.language === 'sv' ? 'en' : 'sv';
+    i18n.changeLanguage(next);
+    localStorage.setItem('myevents_lang', next);
   };
 
   const navItems: NavItem[] = [

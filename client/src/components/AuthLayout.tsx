@@ -4,13 +4,17 @@ import { Calendar, Users, Mail, Star, Globe } from 'lucide-react';
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   const { t, i18n } = useTranslation();
 
-  const toggleLang = () => i18n.changeLanguage(i18n.language === 'sv' ? 'en' : 'sv');
+  const toggleLang = () => {
+    const next = i18n.language === 'sv' ? 'en' : 'sv';
+    i18n.changeLanguage(next);
+    localStorage.setItem('myevents_lang', next);
+  };
 
   const features = [
     { icon: <Calendar className="h-5 w-5" />, text: t('auth.feature1') },
     { icon: <Mail className="h-5 w-5" />, text: t('auth.feature2') },
     { icon: <Users className="h-5 w-5" />, text: t('auth.feature3') },
-    { icon: <Star className="h-5 w-5" />, text: 'Professional templates included' },
+    { icon: <Star className="h-5 w-5" />, text: t('auth.feature4') },
   ];
 
   return (
@@ -54,7 +58,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
         {/* Footer quote */}
         <div className="relative border-t border-white/20 pt-6">
-          <p className="text-blue-200 text-sm italic">"The easiest way to plan events and keep guests informed."</p>
+          <p className="text-blue-200 text-sm italic">"{t('auth.quote')}"</p>
         </div>
       </div>
 

@@ -1,22 +1,19 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
 
 import en from './locales/en.json';
 import sv from './locales/sv.json';
 
+const savedLang = localStorage.getItem('myevents_lang');
+const defaultLang = (savedLang === 'en' || savedLang === 'sv') ? savedLang : 'sv';
+
 i18n
-  .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources: { en: { translation: en }, sv: { translation: sv } },
-    fallbackLng: 'en',
+    lng: defaultLang,
+    fallbackLng: 'sv',
     supportedLngs: ['en', 'sv'],
-    detection: {
-      order: ['localStorage', 'navigator'],
-      caches: ['localStorage'],
-      lookupLocalStorage: 'myevents_lang',
-    },
     interpolation: { escapeValue: false },
   });
 
