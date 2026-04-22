@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Calendar, MapPin, Users, Send, Copy, Edit, ArrowLeft, Lock, X, UserPlus, Share2 } from 'lucide-react';
+import { Calendar, MapPin, Users, Send, Copy, Edit, ArrowLeft, Lock, X, UserPlus, Share2, Eye } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
 import { useAuth } from '@/hooks/useAuth';
@@ -107,6 +107,16 @@ export default function EventDetailPage() {
     i18n.language === 'sv' ? 'sv-SE' : 'en-US',
     { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }
   );
+  const timeDisplay = new Date(event.event_date).toLocaleTimeString(
+    i18n.language === 'sv' ? 'sv-SE' : 'en-US',
+    { hour: '2-digit', minute: '2-digit' }
+  );
+  const endTimeDisplay = event.end_date
+    ? new Date(event.end_date).toLocaleTimeString(
+        i18n.language === 'sv' ? 'sv-SE' : 'en-US',
+        { hour: '2-digit', minute: '2-digit' }
+      )
+    : null;
 
   return (
     <AppLayout>
@@ -139,6 +149,13 @@ export default function EventDetailPage() {
             </div>
             <div className="flex items-center gap-2 shrink-0">
               {event.share_token && (
+                <a href={`${window.location.origin}/e/${event.share_token}`} target="_blank" rel="noopener noreferrer">
+                  <Button variant="outline" size="sm" className="bg-white/10 border-white/30 text-white hover:bg-white/20">
+                    <Eye className="h-3.5 w-3.5 mr-1.5" />Preview
+                  </Button>
+                </a>
+              )}
+              {event.share_token && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -169,6 +186,9 @@ export default function EventDetailPage() {
             <div className="min-w-0">
               <p className="text-xs text-slate-400 font-medium">Date</p>
               <p className="text-sm font-semibold text-slate-800 truncate">{dateDisplay}</p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                {timeDisplay}{endTimeDisplay ? ` – ${endTimeDisplay}` : ''}
+              </p>
             </div>
           </div>
 

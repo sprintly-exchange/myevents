@@ -10,13 +10,26 @@ router.get('/events/:shareToken', async (req: Request, res: Response) => {
   });
   if (!event) return res.status(404).json({ error: 'Event not found' });
 
+  // Read raw columns via raw SQL (columns added via ALTER TABLE)
+  const rawRows = await prisma.$queryRawUnsafe<{ theme_settings: string | null; end_date: string | null }[]>(
+    `SELECT theme_settings, end_date FROM events WHERE id = ?`, event.id
+  );
+  let theme_settings = null;
+  try {
+    const raw = rawRows[0]?.theme_settings;
+    if (raw) theme_settings = JSON.parse(raw);
+  } catch { /* ignore */ }
+  const end_date = rawRows[0]?.end_date || null;
+
   return res.json({
     event: {
       title: event.title,
       description: event.description,
       event_date: event.eventDate,
+      end_date,
       location: event.location,
       template_name: event.template?.name || null,
+      theme_settings,
     },
   });
 });

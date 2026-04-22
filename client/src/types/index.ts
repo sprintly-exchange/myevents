@@ -1,3 +1,9 @@
+export interface ThemeSettings {
+  primary_color?: string;
+  accent_color?: string;
+  tagline?: string;
+}
+
 export interface Plan {
   id: string;
   name: string;
@@ -31,10 +37,12 @@ export interface Event {
   title: string;
   description?: string;
   event_date: string;
+  end_date?: string | null;
   location?: string;
   template_id?: string;
   template_name?: string;
   share_token?: string;
+  theme_settings?: import('./index').ThemeSettings | null;
   status: string;
   created_at: string;
   invitation_count?: number;

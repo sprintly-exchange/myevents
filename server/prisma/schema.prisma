@@ -78,7 +78,8 @@ model Event {
   eventDate   String   @map("event_date")
   location    String?
   templateId  String?  @map("template_id")
-  shareToken  String   @unique @default(cuid()) @map("share_token")
+  shareToken    String   @unique @default(cuid()) @map("share_token")
+  themeSettings String?  @map("theme_settings")
   status      String   @default("active")
   createdAt   DateTime @default(now()) @map("created_at")
 

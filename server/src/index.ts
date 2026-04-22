@@ -53,7 +53,8 @@ async function start() {
   // Migration: add missing columns (safe — ignores errors if column already exists)
   const safeMigrations = [
     `ALTER TABLE events ADD COLUMN share_token TEXT`,
-    `ALTER TABLE plans ADD COLUMN guest_limit INTEGER NOT NULL DEFAULT -1`,
+    `ALTER TABLE events ADD COLUMN theme_settings TEXT`,
+    `ALTER TABLE events ADD COLUMN end_date TEXT`,
     `ALTER TABLE plans ADD COLUMN currency TEXT NOT NULL DEFAULT 'SEK'`,
   ];
   for (const sql of safeMigrations) {

@@ -6,8 +6,10 @@ interface PublicEvent {
   title: string;
   description: string;
   event_date: string;
+  end_date?: string | null;
   location: string;
   template_name: string | null;
+  theme_settings?: { primary_color?: string; accent_color?: string; tagline?: string } | null;
 }
 
 type Theme = 'Elegant' | 'Party' | 'Corporate' | 'Studentfest';
@@ -27,6 +29,15 @@ function resolveTheme(name: string | null): Theme {
 
 function formatDate(raw: string): string {
   return new Date(raw).toLocaleString('sv-SE', { dateStyle: 'full', timeStyle: 'short' });
+}
+
+function formatDateRange(start: string, end?: string | null): string {
+  const startFmt = new Date(start).toLocaleString('sv-SE', { dateStyle: 'full', timeStyle: 'short' });
+  if (!end) return startFmt;
+  const startDay = new Date(start).toDateString();
+  const endDay = new Date(end).toDateString();
+  const endTime = new Date(end).toLocaleTimeString('sv-SE', { timeStyle: 'short' });
+  return startDay === endDay ? `${startFmt} – ${endTime}` : `${startFmt} – ${new Date(end).toLocaleString('sv-SE', { dateStyle: 'full', timeStyle: 'short' })}`;
 }
 
 // ─── Spinner ────────────────────────────────────────────────────────────────
@@ -64,8 +75,10 @@ function ElegantPage({
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const gold = '#c9a84c';
+  const ts = event.theme_settings;
+  const gold = ts?.accent_color || '#c9a84c';
   const cream = '#f5e6c8';
+  const bgPrimary = ts?.primary_color || '#1a1a2e';
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -104,7 +117,7 @@ function ElegantPage({
   return (
     <div
       className="min-h-screen flex flex-col"
-      style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #0f3460 50%, #1a1a2e 100%)' }}
+      style={{ background: `linear-gradient(135deg, ${bgPrimary} 0%, #0f3460 50%, ${bgPrimary} 100%)` }}
     >
       {/* Hero */}
       <div className="flex flex-col items-center pt-16 pb-10 px-4 text-center">
@@ -120,9 +133,14 @@ function ElegantPage({
         >
           {event.title}
         </h1>
-        <div className="w-24 h-px mb-8" style={{ background: gold }} />
-        {event.description && (
+        <div className="w-24 h-px mb-4" style={{ background: gold }} />
+        {(ts?.tagline || event.description) && (
           <p className="max-w-xl text-base leading-relaxed mb-6 opacity-80" style={{ color: cream }}>
+            {ts?.tagline || event.description}
+          </p>
+        )}
+        {ts?.tagline && event.description && (
+          <p className="max-w-xl text-sm leading-relaxed mb-4 opacity-60" style={{ color: cream }}>
             {event.description}
           </p>
         )}
@@ -131,7 +149,7 @@ function ElegantPage({
       {/* Details */}
       <div className="flex flex-col md:flex-row gap-4 justify-center px-6 md:px-12 max-w-3xl mx-auto w-full mb-12">
         {[
-          { label: 'Date & Time', value: formatDate(event.event_date), icon: '📅' },
+          { label: 'Date & Time', value: formatDateRange(event.event_date, event.end_date), icon: '📅' },
           { label: 'Location', value: event.location, icon: '📍' },
         ].map((item) => (
           <div
@@ -286,10 +304,7 @@ function ElegantPage({
                   type="submit"
                   disabled={submitting}
                   className="mt-2 py-3 rounded-xl text-sm font-semibold tracking-widest uppercase transition disabled:opacity-60 flex items-center justify-center gap-2"
-                  style={{
-                    background: 'linear-gradient(to right, #c9a84c, #a07830)',
-                    color: '#1a1a2e',
-                  }}
+                  style={{ background: gold, color: bgPrimary }}
                 >
                   {submitting && <Spinner className="w-4 h-4" />}
                   Confirm RSVP
@@ -318,7 +333,9 @@ function StudentfestPage({
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const yellow = '#FECC02';
+  const ts = event.theme_settings;
+  const yellow = ts?.accent_color || '#FECC02';
+  const bgColor = ts?.primary_color || '#005B99';
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -372,7 +389,7 @@ function StudentfestPage({
   return (
     <div
       className="min-h-screen flex flex-col relative overflow-hidden"
-      style={{ background: 'linear-gradient(180deg, #005B99 0%, #004080 50%, #002d5a 100%)' }}
+      style={{ background: `linear-gradient(180deg, ${bgColor} 0%, #004080 50%, #002d5a 100%)` }}
     >
       {/* Confetti */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -399,15 +416,12 @@ function StudentfestPage({
         <h1 className="text-5xl md:text-6xl font-black text-white mb-3 leading-tight">
           {event.title}
         </h1>
-        <p className="text-lg font-bold mb-6" style={{ color: yellow }}>
-          Du är inbjuden!
+        <p className="text-lg font-bold mb-4" style={{ color: yellow }}>
+          {ts?.tagline || 'Du är inbjuden!'}
         </p>
-        {/* Swedish flag stripe */}
         <div
           className="w-48 h-1 rounded-full mb-6"
-          style={{
-            background: `linear-gradient(to right, #005B99, ${yellow}, #005B99)`,
-          }}
+          style={{ background: `linear-gradient(to right, ${bgColor}, ${yellow}, ${bgColor})` }}
         />
         {event.description && (
           <p className="max-w-xl text-white/80 text-base leading-relaxed">{event.description}</p>
@@ -417,7 +431,7 @@ function StudentfestPage({
       {/* Details */}
       <div className="flex flex-col md:flex-row gap-4 justify-center px-6 md:px-12 max-w-3xl mx-auto w-full mb-12 relative">
         {[
-          { label: 'Datum', value: formatDate(event.event_date), icon: '📅' },
+          { label: 'Datum', value: formatDateRange(event.event_date, event.end_date), icon: '📅' },
           { label: 'Plats', value: event.location, icon: '📍' },
         ].map((item) => (
           <div
@@ -562,6 +576,10 @@ function PartyPage({
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  const ts = event.theme_settings;
+  const partyPrimary = ts?.primary_color || '#9333ea';
+  const partyAccent = ts?.accent_color || '#f97316';
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
@@ -608,7 +626,7 @@ function PartyPage({
   return (
     <div
       className="min-h-screen flex flex-col relative overflow-hidden"
-      style={{ background: 'linear-gradient(135deg, #9333ea 0%, #ec4899 50%, #f97316 100%)' }}
+      style={{ background: `linear-gradient(135deg, ${partyPrimary} 0%, #ec4899 50%, ${partyAccent} 100%)` }}
     >
       {/* Floating emojis */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -635,7 +653,9 @@ function PartyPage({
         <h1 className="text-5xl md:text-7xl font-black text-white mb-4 leading-tight drop-shadow-lg">
           {event.title}
         </h1>
-        <p className="text-xl text-white/90 font-semibold mb-2">You're invited to the party!</p>
+        <p className="text-xl text-white/90 font-semibold mb-2">
+          {ts?.tagline || "You're invited to the party!"}
+        </p>
         {event.description && (
           <p className="max-w-xl text-white/80 text-base leading-relaxed mt-4">
             {event.description}
@@ -646,7 +666,7 @@ function PartyPage({
       {/* Details */}
       <div className="flex flex-col md:flex-row gap-4 justify-center px-6 md:px-12 max-w-3xl mx-auto w-full mb-12 relative">
         {[
-          { label: 'When', value: formatDate(event.event_date), icon: '📅', border: '#f472b6' },
+          { label: 'When', value: formatDateRange(event.event_date, event.end_date), icon: '📅', border: '#f472b6' },
           { label: 'Where', value: event.location, icon: '📍', border: '#c084fc' },
         ].map((item) => (
           <div
@@ -787,6 +807,10 @@ function CorporatePage({
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  const ts = event.theme_settings;
+  const corpPrimary = ts?.primary_color || '#1e3a5f';
+  const corpAccent = ts?.accent_color || '#3b82f6';
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
@@ -825,11 +849,12 @@ function CorporatePage({
     <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-start py-12 px-4">
       <div className="w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden bg-white">
         {/* Header bar */}
-        <div className="bg-slate-900 px-8 py-8">
-          <p className="text-blue-400 text-xs font-semibold uppercase tracking-[0.25em] mb-3">
+        <div className="px-8 py-8" style={{ background: corpPrimary }}>
+          <p className="text-xs font-semibold uppercase tracking-[0.25em] mb-3" style={{ color: corpAccent }}>
             Event Invitation
           </p>
           <h1 className="text-3xl font-bold text-white leading-tight">{event.title}</h1>
+          {ts?.tagline && <p className="text-white/70 text-sm mt-2">{ts.tagline}</p>}
         </div>
 
         {/* Body */}
@@ -851,7 +876,7 @@ function CorporatePage({
                   Date & Time
                 </p>
                 <p className="text-sm font-semibold text-slate-800">
-                  {formatDate(event.event_date)}
+                  {formatDateRange(event.event_date, event.end_date)}
                 </p>
               </div>
             </div>
@@ -961,7 +986,8 @@ function CorporatePage({
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="mt-2 py-2.5 rounded-xl text-sm font-semibold transition disabled:opacity-60 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                  className="mt-2 py-2.5 rounded-xl text-sm font-semibold transition disabled:opacity-60 flex items-center justify-center gap-2 text-white"
+                  style={{ background: corpAccent }}
                 >
                   {submitting && <Spinner className="w-4 h-4" />}
                   Submit Response
