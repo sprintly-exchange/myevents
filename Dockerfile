@@ -1,28 +1,33 @@
-# Stage 1: Build client
-FROM node:20-alpine AS client-builder
-WORKDIR /app/client
-COPY client/package*.json ./
+# Stage 1: Install all dependencies (monorepo root)
+FROM node:20-alpine AS deps
+WORKDIR /app
+COPY package*.json ./
+COPY client/package.json ./client/
+COPY server/package.json ./server/
 RUN npm ci
-COPY client/ ./
-RUN npm run build
 
-# Stage 2: Build server  
-FROM node:20-alpine AS server-builder
-WORKDIR /app/server
-COPY server/package*.json ./
-RUN npm ci
-COPY server/prisma ./prisma
-RUN npx prisma generate
-COPY server/ ./
-RUN npm run build
+# Stage 2: Build client
+FROM deps AS client-builder
+COPY client/ ./client/
+RUN npm run build --workspace=client
 
-# Stage 3: Production
+# Stage 3: Build server
+FROM deps AS server-builder
+COPY server/ ./server/
+RUN npx prisma generate --schema=server/prisma/schema.prisma
+RUN npm run build --workspace=server
+
+# Stage 4: Production
 FROM node:20-alpine
 WORKDIR /app
 RUN mkdir -p /app/data
+COPY package*.json ./
+COPY client/package.json ./client/
+COPY server/package.json ./server/
+RUN npm ci --omit=dev
+COPY server/prisma ./server/prisma
+RUN npx prisma generate --schema=server/prisma/schema.prisma
 COPY --from=server-builder /app/server/dist ./dist
-COPY --from=server-builder /app/server/node_modules ./node_modules
-COPY --from=server-builder /app/server/prisma ./prisma
 COPY --from=client-builder /app/client/dist ./public
 ENV NODE_ENV=production
 ENV PORT=3000
