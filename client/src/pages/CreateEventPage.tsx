@@ -73,7 +73,8 @@ export default function CreateEventPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.title || !form.event_date) { toast.error('Title and date are required'); return; }
-    mutation.mutate({ ...form, end_date: form.end_date || null });
+    const payload: Record<string, string | null> = { ...form, end_date: form.end_date || null };
+    mutation.mutate(payload as any);
   };
 
   return (
