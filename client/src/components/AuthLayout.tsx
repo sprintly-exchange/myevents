@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Calendar, Users, Mail, Star, Globe } from 'lucide-react';
+import { LANG_STORAGE_KEY } from '@/i18n';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   const { t, i18n } = useTranslation();
@@ -7,7 +8,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   const toggleLang = () => {
     const next = i18n.language === 'sv' ? 'en' : 'sv';
     i18n.changeLanguage(next);
-    localStorage.setItem('myevents_lang', next);
+    localStorage.setItem(LANG_STORAGE_KEY, next);
   };
 
   const features = [

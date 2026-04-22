@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 interface PublicEvent {
@@ -60,14 +60,45 @@ function Spinner({ className }: { className?: string }) {
   );
 }
 
+const ATTENDING_TO_STATUS: Record<AttendingValue, string> = {
+  yes: 'accepted',
+  maybe: 'maybe',
+  no: 'rejected',
+};
+
+async function submitRsvp(
+  shareToken: string,
+  form: RsvpForm,
+  inviteToken?: string,
+): Promise<void> {
+  const url = inviteToken
+    ? `/api/invitations/rsvp/${inviteToken}`
+    : `/api/public/events/${shareToken}/rsvp`;
+  const body = inviteToken
+    ? JSON.stringify({ name: form.name, status: ATTENDING_TO_STATUS[form.attending] })
+    : JSON.stringify(form);
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body,
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    if (res.status === 402) throw new Error('__capacity__');
+    throw new Error(data.error ?? 'Something went wrong.');
+  }
+}
+
 // ─── Elegant ────────────────────────────────────────────────────────────────
 
 function ElegantPage({
   event,
   shareToken,
+  inviteToken,
 }: {
   event: PublicEvent;
   shareToken: string;
+  inviteToken?: string;
 }) {
   const [form, setForm] = useState<RsvpForm>({ name: '', email: '', attending: 'yes' });
   const [confirmed, setConfirmed] = useState(false);
@@ -85,24 +116,11 @@ function ElegantPage({
     setError('');
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/public/events/${shareToken}/rsvp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        if (res.status === 402) {
-          setError('This event is full. No more RSVPs are being accepted.');
-        } else {
-          setError(data.error ?? 'Something went wrong.');
-        }
-        return;
-      }
+      await submitRsvp(shareToken, form, inviteToken);
       setConfirmedAttending(form.attending);
       setConfirmed(true);
-    } catch {
-      setError('Network error. Please try again.');
+    } catch (err: any) {
+      setError(err.message === '__capacity__' ? 'This event is full. No more RSVPs are being accepted.' : err.message || 'Network error. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -239,11 +257,11 @@ function ElegantPage({
                     Email
                   </label>
                   <input
-                    required
+                    required={!inviteToken}
                     type="email"
                     value={form.email}
                     onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                    className="rounded-lg px-4 py-2.5 text-sm outline-none transition"
+                    className={`rounded-lg px-4 py-2.5 text-sm outline-none transition${inviteToken ? ' hidden' : ''}`}
                     style={{
                       background: 'rgba(245,230,200,0.1)',
                       color: cream,
@@ -323,9 +341,11 @@ function ElegantPage({
 function StudentfestPage({
   event,
   shareToken,
+  inviteToken,
 }: {
   event: PublicEvent;
   shareToken: string;
+  inviteToken?: string;
 }) {
   const [form, setForm] = useState<RsvpForm>({ name: '', email: '', attending: 'yes' });
   const [confirmed, setConfirmed] = useState(false);
@@ -342,24 +362,11 @@ function StudentfestPage({
     setError('');
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/public/events/${shareToken}/rsvp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        if (res.status === 402) {
-          setError('Det finns inga platser kvar för detta evenemang.');
-        } else {
-          setError(data.error ?? 'Något gick fel.');
-        }
-        return;
-      }
+      await submitRsvp(shareToken, form, inviteToken);
       setConfirmedAttending(form.attending);
       setConfirmed(true);
-    } catch {
-      setError('Nätverksfel. Försök igen.');
+    } catch (err: any) {
+      setError(err.message === '__capacity__' ? 'Det finns inga platser kvar för detta evenemang.' : err.message || 'Nätverksfel. Försök igen.');
     } finally {
       setSubmitting(false);
     }
@@ -489,12 +496,12 @@ function StudentfestPage({
                     className="rounded-xl px-4 py-2.5 text-sm bg-white/15 text-white placeholder-white/40 outline-none border border-white/20 focus:border-[#FECC02] transition"
                   />
                 </div>
-                <div className="flex flex-col gap-1">
+                <div className={`flex flex-col gap-1${inviteToken ? ' hidden' : ''}`}>
                   <label className="text-xs font-bold uppercase tracking-widest" style={{ color: yellow }}>
                     E-post
                   </label>
                   <input
-                    required
+                    required={!inviteToken}
                     type="email"
                     value={form.email}
                     onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
@@ -566,9 +573,11 @@ function StudentfestPage({
 function PartyPage({
   event,
   shareToken,
+  inviteToken,
 }: {
   event: PublicEvent;
   shareToken: string;
+  inviteToken?: string;
 }) {
   const [form, setForm] = useState<RsvpForm>({ name: '', email: '', attending: 'yes' });
   const [confirmed, setConfirmed] = useState(false);
@@ -585,24 +594,11 @@ function PartyPage({
     setError('');
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/public/events/${shareToken}/rsvp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        if (res.status === 402) {
-          setError("This party is full — sorry!");
-        } else {
-          setError(data.error ?? 'Something went wrong.');
-        }
-        return;
-      }
+      await submitRsvp(shareToken, form, inviteToken);
       setConfirmedAttending(form.attending);
       setConfirmed(true);
-    } catch {
-      setError('Network error. Please try again.');
+    } catch (err: any) {
+      setError(err.message === '__capacity__' ? 'This party is full — sorry!' : err.message || 'Network error. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -725,12 +721,12 @@ function PartyPage({
                     className="rounded-xl px-4 py-2.5 text-sm bg-gray-50 text-gray-900 outline-none border-2 border-purple-200 focus:border-purple-400 transition"
                   />
                 </div>
-                <div className="flex flex-col gap-1">
+                <div className={`flex flex-col gap-1${inviteToken ? ' hidden' : ''}`}>
                   <label className="text-xs font-bold uppercase tracking-widest text-pink-500">
                     Email
                   </label>
                   <input
-                    required
+                    required={!inviteToken}
                     type="email"
                     value={form.email}
                     onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
@@ -797,9 +793,11 @@ function PartyPage({
 function CorporatePage({
   event,
   shareToken,
+  inviteToken,
 }: {
   event: PublicEvent;
   shareToken: string;
+  inviteToken?: string;
 }) {
   const [form, setForm] = useState<RsvpForm>({ name: '', email: '', attending: 'yes' });
   const [confirmed, setConfirmed] = useState(false);
@@ -816,24 +814,11 @@ function CorporatePage({
     setError('');
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/public/events/${shareToken}/rsvp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        if (res.status === 402) {
-          setError('This event has reached its maximum capacity.');
-        } else {
-          setError(data.error ?? 'An error occurred. Please try again.');
-        }
-        return;
-      }
+      await submitRsvp(shareToken, form, inviteToken);
       setConfirmedAttending(form.attending);
       setConfirmed(true);
-    } catch {
-      setError('Network error. Please try again.');
+    } catch (err: any) {
+      setError(err.message === '__capacity__' ? 'This event has reached its maximum capacity.' : err.message || 'Network error. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -933,12 +918,12 @@ function CorporatePage({
                     className="rounded-xl px-4 py-2.5 text-sm text-slate-900 outline-none border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition bg-white"
                   />
                 </div>
-                <div className="flex flex-col gap-1">
+                <div className={`flex flex-col gap-1${inviteToken ? ' hidden' : ''}`}>
                   <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                     Email Address
                   </label>
                   <input
-                    required
+                    required={!inviteToken}
                     type="email"
                     value={form.email}
                     onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
@@ -1005,6 +990,8 @@ function CorporatePage({
 
 export default function PublicEventPage() {
   const { shareToken } = useParams<{ shareToken: string }>();
+  const [searchParams] = useSearchParams();
+  const inviteToken = searchParams.get('invite') || undefined;
   const [event, setEvent] = useState<PublicEvent | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -1047,13 +1034,13 @@ export default function PublicEventPage() {
   const theme = resolveTheme(event.template_name);
 
   if (theme === 'Studentfest') {
-    return <StudentfestPage event={event} shareToken={shareToken} />;
+    return <StudentfestPage event={event} shareToken={shareToken} inviteToken={inviteToken} />;
   }
   if (theme === 'Party') {
-    return <PartyPage event={event} shareToken={shareToken} />;
+    return <PartyPage event={event} shareToken={shareToken} inviteToken={inviteToken} />;
   }
   if (theme === 'Corporate') {
-    return <CorporatePage event={event} shareToken={shareToken} />;
+    return <CorporatePage event={event} shareToken={shareToken} inviteToken={inviteToken} />;
   }
-  return <ElegantPage event={event} shareToken={shareToken} />;
+  return <ElegantPage event={event} shareToken={shareToken} inviteToken={inviteToken} />;
 }

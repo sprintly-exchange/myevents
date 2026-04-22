@@ -136,13 +136,24 @@ router.get('/rsvp/:token', async (req: Request, res: Response) => {
     include: { event: { include: { creator: { select: { name: true } } } } },
   });
   if (!invitation) return res.status(404).json({ error: 'Invitation not found' });
-  return res.json({ invitation });
+  return res.json({
+    invitation: {
+      id: invitation.id,
+      status: invitation.status,
+      recipient_name: invitation.recipientName || null,
+      event_title: invitation.event?.title || null,
+      event_date: invitation.event?.eventDate || null,
+      location: invitation.event?.location || null,
+      sender_name: invitation.event?.creator?.name || null,
+      event_share_token: (invitation.event as any)?.shareToken || null,
+    },
+  });
 });
 
 router.post('/rsvp/:token', async (req: Request, res: Response) => {
   const { name, status } = req.body;
-  if (!['accepted', 'rejected'].includes(status))
-    return res.status(400).json({ error: 'Status must be accepted or rejected' });
+  if (!['accepted', 'maybe', 'rejected'].includes(status))
+    return res.status(400).json({ error: 'Status must be accepted, maybe, or rejected' });
 
   const invitation = await prisma.invitation.findUnique({ where: { token: req.params.token } });
   if (!invitation) return res.status(404).json({ error: 'Invitation not found' });

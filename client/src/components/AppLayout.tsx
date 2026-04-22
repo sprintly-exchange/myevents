@@ -9,6 +9,7 @@ import {
   Settings, Users, CreditCard, FileText, Shield, Menu, X, Globe,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { LANG_STORAGE_KEY } from '@/i18n';
 
 interface NavItem { to: string; label: string; icon: React.ReactNode; }
 
@@ -27,7 +28,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const toggleLang = () => {
     const next = i18n.language === 'sv' ? 'en' : 'sv';
     i18n.changeLanguage(next);
-    localStorage.setItem('myevents_lang', next);
+    localStorage.setItem(LANG_STORAGE_KEY, next);
   };
 
   const navItems: NavItem[] = [
