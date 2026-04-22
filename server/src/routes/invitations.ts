@@ -71,6 +71,31 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
   return res.status(201).json({ invitations: created, count: created.length });
 });
 
+router.get('/outgoing', requireAuth, async (req: Request, res: Response) => {
+  const user = (req as any).user;
+  const invitations = await prisma.invitation.findMany({
+    where: { senderId: user.id, event: { status: { not: 'deleted' } } },
+    include: { event: true },
+    orderBy: { sentAt: 'desc' },
+  });
+  return res.json({
+    invitations: invitations.map(inv => ({
+      id: inv.id,
+      event_id: inv.eventId,
+      sender_id: inv.senderId,
+      recipient_email: inv.recipientEmail,
+      recipient_name: inv.recipientName || null,
+      status: inv.status,
+      token: inv.token,
+      sent_at: inv.sentAt,
+      responded_at: inv.respondedAt || null,
+      event_title: inv.event?.title || null,
+      event_date: inv.event?.eventDate || null,
+      location: inv.event?.location || null,
+    })),
+  });
+});
+
 router.get('/incoming', requireAuth, async (req: Request, res: Response) => {
   const user = (req as any).user;
   const invitations = await prisma.invitation.findMany({

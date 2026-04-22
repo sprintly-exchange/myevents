@@ -33,7 +33,7 @@ export default function PendingPaymentPage() {
   const swishHolder = stateData.swishHolder || pendingData?.swish?.holder || '';
   const price = stateData.price || pendingData?.request?.plan_price || 0;
   const planName = stateData.planName || pendingData?.request?.plan_name || 'Basic';
-  const reference = pendingData?.request?.payment_reference || '';
+  const reference = pendingData?.request?.paymentReference || pendingData?.request?.payment_reference || '';
 
   const swishQrData = swishNumber
     ? `swish://payment?version=1&payee=${swishNumber}&amount=${price}&message=${encodeURIComponent(reference || 'MyEvents')}&editable=false`
@@ -84,12 +84,12 @@ export default function PendingPaymentPage() {
             <span className="text-blue-700">{t('upgrade.amount')}</span>
             <span className="font-bold text-xl text-blue-700">{price} SEK</span>
           </div>
-          {reference && (
-            <div className="flex justify-between text-sm">
-              <span className="text-blue-700">{t('upgrade.paymentReference')}</span>
-              <span className="font-mono font-semibold text-blue-900">{reference}</span>
-            </div>
-          )}
+          <div className="flex justify-between text-sm">
+            <span className="text-blue-700">{t('upgrade.paymentReference')}</span>
+            <span className="font-mono font-semibold text-blue-900">
+              {reference || <span className="text-slate-400 italic">loading…</span>}
+            </span>
+          </div>
           {swishNumber && (
             <>
               <div className="border-t border-blue-200 pt-2.5 mt-2.5">
