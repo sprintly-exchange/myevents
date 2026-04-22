@@ -64,11 +64,18 @@ async function start() {
   await prisma.$executeRawUnsafe(`UPDATE events SET share_token = lower(hex(randomblob(16))) WHERE share_token IS NULL`);
 
   // Ensure default app settings exist (migration-safe upsert)
-  await prisma.appSetting.upsert({
-    where: { key: 'free_tier_invite_limit' },
-    update: {},
-    create: { key: 'free_tier_invite_limit', value: '1' },
-  });
+  const defaultSettings: [string, string][] = [
+    ['free_tier_invite_limit', '1'],
+    ['smtp_host', 'smtp.strato.de'],
+    ['smtp_port', '465'],
+  ];
+  for (const [key, value] of defaultSettings) {
+    await prisma.appSetting.upsert({
+      where: { key },
+      update: {},
+      create: { key, value },
+    });
+  }
 
   if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.join(__dirname, '../public')));
