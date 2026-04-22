@@ -6,7 +6,7 @@ import api from '@/lib/axios';
 import { useAuth } from '@/hooks/useAuth';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
-import { Event, Invitation } from '@/types';
+import { Event } from '@/types';
 import { cn } from '@/lib/utils';
 
 export default function DashboardPage() {
@@ -18,21 +18,21 @@ export default function DashboardPage() {
     queryFn: () => api.get('/events').then(r => r.data),
   });
 
-  const { data: invData } = useQuery({
-    queryKey: ['invitations-incoming'],
-    queryFn: () => api.get('/invitations/incoming').then(r => r.data),
-  });
-
   const events: Event[] = eventsData?.events || [];
-  const invitations: Invitation[] = invData?.invitations || [];
 
   const upcomingEvents = events.filter(e => new Date(e.event_date) > new Date()).length;
-  const pendingInvitations = invitations.filter(i => i.status === 'pending').length;
   const eventLimit = user?.event_limit ?? 5;
 
   const recentEvents = [...events]
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 5);
+
+  const eventsWithPendingRsvps = events
+    .filter(e => (e.pending_count ?? 0) > 0)
+    .sort((a, b) => (b.pending_count ?? 0) - (a.pending_count ?? 0))
+    .slice(0, 5);
+
+  const totalPendingRsvps = events.reduce((sum, e) => sum + (e.pending_count ?? 0), 0);
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? t('dashboard.goodMorning') : hour < 18 ? t('dashboard.goodAfternoon') : t('dashboard.goodEvening');
@@ -59,8 +59,8 @@ export default function DashboardPage() {
       accent: 'border-l-emerald-500',
     },
     {
-      label: t('dashboard.pendingInvitations'),
-      value: pendingInvitations,
+      label: t('dashboard.pendingRsvps'),
+      value: totalPendingRsvps,
       iconBg: 'bg-amber-500',
       textColor: 'text-amber-600',
       icon: <Mail className="h-5 w-5 text-white" />,
@@ -162,9 +162,35 @@ export default function DashboardPage() {
                             <p className="font-medium text-sm text-slate-800 group-hover:text-blue-600 transition-colors truncate">
                               {event.title}
                             </p>
-                            <p className="text-xs text-slate-400">
-                              {new Date(event.event_date).toLocaleDateString()}
-                            </p>
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                              <p className="text-xs text-slate-400">
+                                {new Date(event.event_date).toLocaleDateString()}
+                              </p>
+                              {(event.invitation_count ?? 0) > 0 && (
+                                <>
+                                  <span className="text-slate-300">·</span>
+                                  <span className="text-xs text-slate-400">
+                                    {event.invitation_count} {t('dashboard.guestsInvited')}
+                                  </span>
+                                  {(event.accepted_count ?? 0) > 0 && (
+                                    <>
+                                      <span className="text-slate-300">·</span>
+                                      <span className="text-xs text-emerald-600 font-medium">
+                                        {event.accepted_count} {t('dashboard.guestsAttending')}
+                                      </span>
+                                    </>
+                                  )}
+                                  {(event.pending_count ?? 0) > 0 && (
+                                    <>
+                                      <span className="text-slate-300">·</span>
+                                      <span className="text-xs text-amber-600 font-medium">
+                                        {event.pending_count} {t('dashboard.awaitingResponse')}
+                                      </span>
+                                    </>
+                                  )}
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <span className={cn(
@@ -181,44 +207,45 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Pending Invitations */}
+          {/* Pending RSVPs */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-              <h2 className="text-base font-semibold text-slate-900">{t('dashboard.pendingInvitations')}</h2>
-              <Link to="/invitations" className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 font-medium">
+              <h2 className="text-base font-semibold text-slate-900">{t('dashboard.pendingRsvps')}</h2>
+              <Link to="/events" className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 font-medium">
                 {t('common.viewAll')} <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </div>
             <div className="p-4">
-              {pendingInvitations === 0 ? (
+              {eventsWithPendingRsvps.length === 0 ? (
                 <div className="text-center py-10">
                   <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-slate-100 mb-4">
                     <Mail className="h-7 w-7 text-slate-400" />
                   </div>
-                  <h3 className="font-semibold text-slate-700 mb-1">{t('dashboard.noPendingInvitations')}</h3>
-                  <p className="text-sm text-slate-400">{t('dashboard.allCaughtUp')}</p>
+                  <h3 className="font-semibold text-slate-700 mb-1">{t('dashboard.noPendingRsvps')}</h3>
+                  <p className="text-sm text-slate-400">{t('dashboard.noPendingRsvpsDesc')}</p>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {invitations
-                    .filter(i => i.status === 'pending')
-                    .slice(0, 5)
-                    .map(inv => (
-                      <div
-                        key={inv.id}
-                        className="flex items-center justify-between p-3 rounded-xl bg-amber-50 border border-amber-100"
-                      >
-                        <div className="min-w-0">
-                          <p className="font-medium text-sm text-slate-800 truncate">{inv.event_title}</p>
-                          <p className="text-xs text-slate-500">
-                            {t('dashboard.from')} {inv.sender_name}
-                          </p>
-                        </div>
-                        <span className="shrink-0 ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
-                          {t('common.pending')}
-                        </span>
+                  {eventsWithPendingRsvps.map(event => (
+                    <Link
+                      key={event.id}
+                      to={`/events/${event.id}`}
+                      className="flex items-center justify-between p-3 rounded-xl bg-amber-50 border border-amber-100 hover:bg-amber-100 transition-colors group"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm text-slate-800 group-hover:text-blue-600 transition-colors truncate">{event.title}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {new Date(event.event_date).toLocaleDateString()}
+                          {(event.accepted_count ?? 0) > 0 && (
+                            <span className="ml-2 text-emerald-600">· {event.accepted_count} {t('dashboard.guestsAttending')}</span>
+                          )}
+                        </p>
                       </div>
-                    ))}
+                      <span className="shrink-0 ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 border border-amber-200">
+                        {t('dashboard.pendingRsvpsBadge', { count: event.pending_count })}
+                      </span>
+                    </Link>
+                  ))}
                 </div>
               )}
             </div>

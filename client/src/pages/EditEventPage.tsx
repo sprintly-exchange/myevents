@@ -26,6 +26,7 @@ function ThemeSelector({ templates, value, onChange, onThemeChange }: {
   onChange: (id: string) => void;
   onThemeChange: (meta: { primary: string; accent: string } | null) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
       <button type="button" onClick={() => { onChange(''); onThemeChange(null); }}
@@ -33,8 +34,8 @@ function ThemeSelector({ templates, value, onChange, onThemeChange }: {
           !value ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50')}>
         {!value && <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center"><Check className="h-3 w-3 text-white" /></div>}
         <div className="w-full h-10 rounded-lg bg-slate-100 flex items-center justify-center mb-2"><Ban className="h-4 w-4 text-slate-300" /></div>
-        <p className={cn('text-sm font-semibold', !value ? 'text-blue-700' : 'text-slate-600')}>No theme</p>
-        <p className="text-xs text-slate-400 mt-0.5">Plain email</p>
+        <p className={cn('text-sm font-semibold', !value ? 'text-blue-700' : 'text-slate-600')}>{t('events.noTheme')}</p>
+        <p className="text-xs text-slate-400 mt-0.5">{t('events.plainEmail')}</p>
       </button>
       {templates.map(tmpl => {
         const selected = value === tmpl.id;
@@ -98,7 +99,7 @@ export default function EditEventPage() {
 
   const applyThemeDefaults = (meta: { primary: string; accent: string } | null) => {
     if (meta) {
-      setThemeSettings(s => ({ ...s, primary_color: s.primary_color || meta.primary, accent_color: s.accent_color || meta.accent }));
+      setThemeSettings(s => ({ ...s, primary_color: meta.primary, accent_color: meta.accent }));
     }
   };
 
@@ -136,7 +137,7 @@ export default function EditEventPage() {
             <Input type="datetime-local" value={form.event_date} onChange={e => setForm({ ...form, event_date: e.target.value })} required className="border-slate-200 focus:border-blue-400" />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-sm font-medium text-slate-700">End Date & Time <span className="text-slate-400 font-normal text-xs">(optional)</span></Label>
+            <Label className="text-sm font-medium text-slate-700">{t('events.endDateTime')} <span className="text-slate-400 font-normal text-xs">({t('events.endDateOptional')})</span></Label>
             <Input type="datetime-local" value={form.end_date} onChange={e => setForm({ ...form, end_date: e.target.value })} className="border-slate-200 focus:border-blue-400" min={form.event_date || undefined} />
           </div>
           <div className="space-y-1.5">
@@ -152,8 +153,8 @@ export default function EditEventPage() {
           <div className="space-y-3 pt-1">
             <div className="flex items-center gap-2">
               <Palette className="h-4 w-4 text-violet-500" />
-              <Label className="text-sm font-medium text-slate-700">Event Theme</Label>
-              <span className="text-xs text-slate-400 ml-1">— controls your public page & email</span>
+              <Label className="text-sm font-medium text-slate-700">{t('events.eventTheme')}</Label>
+              <span className="text-xs text-slate-400 ml-1">— {t('events.themeControlsDesc')}</span>
             </div>
             <ThemeSelector
               templates={templates}
@@ -173,7 +174,7 @@ export default function EditEventPage() {
               >
                 <span className="flex items-center gap-2">
                   <Palette className="h-4 w-4 text-violet-500" />
-                  Customize colours & tagline
+                  {t('events.customizeColors')}
                   {(themeSettings.primary_color || themeSettings.accent_color || themeSettings.tagline) && (
                     <span className="inline-block w-2 h-2 rounded-full bg-violet-500" />
                   )}
@@ -185,7 +186,7 @@ export default function EditEventPage() {
                 <div className="p-4 space-y-4 bg-white">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Main colour</Label>
+                      <Label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">{t('events.mainColour')}</Label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
@@ -202,7 +203,7 @@ export default function EditEventPage() {
                       </div>
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Accent colour</Label>
+                      <Label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">{t('events.accentColour')}</Label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
@@ -221,14 +222,14 @@ export default function EditEventPage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Custom tagline</Label>
+                    <Label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">{t('events.customTagline')}</Label>
                     <Input
                       value={themeSettings.tagline || ''}
                       onChange={e => setThemeSettings(s => ({ ...s, tagline: e.target.value }))}
-                      placeholder="e.g. Join us for a night to remember…"
+                      placeholder={t('events.taglinePlaceholder')}
                       className="border-slate-200 focus:border-blue-400"
                     />
-                    <p className="text-xs text-slate-400">Shown below the event title on your public page</p>
+                    <p className="text-xs text-slate-400">{t('events.taglineHint')}</p>
                   </div>
 
                   {/* Mini live preview swatch */}
@@ -239,7 +240,7 @@ export default function EditEventPage() {
                       color: themeSettings.accent_color || '#c9a84c',
                     }}
                   >
-                    {themeSettings.tagline || 'Your tagline preview'}
+                    {themeSettings.tagline || t('events.taglinePreview')}
                     <div className="mt-2">
                       <span
                         className="inline-block px-4 py-1.5 rounded-full text-xs font-bold"
@@ -255,7 +256,7 @@ export default function EditEventPage() {
                     onClick={() => setThemeSettings({})}
                     className="text-xs text-slate-400 hover:text-red-500 transition-colors"
                   >
-                    Reset to theme defaults
+                    {t('events.resetThemeDefaults')}
                   </button>
                 </div>
               )}

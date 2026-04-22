@@ -56,7 +56,7 @@ export interface Invitation {
   sender_id: string;
   recipient_email: string;
   recipient_name?: string;
-  status: 'pending' | 'accepted' | 'rejected';
+  status: 'pending' | 'accepted' | 'rejected' | 'cancelled';
   token: string;
   sent_at: string;
   responded_at?: string;

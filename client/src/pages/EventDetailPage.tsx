@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Calendar, MapPin, Users, Send, Copy, Edit, ArrowLeft, Lock, X, UserPlus, Share2, Eye } from 'lucide-react';
+import { Calendar, MapPin, Users, Send, Copy, Edit, ArrowLeft, Lock, X, UserPlus, Share2, Eye, Ban, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
 import { useAuth } from '@/hooks/useAuth';
@@ -54,6 +54,24 @@ export default function EventDetailPage() {
     },
   });
 
+  const cancelMutation = useMutation({
+    mutationFn: (invId: string) => api.patch(`/invitations/${invId}/cancel`),
+    onSuccess: () => {
+      toast.success(t('invitations.cancelSuccess'));
+      qc.invalidateQueries({ queryKey: ['event', id] });
+    },
+    onError: () => toast.error(t('invitations.cancelError')),
+  });
+
+  const resendMutation = useMutation({
+    mutationFn: (invId: string) => api.patch(`/invitations/${invId}/resend`),
+    onSuccess: () => {
+      toast.success(t('invitations.resendSuccess'));
+      qc.invalidateQueries({ queryKey: ['event', id] });
+    },
+    onError: () => toast.error(t('invitations.resendError')),
+  });
+
   const event = data?.event;
   const invitations: Invitation[] = data?.invitations || [];
   const usedInvites = invitations.length;
@@ -86,6 +104,8 @@ export default function EventDetailPage() {
       return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">{t('invitations.accepted')}</span>;
     if (status === 'rejected')
       return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-600">{t('invitations.declined')}</span>;
+    if (status === 'cancelled')
+      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500">{t('invitations.cancelled')}</span>;
     return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">{t('common.pending')}</span>;
   };
 
@@ -340,9 +360,15 @@ export default function EventDetailPage() {
           ) : (
             <ul className="divide-y divide-slate-100">
               {invitations.map(inv => (
-                <li key={inv.id} className="flex items-center justify-between px-6 py-3.5 hover:bg-slate-50 transition-colors">
+                <li key={inv.id} className={cn(
+                  'flex items-center justify-between px-6 py-3.5 hover:bg-slate-50 transition-colors',
+                  inv.status === 'cancelled' && 'opacity-60'
+                )}>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-slate-800 truncate">{inv.recipient_email}</p>
+                    <p className={cn(
+                      'text-sm font-medium text-slate-800 truncate',
+                      inv.status === 'cancelled' && 'line-through text-slate-400'
+                    )}>{inv.recipient_email}</p>
                     {inv.recipient_name && (
                       <p className="text-xs text-slate-400">{inv.recipient_name}</p>
                     )}
@@ -352,13 +378,35 @@ export default function EventDetailPage() {
                     <span className="text-xs text-slate-400 hidden sm:inline">
                       {new Date(inv.sent_at).toLocaleDateString()}
                     </span>
-                    <button
-                      onClick={() => copyRsvpLink(inv.token)}
-                      className="text-slate-300 hover:text-blue-500 transition-colors"
-                      title={t('events.copyLink')}
-                    >
-                      <Copy className="h-3.5 w-3.5" />
-                    </button>
+                    {inv.status !== 'cancelled' && (
+                      <button
+                        onClick={() => copyRsvpLink(inv.token)}
+                        className="text-slate-300 hover:text-blue-500 transition-colors"
+                        title={t('events.copyLink')}
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                    {inv.status === 'pending' && (
+                      <button
+                        onClick={() => cancelMutation.mutate(inv.id)}
+                        disabled={cancelMutation.isPending}
+                        className="text-slate-300 hover:text-red-500 transition-colors"
+                        title={t('invitations.cancelInvite')}
+                      >
+                        <Ban className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                    {inv.status === 'cancelled' && (
+                      <button
+                        onClick={() => resendMutation.mutate(inv.id)}
+                        disabled={resendMutation.isPending}
+                        className="text-slate-300 hover:text-green-500 transition-colors"
+                        title={t('invitations.resendInvite')}
+                      >
+                        <RefreshCw className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                   </div>
                 </li>
               ))}

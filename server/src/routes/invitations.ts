@@ -130,6 +130,63 @@ router.patch('/:id/respond', requireAuth, async (req: Request, res: Response) =>
   return res.json({ invitation: updated });
 });
 
+router.patch('/:id/cancel', requireAuth, async (req: Request, res: Response) => {
+  const user = (req as any).user;
+
+  const invitation = await prisma.invitation.findUnique({
+    where: { id: req.params.id },
+    include: { event: { select: { creatorId: true } } },
+  });
+  if (!invitation) return res.status(404).json({ error: 'Invitation not found' });
+  if (invitation.event?.creatorId !== user.id && user.role !== 'admin')
+    return res.status(403).json({ error: 'Not authorized' });
+  if (invitation.status !== 'pending')
+    return res.status(400).json({ error: 'Only pending invitations can be cancelled' });
+
+  const updated = await prisma.invitation.update({
+    where: { id: req.params.id },
+    data: { status: 'cancelled' },
+  });
+  return res.json({ invitation: updated });
+});
+
+router.patch('/:id/resend', requireAuth, async (req: Request, res: Response) => {
+  const user = (req as any).user;
+
+  const invitation = await prisma.invitation.findUnique({
+    where: { id: req.params.id },
+    include: {
+      event: { include: { creator: { select: { name: true } } } },
+    },
+  });
+  if (!invitation) return res.status(404).json({ error: 'Invitation not found' });
+  if (invitation.event?.creatorId !== user.id && user.role !== 'admin')
+    return res.status(403).json({ error: 'Not authorized' });
+  if (invitation.status !== 'cancelled')
+    return res.status(400).json({ error: 'Only cancelled invitations can be resent' });
+
+  const updated = await prisma.invitation.update({
+    where: { id: req.params.id },
+    data: { status: 'pending' },
+  });
+
+  if (invitation.event) {
+    let template = await prisma.template.findFirst();
+    const senderName = invitation.event.creator?.name || 'Someone';
+    if (template) {
+      sendInvitationEmail(
+        invitation.recipientEmail,
+        { token: invitation.token, recipientName: invitation.recipientName },
+        invitation.event,
+        template,
+        senderName
+      ).catch((err: Error) => console.error('Resend email failed:', err.message));
+    }
+  }
+
+  return res.json({ invitation: updated });
+});
+
 router.get('/rsvp/:token', async (req: Request, res: Response) => {
   const invitation = await prisma.invitation.findUnique({
     where: { token: req.params.token },
