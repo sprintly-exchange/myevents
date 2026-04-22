@@ -1,0 +1,33 @@
+# fly.toml — Fly.io app configuration for MyEvents
+# App name is overridden at deploy time via FLY_APP_NAME (see .github/workflows/deploy.yml)
+app = "myevents"
+primary_region = "arn"  # Stockholm — change via FLY_REGION GitHub variable
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  NODE_ENV   = "production"
+  PORT       = "3000"
+  # APP_URL and JWT_SECRET are set as Fly secrets (not here)
+
+# Persistent volume for SQLite database
+[mounts]
+  source      = "myevents_data"
+  destination = "/app/data"
+
+[http_service]
+  internal_port        = 3000
+  force_https          = true
+  auto_stop_machines   = true
+  auto_start_machines  = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type       = "connections"
+    hard_limit = 25
+    soft_limit = 20
+
+[[vm]]
+  memory = "256mb"
+  cpus   = 1
