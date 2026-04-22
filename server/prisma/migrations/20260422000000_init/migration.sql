@@ -3,7 +3,9 @@ CREATE TABLE "plans" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "name" TEXT NOT NULL,
     "event_limit" INTEGER NOT NULL DEFAULT 5,
+    "guest_limit" INTEGER NOT NULL DEFAULT -1,
     "price_sek" REAL NOT NULL DEFAULT 0,
+    "currency" TEXT NOT NULL DEFAULT 'SEK',
     "description" TEXT,
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "is_default" BOOLEAN NOT NULL DEFAULT false,
@@ -30,6 +32,7 @@ CREATE TABLE "upgrade_requests" (
     "user_id" TEXT NOT NULL,
     "plan_id" TEXT NOT NULL,
     "status" TEXT NOT NULL DEFAULT 'pending',
+    "payment_reference" TEXT,
     "requested_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "resolved_at" DATETIME,
     CONSTRAINT "upgrade_requests_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
@@ -54,6 +57,8 @@ CREATE TABLE "events" (
     "event_date" TEXT NOT NULL,
     "location" TEXT,
     "template_id" TEXT,
+    "share_token" TEXT NOT NULL DEFAULT '',
+    "theme_settings" TEXT,
     "status" TEXT NOT NULL DEFAULT 'active',
     "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "events_creator_id_fkey" FOREIGN KEY ("creator_id") REFERENCES "users" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
@@ -84,6 +89,9 @@ CREATE TABLE "app_settings" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "events_share_token_key" ON "events"("share_token");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "invitations_token_key" ON "invitations"("token");
