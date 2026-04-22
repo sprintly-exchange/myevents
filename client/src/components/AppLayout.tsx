@@ -26,7 +26,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   const toggleLang = () => {
-    const next = i18n.language === 'sv' ? 'en' : 'sv';
+    const cycle: Record<string, string> = { sv: 'en', en: 'si', si: 'sv' };
+    const next = cycle[i18n.language] ?? 'sv';
     i18n.changeLanguage(next);
     localStorage.setItem(LANG_STORAGE_KEY, next);
   };
@@ -138,9 +139,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           className="w-full flex items-center gap-2 px-3 py-2 mb-1 rounded-lg text-sm text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-colors"
         >
           <Globe className="h-4 w-4" />
-          <span className="flex-1 text-left">{i18n.language === 'sv' ? 'Svenska' : 'English'}</span>
+          <span className="flex-1 text-left">
+            {i18n.language === 'sv' ? 'Svenska' : i18n.language === 'si' ? 'සිංහල' : 'English'}
+          </span>
           <span className="text-xs bg-slate-700 rounded px-1.5 py-0.5 font-mono">
-            {i18n.language === 'sv' ? '🇸🇪' : '🇬🇧'}
+            {i18n.language === 'sv' ? '🇸🇪' : i18n.language === 'si' ? '🇱🇰' : '🇬🇧'}
           </span>
         </button>
         <Button

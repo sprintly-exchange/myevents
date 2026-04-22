@@ -6,7 +6,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   const { t, i18n } = useTranslation();
 
   const toggleLang = () => {
-    const next = i18n.language === 'sv' ? 'en' : 'sv';
+    const cycle: Record<string, string> = { sv: 'en', en: 'si', si: 'sv' };
+    const next = cycle[i18n.language] ?? 'sv';
     i18n.changeLanguage(next);
     localStorage.setItem(LANG_STORAGE_KEY, next);
   };
@@ -79,7 +80,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-sm text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors shadow-sm"
           >
             <Globe className="h-3.5 w-3.5" />
-            <span>{i18n.language === 'sv' ? '🇸🇪 Svenska' : '🇬🇧 English'}</span>
+            <span>{i18n.language === 'sv' ? '🇸🇪 Svenska' : i18n.language === 'si' ? '🇱🇰 සිංහල' : '🇬🇧 English'}</span>
           </button>
         </div>
 
