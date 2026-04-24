@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { ArrowLeft, Check, Palette, Ban, ChevronDown, ChevronUp, Eye, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Check, Palette, Ban, ChevronDown, ChevronUp, Eye, ExternalLink, Calendar, Clock, MapPin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
 import AppLayout from '@/components/AppLayout';
@@ -13,12 +13,77 @@ import { Textarea } from '@/components/ui/textarea';
 import { Template, ThemeSettings } from '@/types';
 import { cn } from '@/lib/utils';
 
-const THEME_META: Record<string, { gradient: string; emoji: string; desc: string; primary: string; accent: string }> = {
-  Elegant:     { gradient: 'from-[#1a1a2e] to-[#c9a84c]', emoji: '✨', desc: 'Formal & classic',    primary: '#1a1a2e', accent: '#c9a84c' },
-  Party:       { gradient: 'from-purple-500 via-pink-500 to-orange-400', emoji: '🎉', desc: 'Fun & vibrant',   primary: '#9333ea', accent: '#f97316' },
-  Corporate:   { gradient: 'from-slate-700 to-blue-700', emoji: '💼', desc: 'Professional',         primary: '#1e3a5f', accent: '#3b82f6' },
-  Studentfest: { gradient: 'from-[#005B99] to-[#FECC02]', emoji: '🎓', desc: 'Swedish graduation',  primary: '#005B99', accent: '#FECC02' },
+const THEME_META: Record<string, { gradient: string; emoji: string; descKey: string; primary: string; accent: string }> = {
+  Elegant:     { gradient: 'from-[#1a1a2e] to-[#c9a84c]', emoji: '✨', descKey: 'events.themeElegantDesc',    primary: '#1a1a2e', accent: '#c9a84c' },
+  Party:       { gradient: 'from-purple-500 via-pink-500 to-orange-400', emoji: '🎉', descKey: 'events.themePartyDesc',   primary: '#9333ea', accent: '#f97316' },
+  Corporate:   { gradient: 'from-slate-700 to-blue-700', emoji: '💼', descKey: 'events.themeCorporateDesc',         primary: '#1e3a5f', accent: '#3b82f6' },
+  Studentfest: { gradient: 'from-[#005B99] to-[#FECC02]', emoji: '🎓', descKey: 'events.themeStudentfestDesc',  primary: '#005B99', accent: '#FECC02' },
 };
+
+function formatDuration(start: string, end: string): string | null {
+  if (!start || !end) return null;
+  const diff = new Date(end).getTime() - new Date(start).getTime();
+  if (diff <= 0) return null;
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+}
+
+function DateTimeInput({
+  label, value, onChange, min, required, optional,
+}: {
+  label: string; value: string; onChange: (v: string) => void;
+  min?: string; required?: boolean; optional?: boolean;
+}) {
+  const { t } = useTranslation();
+  const date = value ? value.split('T')[0] : '';
+  const time = value ? value.split('T')[1] || '' : '';
+  const set = (d: string, tt: string) => {
+    if (!d) { onChange(''); return; }
+    onChange(`${d}T${tt || '00:00'}`);
+  };
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+        {label}
+        {required && <span className="text-red-500">*</span>}
+        {optional && <span className="text-xs font-normal text-slate-400">({t('events.endDateOptional')})</span>}
+      </Label>
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none z-10" />
+          <input
+            type="date"
+            value={date}
+            min={min?.split('T')[0]}
+            required={required}
+            onChange={e => set(e.target.value, time)}
+            className={cn(
+              'w-full h-10 pl-9 pr-3 rounded-lg border border-slate-200 text-sm text-slate-700',
+              'focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 bg-white',
+              'hover:border-slate-300 transition-colors'
+            )}
+          />
+        </div>
+        <div className="relative w-[110px]">
+          <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none z-10" />
+          <input
+            type="time"
+            value={time}
+            onChange={e => set(date, e.target.value)}
+            className={cn(
+              'w-full h-10 pl-9 pr-2 rounded-lg border border-slate-200 text-sm text-slate-700',
+              'focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 bg-white',
+              'hover:border-slate-300 transition-colors'
+            )}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function ThemeSelector({ templates, value, onChange, onThemeChange }: {
   templates: Template[];
@@ -39,7 +104,7 @@ function ThemeSelector({ templates, value, onChange, onThemeChange }: {
       </button>
       {templates.map(tmpl => {
         const selected = value === tmpl.id;
-        const meta = THEME_META[tmpl.name] ?? { gradient: 'from-slate-400 to-slate-600', emoji: '📋', desc: '', primary: '#334155', accent: '#64748b' };
+        const meta = THEME_META[tmpl.name] ?? { gradient: 'from-slate-400 to-slate-600', emoji: '📋', descKey: '', primary: '#334155', accent: '#64748b' };
         return (
           <button key={tmpl.id} type="button"
             onClick={() => { onChange(tmpl.id); onThemeChange({ primary: meta.primary, accent: meta.accent }); }}
@@ -50,7 +115,7 @@ function ThemeSelector({ templates, value, onChange, onThemeChange }: {
               {meta.emoji}
             </div>
             <p className={cn('text-sm font-semibold', selected ? 'text-blue-700' : 'text-slate-700')}>{tmpl.name}</p>
-            <p className="text-xs text-slate-400 mt-0.5">{meta.desc}</p>
+            <p className="text-xs text-slate-400 mt-0.5">{meta.descKey ? t(meta.descKey) : ''}</p>
           </button>
         );
       })}
@@ -89,7 +154,7 @@ export default function EditEventPage() {
       toast.success(t('events.eventUpdated'));
       navigate(`/events/${id}`);
     },
-    onError: (err: any) => toast.error(err.response?.data?.error || 'Update failed'),
+    onError: (err: any) => toast.error(err.response?.data?.error || t('events.updateFailed')),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -115,7 +180,7 @@ export default function EditEventPage() {
           {previewUrl && (
             <a href={previewUrl} target="_blank" rel="noopener noreferrer">
               <Button variant="outline" size="sm" className="gap-1.5 border-slate-200 text-slate-600 hover:text-blue-600">
-                <Eye className="h-3.5 w-3.5" />Preview Page
+                <Eye className="h-3.5 w-3.5" />{t('events.previewPage')}
                 <ExternalLink className="h-3 w-3 opacity-60" />
               </Button>
             </a>
@@ -132,16 +197,31 @@ export default function EditEventPage() {
             <Label className="text-sm font-medium text-slate-700">{t('events.eventTitle')} <span className="text-red-500">*</span></Label>
             <Input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} required className="border-slate-200 focus:border-blue-400" />
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium text-slate-700">{t('events.date')} <span className="text-red-500">*</span></Label>
-            <Input type="datetime-local" value={form.event_date} onChange={e => setForm({ ...form, event_date: e.target.value })} required className="border-slate-200 focus:border-blue-400" />
+          <DateTimeInput
+            label={t('events.date')}
+            value={form.event_date}
+            onChange={v => setForm({ ...form, event_date: v })}
+            required
+          />
+          <div className="space-y-1">
+            <DateTimeInput
+              label={t('events.endDateTime')}
+              value={form.end_date}
+              onChange={v => setForm({ ...form, end_date: v })}
+              min={form.event_date}
+              optional
+            />
+            {formatDuration(form.event_date, form.end_date) && (
+              <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium pt-1">
+                <Clock className="h-3.5 w-3.5" />
+                {t('events.duration')}: {formatDuration(form.event_date, form.end_date)}
+              </div>
+            )}
           </div>
           <div className="space-y-1.5">
-            <Label className="text-sm font-medium text-slate-700">{t('events.endDateTime')} <span className="text-slate-400 font-normal text-xs">({t('events.endDateOptional')})</span></Label>
-            <Input type="datetime-local" value={form.end_date} onChange={e => setForm({ ...form, end_date: e.target.value })} className="border-slate-200 focus:border-blue-400" min={form.event_date || undefined} />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium text-slate-700">{t('events.location')}</Label>
+            <Label className="text-sm font-medium text-slate-700 flex items-center gap-1.5">
+              <MapPin className="h-3.5 w-3.5 text-slate-400" />{t('events.location')}
+            </Label>
             <Input value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} className="border-slate-200 focus:border-blue-400" />
           </div>
           <div className="space-y-1.5">

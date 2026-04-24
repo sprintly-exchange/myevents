@@ -35,7 +35,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 backdrop-blur">
             <Calendar className="h-5 w-5 text-white" />
           </div>
-          <span className="text-xl font-bold text-white">MyEvents</span>
+          <span className="text-xl font-bold text-white">{t('common.appName')}</span>
         </div>
 
         {/* Hero text */}
@@ -72,7 +72,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
               <Calendar className="h-5 w-5 text-white" />
             </div>
-            <span className="text-xl font-bold text-gray-900">MyEvents</span>
+            <span className="text-xl font-bold text-gray-900">{t('common.appName')}</span>
           </div>
           {/* Language toggle — visible on all screen sizes in right panel */}
           <button

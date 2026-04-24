@@ -17,11 +17,12 @@ type SortDir = 'asc' | 'desc';
 type StatusFilter = 'all' | 'pending' | 'accepted' | 'rejected';
 
 function StatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation();
   if (status === 'accepted')
-    return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">Accepted</span>;
+    return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">{t('invitations.accepted')}</span>;
   if (status === 'rejected')
-    return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-600">Declined</span>;
-  return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">Pending</span>;
+    return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-600">{t('invitations.declined')}</span>;
+  return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">{t('common.pending')}</span>;
 }
 
 export default function InvitationsPage() {
@@ -101,8 +102,10 @@ export default function InvitationsPage() {
     declined: sentInvitations.filter(i => i.status === 'rejected').length,
   }), [sentInvitations]);
 
-  const fmtDate = (d: string) =>
-    new Date(d).toLocaleDateString(i18n.language === 'sv' ? 'sv-SE' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  const fmtDate = (d: string) => {
+    const locale = i18n.language === 'sv' ? 'sv-SE' : i18n.language === 'si' ? 'si-LK' : 'en-US';
+    return new Date(d).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' });
+  };
 
   const SortHeader = ({ field, label }: { field: SortField; label: string }) => (
     <button
@@ -120,8 +123,8 @@ export default function InvitationsPage() {
 
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-slate-900">Invitations</h1>
-          <p className="text-slate-500 mt-1">Manage invitations you've sent and received</p>
+          <h1 className="text-2xl font-bold text-slate-900">{t('invitations.title')}</h1>
+          <p className="text-slate-500 mt-1">{t('invitations.manageSubtitle')}</p>
         </div>
 
         {/* Tabs */}
@@ -134,7 +137,7 @@ export default function InvitationsPage() {
             )}
           >
             <Send className="h-4 w-4" />
-            Sent
+            {t('invitations.sent')}
             {sentInvitations.length > 0 && (
               <span className="ml-1 px-1.5 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700 font-semibold">
                 {sentInvitations.length}
@@ -149,7 +152,7 @@ export default function InvitationsPage() {
             )}
           >
             <Mail className="h-4 w-4" />
-            Received
+            {t('invitations.received')}
             {receivedInvitations.length > 0 && (
               <span className="ml-1 px-1.5 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700 font-semibold">
                 {receivedInvitations.length}
@@ -165,10 +168,10 @@ export default function InvitationsPage() {
             {sentInvitations.length > 0 && (
               <div className="grid grid-cols-4 gap-3 mb-5">
                 {[
-                  { label: 'Total', value: stats.total, color: 'text-slate-700', bg: 'bg-slate-50 border-slate-200' },
-                  { label: 'Accepted', value: stats.accepted, color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200' },
-                  { label: 'Pending', value: stats.pending, color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200' },
-                  { label: 'Declined', value: stats.declined, color: 'text-red-600', bg: 'bg-red-50 border-red-200' },
+                  { label: t('invitations.total'), value: stats.total, color: 'text-slate-700', bg: 'bg-slate-50 border-slate-200' },
+                  { label: t('invitations.accepted'), value: stats.accepted, color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200' },
+                  { label: t('common.pending'), value: stats.pending, color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200' },
+                  { label: t('invitations.declined'), value: stats.declined, color: 'text-red-600', bg: 'bg-red-50 border-red-200' },
                 ].map(s => (
                   <div key={s.label} className={cn('rounded-xl border p-3 text-center', s.bg)}>
                     <p className={cn('text-2xl font-bold', s.color)}>{s.value}</p>
@@ -183,7 +186,7 @@ export default function InvitationsPage() {
               <div className="relative flex-1 min-w-48">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
-                  placeholder="Search by name, email or event…"
+                  placeholder={t('invitations.searchPlaceholder')}
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   className="pl-9 border-slate-200"
@@ -195,10 +198,10 @@ export default function InvitationsPage() {
                 onChange={e => setStatusFilter(e.target.value as StatusFilter)}
                 className="px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400"
               >
-                <option value="all">All statuses</option>
-                <option value="pending">Pending</option>
-                <option value="accepted">Accepted</option>
-                <option value="rejected">Declined</option>
+                <option value="all">{t('invitations.allStatuses')}</option>
+                <option value="pending">{t('common.pending')}</option>
+                <option value="accepted">{t('invitations.accepted')}</option>
+                <option value="rejected">{t('invitations.declined')}</option>
               </select>
 
               {uniqueEvents.length > 1 && (
@@ -207,7 +210,7 @@ export default function InvitationsPage() {
                   onChange={e => setEventFilter(e.target.value)}
                   className="px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400 max-w-48 truncate"
                 >
-                  <option value="all">All events</option>
+                  <option value="all">{t('invitations.allEvents')}</option>
                   {uniqueEvents.map(([id, name]) => (
                     <option key={id} value={id}>{name}</option>
                   ))}
@@ -224,28 +227,28 @@ export default function InvitationsPage() {
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-slate-100 mb-5">
                   <Send className="h-8 w-8 text-slate-400" />
                 </div>
-                <h3 className="text-lg font-semibold text-slate-700 mb-2">No invitations sent yet</h3>
-                <p className="text-slate-400 text-sm mb-5">Go to one of your events to invite guests.</p>
+                <h3 className="text-lg font-semibold text-slate-700 mb-2">{t('invitations.noSentYet')}</h3>
+                <p className="text-slate-400 text-sm mb-5">{t('invitations.noSentSubtitle')}</p>
                 <Link to="/events">
-                  <Button size="sm" className="bg-blue-600 hover:bg-blue-700">View My Events</Button>
+                  <Button size="sm" className="bg-blue-600 hover:bg-blue-700">{t('invitations.viewMyEvents')}</Button>
                 </Link>
               </div>
             ) : filtered.length === 0 ? (
               <div className="bg-white rounded-2xl border border-slate-200/70 flex flex-col items-center py-12 text-center">
                 <Search className="h-8 w-8 text-slate-300 mb-3" />
-                <p className="text-slate-500 font-medium">No results match your filters</p>
+                <p className="text-slate-500 font-medium">{t('invitations.noResults')}</p>
                 <button onClick={() => { setSearch(''); setStatusFilter('all'); setEventFilter('all'); }} className="mt-2 text-sm text-blue-600 hover:underline">
-                  Clear filters
+                  {t('invitations.clearFilters')}
                 </button>
               </div>
             ) : (
               <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 overflow-hidden">
                 {/* Table header */}
                 <div className="grid grid-cols-[1fr_1fr_auto_auto] gap-4 px-5 py-3 border-b border-slate-100 bg-slate-50">
-                  <SortHeader field="recipient_email" label="Guest" />
-                  <SortHeader field="event_title" label="Event" />
-                  <SortHeader field="status" label="Status" />
-                  <SortHeader field="sent_at" label="Sent" />
+                  <SortHeader field="recipient_email" label={t('invitations.guestHeader')} />
+                  <SortHeader field="event_title" label={t('invitations.eventHeader')} />
+                  <SortHeader field="status" label={t('common.status')} />
+                  <SortHeader field="sent_at" label={t('invitations.sentHeader')} />
                 </div>
 
                 <ul className="divide-y divide-slate-100">
