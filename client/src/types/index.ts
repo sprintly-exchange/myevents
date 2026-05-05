@@ -56,6 +56,7 @@ export interface Invitation {
   sender_id: string;
   recipient_email: string;
   recipient_name?: string;
+  recipient_phone?: string;
   status: 'pending' | 'accepted' | 'rejected' | 'cancelled';
   token: string;
   sent_at: string;
@@ -106,4 +107,20 @@ export interface PendingPaymentData {
   swishHolder: string;
   price: number;
   planName: string;
+}
+
+
+export interface Contact {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+  created_at: string;
+}
+
+export interface ContactGroup {
+  id: string;
+  name: string;
+  created_at: string;
+  members: Contact[];
 }

@@ -130,6 +130,41 @@ router.patch('/:id/respond', requireAuth, async (req: Request, res: Response) =>
   return res.json({ invitation: updated });
 });
 
+router.patch('/:id', requireAuth, async (req: Request, res: Response) => {
+  const user = (req as any).user;
+  const { recipient_name, recipient_email, recipient_phone } = req.body;
+
+  const invitation = await prisma.invitation.findUnique({
+    where: { id: req.params.id },
+    include: { event: { select: { creatorId: true } } },
+  });
+  if (!invitation) return res.status(404).json({ error: 'Invitation not found' });
+  if (invitation.event?.creatorId !== user.id && user.role !== 'admin')
+    return res.status(403).json({ error: 'Not authorized' });
+
+  const data: any = {};
+  if (recipient_name !== undefined) data.recipientName = recipient_name || null;
+  if (recipient_phone !== undefined) data.recipientPhone = recipient_phone || null;
+  if (recipient_email !== undefined) {
+    const trimmed = recipient_email.trim().toLowerCase();
+    if (!trimmed.includes('@')) return res.status(400).json({ error: 'Invalid email' });
+    data.recipientEmail = trimmed;
+  }
+
+  const updated = await prisma.invitation.update({ where: { id: req.params.id }, data });
+  return res.json({
+    invitation: {
+      id: updated.id,
+      recipient_email: updated.recipientEmail,
+      recipient_name: updated.recipientName || null,
+      recipient_phone: (updated as any).recipientPhone || null,
+      status: updated.status,
+      token: updated.token,
+      sent_at: updated.sentAt,
+    },
+  });
+});
+
 router.patch('/:id/cancel', requireAuth, async (req: Request, res: Response) => {
   const user = (req as any).user;
 

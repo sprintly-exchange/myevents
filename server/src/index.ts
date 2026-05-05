@@ -12,6 +12,7 @@ import templatesRoutes from './routes/templates';
 import plansRoutes from './routes/plans';
 import adminRoutes from './routes/admin';
 import publicRoutes from './routes/public';
+import contactsRoutes from './routes/contacts';
 import { requireAuth } from './middleware/auth';
 import prisma from './db';
 
@@ -28,6 +29,7 @@ app.use('/api/templates', templatesRoutes);
 app.use('/api/plans', plansRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/public', publicRoutes);
+app.use('/api/contacts', contactsRoutes);
 
 // Upgrade requests (user-facing)
 const upgradeRouter = Router();

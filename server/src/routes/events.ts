@@ -14,6 +14,7 @@ function formatInvitation(inv: any) {
     sender_id: inv.senderId,
     recipient_email: inv.recipientEmail,
     recipient_name: inv.recipientName || null,
+    recipient_phone: inv.recipientPhone || null,
     status: inv.status,
     token: inv.token,
     sent_at: inv.sentAt,

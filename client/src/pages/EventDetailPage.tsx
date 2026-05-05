@@ -2,16 +2,16 @@ import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Calendar, MapPin, Users, Send, Copy, Edit, ArrowLeft, Lock, X, UserPlus, Share2, Eye, Ban, RefreshCw } from 'lucide-react';
+import { Calendar, MapPin, Users, Send, Copy, Edit, ArrowLeft, Lock, X, UserPlus, Share2, Eye, Ban, RefreshCw, Pencil, BookUser, Check, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
 import { useAuth } from '@/hooks/useAuth';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { cn } from '@/lib/utils';
-import { Invitation } from '@/types';
+import { Contact, ContactGroup, Invitation } from '@/types';
 
 export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -23,6 +23,12 @@ export default function EventDetailPage() {
   const [stagingGuests, setStagingGuests] = useState<{ email: string; name: string }[]>([]);
   const [emailInput, setEmailInput] = useState('');
   const [nameInput, setNameInput] = useState('');
+  const [showGuestBookPicker, setShowGuestBookPicker] = useState(false);
+
+  const [editingInv, setEditingInv] = useState<Invitation | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editPhone, setEditPhone] = useState('');
 
   const isPaid = user?.payment_status === 'paid' || user?.role === 'admin';
 
@@ -37,6 +43,17 @@ export default function EventDetailPage() {
     enabled: !isPaid,
   });
   const freeLimit = parseInt(settingsData?.free_tier_invite_limit || '1', 10);
+
+  const { data: contactsData } = useQuery({
+    queryKey: ['contacts'],
+    queryFn: () => api.get('/contacts').then(r => r.data),
+  });
+  const { data: groupsData } = useQuery({
+    queryKey: ['contact-groups'],
+    queryFn: () => api.get('/contacts/groups').then(r => r.data),
+  });
+  const allContacts: Contact[] = contactsData?.contacts || [];
+  const allGroups: ContactGroup[] = groupsData?.groups || [];
 
   const sendMutation = useMutation({
     mutationFn: (emails: string[]) =>
@@ -71,6 +88,24 @@ export default function EventDetailPage() {
     },
     onError: () => toast.error(t('invitations.resendError')),
   });
+
+  const editGuestMutation = useMutation({
+    mutationFn: ({ invId, data }: { invId: string; data: { recipient_name: string; recipient_email: string; recipient_phone: string } }) =>
+      api.patch(`/invitations/${invId}`, data),
+    onSuccess: () => {
+      toast.success(t('invitations.guestUpdated'));
+      setEditingInv(null);
+      qc.invalidateQueries({ queryKey: ['event', id] });
+    },
+    onError: () => toast.error(t('invitations.guestUpdateError')),
+  });
+
+  const openEdit = (inv: Invitation) => {
+    setEditingInv(inv);
+    setEditName(inv.recipient_name || '');
+    setEditEmail(inv.recipient_email);
+    setEditPhone(inv.recipient_phone || '');
+  };
 
   const event = data?.event;
   const invitations: Invitation[] = data?.invitations || [];
@@ -304,6 +339,18 @@ export default function EventDetailPage() {
                 </Button>
               </div>
 
+              {(allContacts.length > 0 || allGroups.length > 0) && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowGuestBookPicker(true)}
+                  className="border-dashed border-slate-300 text-slate-500 hover:bg-slate-50 w-full mb-4"
+                >
+                  <BookUser className="h-4 w-4 mr-1.5" />
+                  {t('guestBook.addFromGuestBook')}
+                </Button>
+              )}
+
               {/* Staging list */}
               {stagingGuests.length > 0 && (
                 <div className="rounded-xl border border-slate-200 bg-slate-50 divide-y divide-slate-100 mb-4">
@@ -372,6 +419,9 @@ export default function EventDetailPage() {
                     {inv.recipient_name && (
                       <p className="text-xs text-slate-400">{inv.recipient_name}</p>
                     )}
+                    {inv.recipient_phone && (
+                      <p className="text-xs text-slate-400">{inv.recipient_phone}</p>
+                    )}
                   </div>
                   <div className="flex items-center gap-3 ml-4 shrink-0">
                     {statusBadge(inv.status)}
@@ -407,6 +457,13 @@ export default function EventDetailPage() {
                         <RefreshCw className="h-3.5 w-3.5" />
                       </button>
                     )}
+                    <button
+                      onClick={() => openEdit(inv)}
+                      className="text-slate-300 hover:text-blue-500 transition-colors"
+                      title={t('invitations.editGuest')}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
                   </div>
                 </li>
               ))}
@@ -415,6 +472,227 @@ export default function EventDetailPage() {
         </div>
 
       </div>
+
+      {showGuestBookPicker && (
+        <GuestBookPickerModal
+          contacts={allContacts}
+          groups={allGroups}
+          existingEmails={new Set([
+            ...stagingGuests.map(guest => guest.email),
+            ...invitations.map(invitation => invitation.recipient_email),
+          ])}
+          onAdd={(guests) => setStagingGuests(prev => {
+            const existing = new Set([
+              ...prev.map(guest => guest.email),
+              ...invitations.map(invitation => invitation.recipient_email),
+            ]);
+            return [...prev, ...guests.filter(guest => !existing.has(guest.email))];
+          })}
+          onClose={() => setShowGuestBookPicker(false)}
+          t={t}
+        />
+      )}
+
+      {/* ── Edit Guest Dialog ── */}
+      {editingInv && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-base font-semibold text-slate-900">{t('invitations.editGuestTitle')}</h3>
+              <button onClick={() => setEditingInv(null)} className="text-slate-400 hover:text-slate-600">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">{t('common.name')}</label>
+                <Input
+                  value={editName}
+                  onChange={e => setEditName(e.target.value)}
+                  placeholder={t('auth.fullNamePlaceholder')}
+                  className="border-slate-200 focus:border-blue-400"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">{t('common.email')}</label>
+                <Input
+                  type="email"
+                  value={editEmail}
+                  onChange={e => setEditEmail(e.target.value)}
+                  placeholder="guest@example.com"
+                  className="border-slate-200 focus:border-blue-400"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">{t('invitations.phone')}</label>
+                <PhoneInput
+                  value={editPhone}
+                  onChange={setEditPhone}
+                  placeholder={t('invitations.phonePlaceholder')}
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 mt-5">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setEditingInv(null)}
+              >
+                {t('common.cancel')}
+              </Button>
+              <Button
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
+                disabled={editGuestMutation.isPending}
+                onClick={() =>
+                  editGuestMutation.mutate({
+                    invId: editingInv.id,
+                    data: { recipient_name: editName, recipient_email: editEmail, recipient_phone: editPhone },
+                  })
+                }
+              >
+                {t('common.save')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </AppLayout>
+  );
+}
+
+
+function GuestBookPickerModal({
+  contacts,
+  groups,
+  existingEmails,
+  onAdd,
+  onClose,
+  t,
+}: {
+  contacts: Contact[];
+  groups: ContactGroup[];
+  existingEmails: Set<string>;
+  onAdd: (guests: { email: string; name: string }[]) => void;
+  onClose: () => void;
+  t: (key: string, options?: Record<string, unknown>) => string;
+}) {
+  const [pickerTab, setPickerTab] = useState<'contacts' | 'groups'>('contacts');
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [search, setSearch] = useState('');
+
+  const availableContacts = contacts.filter(contact => !existingEmails.has(contact.email));
+  const filteredContacts = availableContacts.filter(contact =>
+    contact.name.toLowerCase().includes(search.toLowerCase()) ||
+    contact.email.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const toggle = (id: string) => setSelected(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
+
+  const selectGroup = (group: ContactGroup) => {
+    const toAdd = group.members
+      .filter(member => !existingEmails.has(member.email))
+      .map(member => ({ email: member.email, name: member.name }));
+    if (toAdd.length > 0) onAdd(toAdd);
+    onClose();
+  };
+
+  const addSelected = () => {
+    const toAdd = contacts
+      .filter(contact => selected.has(contact.id) && !existingEmails.has(contact.email))
+      .map(contact => ({ email: contact.email, name: contact.name }));
+    onAdd(toAdd);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between mb-4 shrink-0">
+          <h3 className="text-base font-semibold text-slate-900">{t('guestBook.addFromGuestBook')}</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X className="h-4 w-4" /></button>
+        </div>
+
+        <div className="flex gap-1 bg-slate-100 rounded-xl p-1 mb-4 shrink-0">
+          {(['contacts', 'groups'] as const).map(key => (
+            <button
+              key={key}
+              onClick={() => setPickerTab(key)}
+              className={cn(
+                'flex-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
+                pickerTab === key ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'
+              )}
+            >
+              {t(`guestBook.${key}`)}
+            </button>
+          ))}
+        </div>
+
+        {pickerTab === 'contacts' && (
+          <div className="flex-1 flex flex-col min-h-0">
+            <div className="relative mb-2 shrink-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+              <Input placeholder={t('guestBook.searchContacts')} value={search} onChange={e => setSearch(e.target.value)} className="pl-8 h-8 text-sm border-slate-200" />
+            </div>
+            <div className="overflow-y-auto flex-1 space-y-1">
+              {filteredContacts.length === 0 && <p className="text-sm text-slate-400 text-center py-4">{t('guestBook.noContacts')}</p>}
+              {filteredContacts.map(contact => (
+                <div
+                  key={contact.id}
+                  onClick={() => toggle(contact.id)}
+                  className={cn(
+                    'flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors border',
+                    selected.has(contact.id) ? 'bg-blue-50 border-blue-200' : 'border-transparent hover:bg-slate-50'
+                  )}
+                >
+                  <div className={cn('w-4 h-4 rounded border-2 flex items-center justify-center shrink-0', selected.has(contact.id) ? 'bg-blue-600 border-blue-600' : 'border-slate-300')}>
+                    {selected.has(contact.id) && <Check className="h-3 w-3 text-white" />}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-800">{contact.name}</p>
+                    <p className="text-xs text-slate-400">{contact.email}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {selected.size > 0 && (
+              <Button className="mt-3 w-full bg-blue-600 hover:bg-blue-700 shrink-0" onClick={addSelected}>
+                {t('guestBook.addSelected', { count: selected.size })}
+              </Button>
+            )}
+          </div>
+        )}
+
+        {pickerTab === 'groups' && (
+          <div className="flex-1 overflow-y-auto space-y-2">
+            {groups.length === 0 && <p className="text-sm text-slate-400 text-center py-4">{t('guestBook.noGroups')}</p>}
+            {groups.map(group => {
+              const availableMembers = group.members.filter(member => !existingEmails.has(member.email));
+              return (
+                <div key={group.id} className="flex items-center justify-between bg-slate-50 rounded-xl px-4 py-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">{group.name}</p>
+                    <p className="text-xs text-slate-400">{t('guestBook.members', { count: group.members.length })}</p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={availableMembers.length === 0}
+                    onClick={() => selectGroup(group)}
+                    className="shrink-0"
+                  >
+                    {t('guestBook.addAll')}
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

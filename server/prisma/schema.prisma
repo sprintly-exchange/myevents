@@ -39,6 +39,8 @@ model User {
   events          Event[]
   sentInvitations Invitation[]     @relation("SentInvitations")
   upgradeRequests UpgradeRequest[]
+  contacts        Contact[]
+  contactGroups   ContactGroup[]
 
   @@map("users")
 }
@@ -96,6 +98,7 @@ model Invitation {
   senderId       String    @map("sender_id")
   recipientEmail String    @map("recipient_email")
   recipientName  String?   @map("recipient_name")
+  recipientPhone String?   @map("recipient_phone")
   status         String    @default("pending")
   token          String    @unique @default(cuid())
   sentAt         DateTime  @default(now()) @map("sent_at")
@@ -113,4 +116,42 @@ model AppSetting {
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@map("app_settings")
+}
+
+
+model Contact {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  name      String
+  email     String
+  phone     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user   User                 @relation(fields: [userId], references: [id])
+  groups ContactGroupMember[]
+
+  @@map("contacts")
+}
+
+model ContactGroup {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User                 @relation(fields: [userId], references: [id])
+  members ContactGroupMember[]
+
+  @@map("contact_groups")
+}
+
+model ContactGroupMember {
+  groupId   String @map("group_id")
+  contactId String @map("contact_id")
+
+  group   ContactGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  contact Contact      @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, contactId])
+  @@map("contact_group_members")
 }

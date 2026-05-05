@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
-  LayoutDashboard, Calendar, Mail, TrendingUp, LogOut,
+  LayoutDashboard, Calendar, Mail, BookUser, TrendingUp, LogOut,
   Settings, Users, CreditCard, FileText, Shield, Menu, X, Globe,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -36,6 +36,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     { to: '/dashboard', label: t('nav.dashboard'), icon: <LayoutDashboard className="h-4 w-4" /> },
     { to: '/events', label: t('nav.myEvents'), icon: <Calendar className="h-4 w-4" /> },
     { to: '/invitations', label: t('nav.myInvitations'), icon: <Mail className="h-4 w-4" /> },
+    { to: '/guest-book', label: t('nav.guestBook'), icon: <BookUser className="h-4 w-4" /> },
     { to: '/upgrade', label: t('nav.upgradePlan'), icon: <TrendingUp className="h-4 w-4" /> },
   ];
 

@@ -14,6 +14,7 @@ import CreateEventPage from '@/pages/CreateEventPage';
 import EventDetailPage from '@/pages/EventDetailPage';
 import EditEventPage from '@/pages/EditEventPage';
 import InvitationsPage from '@/pages/InvitationsPage';
+import GuestBookPage from '@/pages/GuestBookPage';
 import UpgradePage from '@/pages/UpgradePage';
 import RsvpPage from '@/pages/RsvpPage';
 import PublicEventPage from '@/pages/PublicEventPage';
@@ -43,6 +44,7 @@ export default function App() {
             <Route path="/events/:id" element={<ProtectedRoute><EventDetailPage /></ProtectedRoute>} />
             <Route path="/events/:id/edit" element={<ProtectedRoute><EditEventPage /></ProtectedRoute>} />
             <Route path="/invitations" element={<ProtectedRoute><InvitationsPage /></ProtectedRoute>} />
+            <Route path="/guest-book" element={<ProtectedRoute><GuestBookPage /></ProtectedRoute>} />
             <Route path="/upgrade" element={<ProtectedRoute><UpgradePage /></ProtectedRoute>} />
 
             {/* Admin */}
