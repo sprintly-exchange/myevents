@@ -51,7 +51,8 @@
     "adminDashboard": "පරිපාලක උපකරණ පුවරුව",
     "users": "පරිශීලකයන්",
     "plans": "සැලසුම්",
-    "templates": "සැකිලි"
+    "templates": "සැකිලි",
+    "guestBook": "අමුත්තන් පොත"
   },
   "auth": {
     "signIn": "පිවිසෙන්න",
@@ -226,7 +227,13 @@
     "clearFilters": "පෙරහන් ඉවත් කරන්න",
     "guestHeader": "අමුත්තා",
     "eventHeader": "සිදුවීම",
-    "sentHeader": "යැවූ"
+    "sentHeader": "යැවූ",
+    "editGuest": "අමුත්තා තොරතුරු සංස්කරණය කරන්න",
+    "editGuestTitle": "අමුත්තා සංස්කරණය කරන්න",
+    "phone": "දුරකථනය",
+    "phonePlaceholder": "+94 77 000 0000",
+    "guestUpdated": "අමුත්තා යාවත්කාලීන කෙරිණි",
+    "guestUpdateError": "අමුත්තා යාවත්කාලීන කිරීම අසාර්ථකයි"
   },
   "rsvp": {
     "title": "ඔබට ආරාධනා කෙරේ!",
@@ -357,5 +364,47 @@
       "settingsSaved": "සැකසීම් සුරකින ලදී",
       "saving": "සුරකිමින්..."
     }
+  },
+  "guestBook": {
+    "title": "අමුත්තන් පොත",
+    "subtitle": "ඔබේ සම්බන්ධතා සහ කණ්ඩායම් කළමනාකරණය කරන්න",
+    "contacts": "සම්බන්ධතා",
+    "groups": "කණ්ඩායම්",
+    "addContact": "සම්බන්ධතාවක් එක් කරන්න",
+    "addGroup": "කණ්ඩායමක් එක් කරන්න",
+    "noContacts": "තවම සම්බන්ධතා නොමැත",
+    "noContactsSubtitle": "සිදුවීම් හරහා නැවත භාවිතා කිරීමට සම්බන්ධතා එක් කරන්න",
+    "noGroups": "තවම කණ්ඩායම් නොමැත",
+    "noGroupsSubtitle": "එකවර ආරාධිතයන් කිහිප දෙනෙකු ආරාධනා කිරීමට කණ්ඩායම් සාදන්න",
+    "editContact": "සම්බන්ධතාව සංස්කරණය කරන්න",
+    "deleteContact": "සම්බන්ධතාව මකන්න",
+    "deleteContactConfirm": "මෙම සම්බන්ධතාව මකන්නද?",
+    "contactAdded": "සම්බන්ධතාව එක් කෙරිණි",
+    "contactUpdated": "සම්බන්ධතාව යාවත්කාලීන කෙරිණි",
+    "contactDeleted": "සම්බන්ධතාව මකා දමන ලදී",
+    "groupAdded": "කණ්ඩායම සාදන ලදී",
+    "groupUpdated": "කණ්ඩායම යාවත්කාලීන කෙරිණි",
+    "groupDeleted": "කණ්ඩායම මකා දමන ලදී",
+    "groupName": "කණ්ඩායමේ නම",
+    "groupNamePlaceholder": "උදා: පවුල, කාර්යාල කණ්ඩායම",
+    "manageMembers": "සාමාජිකයන් කළමනාකරණය කරන්න",
+    "addToGroup": "කණ්ඩායමට එක් කරන්න",
+    "removeFromGroup": "ඉවත් කරන්න",
+    "members": "{{count}} සාමාජිකයෙකු",
+    "members_plural": "{{count}} සාමාජිකයන්",
+    "addFromGuestBook": "අමුත්තන් පොතෙන් එක් කරන්න",
+    "pickContacts": "සම්බන්ධතා තෝරන්න",
+    "pickGroups": "කණ්ඩායම් තෝරන්න",
+    "addSelected": "ආරාධනා ලැයිස්තුවට {{count}} ක් එක් කරන්න",
+    "searchContacts": "සම්බන්ධතා සොයන්න...",
+    "errorAddContact": "සම්බන්ධතාව එක් කිරීම අසාර්ථකයි",
+    "errorUpdateContact": "සම්බන්ධතාව යාවත්කාලීන කිරීම අසාර්ථකයි",
+    "errorDeleteContact": "සම්බන්ධතාව මකා දැමීම අසාර්ථකයි",
+    "errorAddGroup": "කණ්ඩායම සෑදීම අසාර්ථකයි",
+    "errorUpdateGroup": "කණ්ඩායම යාවත්කාලීන කිරීම අසාර්ථකයි",
+    "errorDeleteGroup": "කණ්ඩායම මකා දැමීම අසාර්ථකයි",
+    "currentMembers": "වත්මන් සාමාජිකයන්",
+    "addContacts": "සම්බන්ධතා එක් කරන්න",
+    "addAll": "සියල්ල එක් කරන්න"
   }
 }
