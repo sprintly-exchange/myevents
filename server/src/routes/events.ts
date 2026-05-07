@@ -152,6 +152,31 @@ router.put('/:id', async (req: Request, res: Response) => {
   return res.json({ event: { ...formatEvent(event), theme_settings: resolvedTheme, end_date: resolvedEndDate } });
 });
 
+router.get('/:id/checkin', async (req: Request, res: Response) => {
+  const userId = (req as any).user.id;
+  const event = await prisma.event.findFirst({
+    where: { id: req.params.id, creatorId: userId, status: { not: 'deleted' } },
+    select: { id: true, title: true },
+  });
+  if (!event) return res.status(404).json({ error: 'Event not found' });
+
+  const invitations = await prisma.invitation.findMany({
+    where: { eventId: req.params.id, status: 'accepted' },
+    orderBy: { recipientName: 'asc' },
+  });
+
+  return res.json({
+    event: { id: event.id, title: event.title },
+    guests: invitations.map(inv => ({
+      id: inv.id,
+      recipient_name: inv.recipientName || null,
+      recipient_email: inv.recipientEmail,
+      token: inv.token,
+      checked_in_at: (inv as any).checkedInAt || null,
+    })),
+  });
+});
+
 router.delete('/:id', async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
   const existing = await prisma.event.findFirst({ where: { id: req.params.id, creatorId: userId } });

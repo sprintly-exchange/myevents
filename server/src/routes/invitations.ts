@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../db';
 import { requireAuth } from '../middleware/auth';
-import { sendInvitationEmail } from '../services/email';
+import { sendInvitationEmail, sendCheckinConfirmationEmail } from '../services/email';
 
 const router = Router();
 
@@ -222,6 +222,34 @@ router.patch('/:id/resend', requireAuth, async (req: Request, res: Response) => 
   return res.json({ invitation: updated });
 });
 
+router.post('/checkin/:token', requireAuth, async (req: Request, res: Response) => {
+  const userId = (req as any).user.id;
+  const invitation = await prisma.invitation.findUnique({
+    where: { token: req.params.token },
+    include: { event: { select: { creatorId: true, title: true } } },
+  });
+  if (!invitation) return res.status(404).json({ error: 'Invitation not found' });
+  if (invitation.event?.creatorId !== userId && (req as any).user.role !== 'admin')
+    return res.status(403).json({ error: 'Not authorized' });
+  if (invitation.status !== 'accepted')
+    return res.status(400).json({ error: 'Guest has not accepted the invitation' });
+
+  const updated = await prisma.invitation.update({
+    where: { id: invitation.id },
+    data: { checkedInAt: new Date() },
+  });
+  return res.json({
+    invitation: {
+      id: updated.id,
+      recipient_name: updated.recipientName || null,
+      recipient_email: updated.recipientEmail,
+      status: updated.status,
+      checked_in_at: (updated as any).checkedInAt || null,
+      event_title: invitation.event?.title || null,
+    },
+  });
+});
+
 router.get('/rsvp/:token', async (req: Request, res: Response) => {
   const invitation = await prisma.invitation.findUnique({
     where: { token: req.params.token },
@@ -247,13 +275,27 @@ router.post('/rsvp/:token', async (req: Request, res: Response) => {
   if (!['accepted', 'maybe', 'rejected'].includes(status))
     return res.status(400).json({ error: 'Status must be accepted, maybe, or rejected' });
 
-  const invitation = await prisma.invitation.findUnique({ where: { token: req.params.token } });
+  const invitation = await prisma.invitation.findUnique({
+    where: { token: req.params.token },
+    include: { event: true },
+  });
   if (!invitation) return res.status(404).json({ error: 'Invitation not found' });
 
   const updated = await prisma.invitation.update({
     where: { token: req.params.token },
     data: { status, ...(name ? { recipientName: name } : {}), respondedAt: new Date() },
   });
+
+  // Send QR confirmation email when accepted
+  if (status === 'accepted' && invitation.event) {
+    sendCheckinConfirmationEmail(
+      invitation.recipientEmail,
+      name || invitation.recipientName || null,
+      invitation.event,
+      invitation.token
+    ).catch((err: Error) => console.error('Confirmation email failed:', err.message));
+  }
+
   return res.json({ invitation: updated });
 });
 

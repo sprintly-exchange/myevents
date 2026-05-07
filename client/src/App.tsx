@@ -24,6 +24,8 @@ import AdminPlansPage from '@/pages/AdminPlansPage';
 import AdminTemplatesPage from '@/pages/AdminTemplatesPage';
 import AdminSettingsPage from '@/pages/AdminSettingsPage';
 
+import CheckinPage from '@/pages/CheckinPage';
+
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -35,6 +37,7 @@ export default function App() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/pending-payment" element={<PendingPaymentPage />} />
             <Route path="/rsvp/:token" element={<RsvpPage />} />
+            <Route path="/checkin/:token" element={<RsvpPage />} />
             <Route path="/e/:shareToken" element={<PublicEventPage />} />
 
             {/* Protected */}
@@ -43,6 +46,7 @@ export default function App() {
             <Route path="/events/new" element={<ProtectedRoute><CreateEventPage /></ProtectedRoute>} />
             <Route path="/events/:id" element={<ProtectedRoute><EventDetailPage /></ProtectedRoute>} />
             <Route path="/events/:id/edit" element={<ProtectedRoute><EditEventPage /></ProtectedRoute>} />
+            <Route path="/events/:id/checkin" element={<ProtectedRoute><CheckinPage /></ProtectedRoute>} />
             <Route path="/invitations" element={<ProtectedRoute><InvitationsPage /></ProtectedRoute>} />
             <Route path="/guest-book" element={<ProtectedRoute><GuestBookPage /></ProtectedRoute>} />
             <Route path="/upgrade" element={<ProtectedRoute><UpgradePage /></ProtectedRoute>} />

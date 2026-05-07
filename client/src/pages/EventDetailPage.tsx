@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Calendar, MapPin, Users, Send, Copy, Edit, ArrowLeft, Lock, X, UserPlus, Share2, Eye, Ban, RefreshCw, Pencil, BookUser, Check, Search } from 'lucide-react';
+import { Calendar, MapPin, Users, Send, Copy, Edit, ArrowLeft, Lock, X, UserPlus, Share2, Eye, Ban, RefreshCw, Pencil, BookUser, Check, Search, ClipboardList, Info, QrCode } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,6 +12,8 @@ import { Input } from '@/components/ui/input';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { cn } from '@/lib/utils';
 import { Contact, ContactGroup, Invitation } from '@/types';
+import AgendaEditor from '@/components/AgendaEditor';
+import GuidanceEditor from '@/components/GuidanceEditor';
 
 export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -24,6 +26,7 @@ export default function EventDetailPage() {
   const [emailInput, setEmailInput] = useState('');
   const [nameInput, setNameInput] = useState('');
   const [showGuestBookPicker, setShowGuestBookPicker] = useState(false);
+  const [activeTab, setActiveTab] = useState<'guests' | 'agenda' | 'guidance'>('guests');
 
   const [editingInv, setEditingInv] = useState<Invitation | null>(null);
   const [editName, setEditName] = useState('');
@@ -228,6 +231,11 @@ export default function EventDetailPage() {
                   <Edit className="h-3.5 w-3.5 mr-1.5" />{t('common.edit')}
                 </Button>
               </Link>
+              <Link to={`/events/${id}/checkin`}>
+                <Button variant="outline" size="sm" className="bg-white/10 border-white/30 text-white hover:bg-white/20">
+                  <QrCode className="h-3.5 w-3.5 mr-1.5" />{t('checkin.title')}
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -271,6 +279,44 @@ export default function EventDetailPage() {
           </div>
         </div>
 
+        {/* ── Tabs ── */}
+        <div className="flex gap-1 bg-slate-100 rounded-xl p-1 mb-5">
+          {([
+            { key: 'guests', label: t('events.guestList'), icon: Users },
+            { key: 'agenda', label: t('agenda.title'), icon: ClipboardList },
+            { key: 'guidance', label: t('guidance.title'), icon: Info },
+          ] as const).map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className={cn(
+                'flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all',
+                activeTab === key ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'
+              )}
+            >
+              <Icon className="h-3.5 w-3.5" />{label}
+            </button>
+          ))}
+        </div>
+
+        {/* ── Agenda Tab ── */}
+        {activeTab === 'agenda' && id && (
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 p-6 mb-5">
+            <h2 className="text-base font-semibold text-slate-900 mb-4">{t('agenda.title')}</h2>
+            <AgendaEditor eventId={id} />
+          </div>
+        )}
+
+        {/* ── Guidance Tab ── */}
+        {activeTab === 'guidance' && id && (
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 p-6 mb-5">
+            <h2 className="text-base font-semibold text-slate-900 mb-4">{t('guidance.title')}</h2>
+            <GuidanceEditor eventId={id} />
+          </div>
+        )}
+
+        {activeTab === 'guests' && (
+        <>
         {/* ── Invite Guests Card ── */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 p-6 mb-5">
           <div className="flex items-start justify-between mb-1">
@@ -470,6 +516,9 @@ export default function EventDetailPage() {
             </ul>
           )}
         </div>
+
+        </> /* end guests tab */
+        )}
 
       </div>
 

@@ -1,3 +1,20 @@
+export interface AgendaItem {
+  id: string;
+  event_id: string;
+  sort_order: number;
+  start_time?: string | null;
+  title: string;
+  description?: string | null;
+}
+
+export interface GuidanceItem {
+  id: string;
+  event_id: string;
+  sort_order: number;
+  title: string;
+  body: string;
+}
+
 export interface ThemeSettings {
   primary_color?: string;
   accent_color?: string;
@@ -48,6 +65,8 @@ export interface Event {
   invitation_count?: number;
   accepted_count?: number;
   pending_count?: number;
+  agenda_items?: AgendaItem[];
+  guidance_items?: GuidanceItem[];
 }
 
 export interface Invitation {
@@ -61,6 +80,7 @@ export interface Invitation {
   token: string;
   sent_at: string;
   responded_at?: string;
+  checked_in_at?: string | null;
   event_title?: string;
   event_date?: string;
   location?: string;

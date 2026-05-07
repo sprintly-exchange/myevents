@@ -1,6 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import QRCode from 'qrcode';
+
+interface AgendaItem {
+  id: string;
+  sort_order: number;
+  start_time?: string | null;
+  title: string;
+  description?: string | null;
+}
+
+interface GuidanceItem {
+  id: string;
+  sort_order: number;
+  title: string;
+  body: string;
+}
 
 interface PublicEvent {
   title: string;
@@ -10,6 +26,97 @@ interface PublicEvent {
   location: string;
   template_name: string | null;
   theme_settings?: { primary_color?: string; accent_color?: string; tagline?: string } | null;
+  agenda_items?: AgendaItem[];
+  guidance_items?: GuidanceItem[];
+}
+
+// ─── QR Code Display ─────────────────────────────────────────────────────────
+
+function QrCodeBlock({ token, darkBg = false }: { token: string; darkBg?: boolean }) {
+  const [dataUrl, setDataUrl] = useState<string | null>(null);
+  const appUrl = window.location.origin;
+
+  useEffect(() => {
+    QRCode.toDataURL(`${appUrl}/checkin/${token}`, { width: 200, margin: 2, color: { dark: '#000000', light: '#ffffff' } })
+      .then(setDataUrl)
+      .catch(() => {});
+  }, [token, appUrl]);
+
+  if (!dataUrl) return null;
+
+  return (
+    <div className={cn('mt-6 flex flex-col items-center gap-2', darkBg ? 'opacity-90' : '')}>
+      <div className={cn('p-3 rounded-xl', darkBg ? 'bg-white/10' : 'bg-slate-50 border border-slate-200')}>
+        <img src={dataUrl} alt="Check-in QR code" className="w-40 h-40 rounded-lg" />
+      </div>
+      <p className={cn('text-xs text-center max-w-[180px]', darkBg ? 'text-white/60' : 'text-slate-400')}>
+        Show this QR code at the entrance to check in
+      </p>
+    </div>
+  );
+}
+
+// ─── Agenda & Guidance sections ───────────────────────────────────────────────
+
+function AgendaSection({ items, accentColor, textColor, bgCard }: {
+  items: AgendaItem[];
+  accentColor?: string;
+  textColor?: string;
+  bgCard?: string;
+}) {
+  if (!items || items.length === 0) return null;
+  const accent = accentColor || '#6366f1';
+  const text = textColor || '#1e293b';
+  const bg = bgCard || 'rgba(255,255,255,0.08)';
+
+  return (
+    <div className="max-w-3xl mx-auto w-full px-6 md:px-12 mb-10">
+      <h3 className="text-xs font-semibold uppercase tracking-widest mb-4 flex items-center gap-2" style={{ color: accent }}>
+        <span>📋</span> Programme
+      </h3>
+      <div className="space-y-2">
+        {items.map((item) => (
+          <div key={item.id} className="flex gap-3 items-start rounded-xl p-3" style={{ background: bg }}>
+            {item.start_time && (
+              <span className="text-xs font-mono shrink-0 mt-0.5 px-2 py-0.5 rounded" style={{ background: accent + '30', color: accent }}>{item.start_time}</span>
+            )}
+            <div>
+              <p className="text-sm font-semibold" style={{ color: text }}>{item.title}</p>
+              {item.description && <p className="text-xs mt-0.5 opacity-70" style={{ color: text }}>{item.description}</p>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function GuidanceSection({ items, accentColor, textColor, bgCard }: {
+  items: GuidanceItem[];
+  accentColor?: string;
+  textColor?: string;
+  bgCard?: string;
+}) {
+  if (!items || items.length === 0) return null;
+  const accent = accentColor || '#6366f1';
+  const text = textColor || '#1e293b';
+  const bg = bgCard || 'rgba(255,255,255,0.08)';
+
+  return (
+    <div className="max-w-3xl mx-auto w-full px-6 md:px-12 mb-10">
+      <h3 className="text-xs font-semibold uppercase tracking-widest mb-4 flex items-center gap-2" style={{ color: accent }}>
+        <span>ℹ️</span> Good to Know
+      </h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        {items.map((item) => (
+          <div key={item.id} className="rounded-xl p-4" style={{ background: bg }}>
+            <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: accent }}>{item.title}</p>
+            <p className="text-sm whitespace-pre-line" style={{ color: text }}>{item.body}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 type Theme = 'Elegant' | 'Party' | 'Corporate' | 'Studentfest';
@@ -196,6 +303,9 @@ function ElegantPage({
         ))}
       </div>
 
+      <AgendaSection items={event.agenda_items || []} accentColor={gold} textColor={cream} bgCard="rgba(255,255,255,0.05)" />
+      <GuidanceSection items={event.guidance_items || []} accentColor={gold} textColor={cream} bgCard="rgba(255,255,255,0.05)" />
+
       {/* RSVP */}
       <div className="flex-1 flex justify-center px-4 pb-16">
         <div
@@ -216,6 +326,9 @@ function ElegantPage({
                   ? 'We hope to see you there.'
                   : 'You will be missed.'}
               </p>
+              {confirmedAttending === 'yes' && inviteToken && (
+                <QrCodeBlock token={inviteToken} darkBg />
+              )}
             </div>
           ) : (
             <>
@@ -457,6 +570,9 @@ function StudentfestPage({
         ))}
       </div>
 
+      <AgendaSection items={event.agenda_items || []} accentColor={yellow} textColor="#ffffff" bgCard="rgba(255,255,255,0.08)" />
+      <GuidanceSection items={event.guidance_items || []} accentColor={yellow} textColor="#ffffff" bgCard="rgba(255,255,255,0.08)" />
+
       {/* RSVP */}
       <div className="flex-1 flex justify-center px-4 pb-16 relative">
         <div className="w-full max-w-md rounded-2xl p-8 bg-white/10 backdrop-blur-sm border border-white/20">
@@ -473,6 +589,9 @@ function StudentfestPage({
                   ? 'Vi hoppas att du kan komma!'
                   : 'Tråkigt att du inte kan — vi saknar dig!'}
               </p>
+              {confirmedAttending === 'yes' && inviteToken && (
+                <QrCodeBlock token={inviteToken} darkBg />
+              )}
             </div>
           ) : (
             <>
@@ -684,6 +803,9 @@ function PartyPage({
         ))}
       </div>
 
+      <AgendaSection items={event.agenda_items || []} accentColor="#c084fc" textColor="#1f2937" bgCard="rgba(255,255,255,0.9)" />
+      <GuidanceSection items={event.guidance_items || []} accentColor="#f472b6" textColor="#1f2937" bgCard="rgba(255,255,255,0.9)" />
+
       {/* RSVP */}
       <div className="flex-1 flex justify-center px-4 pb-16 relative">
         <div className="w-full max-w-md rounded-3xl p-8 bg-white shadow-2xl">
@@ -698,6 +820,9 @@ function PartyPage({
                   : 'Sorry you can\'t make it!'}
               </h2>
               <p className="text-gray-500 text-sm">Your RSVP is confirmed 🥳</p>
+              {confirmedAttending === 'yes' && inviteToken && (
+                <QrCodeBlock token={inviteToken} />
+              )}
             </div>
           ) : (
             <>
@@ -881,6 +1006,18 @@ function CorporatePage({
           {/* Divider */}
           <div className="border-t border-slate-100 mb-8" />
 
+          {/* Agenda & Guidance */}
+          {(event.agenda_items?.length ?? 0) > 0 && (
+            <div className="mb-8">
+              <AgendaSection items={event.agenda_items || []} accentColor={corpAccent} textColor="#1e293b" bgCard="#f8fafc" />
+            </div>
+          )}
+          {(event.guidance_items?.length ?? 0) > 0 && (
+            <div className="mb-8">
+              <GuidanceSection items={event.guidance_items || []} accentColor={corpAccent} textColor="#1e293b" bgCard="#f1f5f9" />
+            </div>
+          )}
+
           {/* RSVP */}
           {confirmed ? (
             <div className="text-center py-8">
@@ -897,6 +1034,9 @@ function CorporatePage({
                   ? 'We have noted your tentative response.'
                   : 'Thank you for letting us know.'}
               </p>
+              {confirmedAttending === 'yes' && inviteToken && (
+                <QrCodeBlock token={inviteToken} />
+              )}
             </div>
           ) : (
             <>

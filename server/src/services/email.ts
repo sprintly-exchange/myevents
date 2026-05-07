@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import QRCode from 'qrcode';
 import prisma from '../db';
 
 async function getSmtpConfig() {
@@ -58,6 +59,49 @@ export async function sendInvitationEmail(
 
   const transport = createTransport(config);
   await transport.sendMail({ from: `"MyEvents" <${config.from}>`, to, subject: `You're invited to ${event.title}`, html });
+}
+
+export async function sendCheckinConfirmationEmail(
+  to: string,
+  recipientName: string | null,
+  event: { title: string; eventDate: string; location?: string | null },
+  invitationToken: string
+): Promise<void> {
+  const config = await getSmtpConfig();
+  if (!config) { console.warn('SMTP not configured, skipping confirmation email'); return; }
+
+  const appUrl = process.env.APP_URL || 'http://localhost:3000';
+  const checkinUrl = `${appUrl}/checkin/${invitationToken}`;
+  const qrDataUrl = await QRCode.toDataURL(checkinUrl, { width: 200, margin: 2 });
+
+  const displayName = recipientName || to;
+  const eventDateStr = new Date(event.eventDate).toLocaleString('sv-SE');
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="font-family:sans-serif;background:#f5f5f5;margin:0;padding:24px">
+  <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:12px;padding:32px;text-align:center">
+    <h2 style="color:#1a1a2e;margin-bottom:4px">You're confirmed! 🎉</h2>
+    <p style="color:#555;margin-top:0">Hi ${displayName}, your spot at <strong>${event.title}</strong> is confirmed.</p>
+    <p style="color:#555"><strong>📅</strong> ${eventDateStr}</p>
+    ${event.location ? `<p style="color:#555"><strong>📍</strong> ${event.location}</p>` : ''}
+    <hr style="border:none;border-top:1px solid #eee;margin:24px 0">
+    <p style="color:#555;font-size:14px">Present this QR code at the entrance to check in:</p>
+    <img src="${qrDataUrl}" alt="Check-in QR code" style="width:180px;height:180px;border-radius:8px" />
+    <p style="color:#aaa;font-size:12px;margin-top:8px">Keep this email handy on the day of the event.</p>
+  </div>
+</body>
+</html>`;
+
+  const transport = createTransport(config);
+  await transport.sendMail({
+    from: `"MyEvents" <${config.from}>`,
+    to,
+    subject: `You're confirmed for ${event.title} — your check-in QR`,
+    html,
+  });
 }
 
 export async function sendTestEmail(to: string): Promise<void> {

@@ -6,7 +6,11 @@ const router = Router();
 router.get('/events/:shareToken', async (req: Request, res: Response) => {
   const event = await prisma.event.findFirst({
     where: { shareToken: req.params.shareToken, status: { not: 'deleted' } },
-    include: { template: { select: { name: true } } },
+    include: {
+      template: { select: { name: true } },
+      agendaItems: { orderBy: { sortOrder: 'asc' } },
+      guidanceItems: { orderBy: { sortOrder: 'asc' } },
+    },
   });
   if (!event) return res.status(404).json({ error: 'Event not found' });
 
@@ -30,6 +34,19 @@ router.get('/events/:shareToken', async (req: Request, res: Response) => {
       location: event.location,
       template_name: event.template?.name || null,
       theme_settings,
+      agenda_items: event.agendaItems.map(a => ({
+        id: a.id,
+        sort_order: a.sortOrder,
+        start_time: a.startTime || null,
+        title: a.title,
+        description: a.description || null,
+      })),
+      guidance_items: event.guidanceItems.map(g => ({
+        id: g.id,
+        sort_order: g.sortOrder,
+        title: g.title,
+        body: g.body,
+      })),
     },
   });
 });

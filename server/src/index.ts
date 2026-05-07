@@ -13,6 +13,8 @@ import plansRoutes from './routes/plans';
 import adminRoutes from './routes/admin';
 import publicRoutes from './routes/public';
 import contactsRoutes from './routes/contacts';
+import agendaRoutes from './routes/agenda';
+import guidanceRoutes from './routes/guidance';
 import { requireAuth } from './middleware/auth';
 import prisma from './db';
 
@@ -30,6 +32,8 @@ app.use('/api/plans', plansRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/contacts', contactsRoutes);
+app.use('/api/events', agendaRoutes);
+app.use('/api/events', guidanceRoutes);
 
 // Upgrade requests (user-facing)
 const upgradeRouter = Router();
