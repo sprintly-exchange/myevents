@@ -45,8 +45,6 @@ function formatEvent(e: any, extra: Record<string, any> = {}) {
     template_id: e.templateId || null,
     template_name: e.template?.name || null,
     share_token: e.shareToken || null,
-    enable_qr_checkin: e.enable_qr_checkin !== undefined ? Boolean(e.enable_qr_checkin) : true,
-    enable_agenda: e.enable_agenda !== undefined ? Boolean(e.enable_agenda) : true,
     theme_settings: parsedThemeSettings,
     status: e.status,
     created_at: e.createdAt,
