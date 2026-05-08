@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Check, Palette, Ban, Calendar, Clock, MapPin, FileText, Sparkles } from 'lucide-react';
+import { ArrowLeft, Check, Palette, Ban, Calendar, Clock, MapPin, FileText, Sparkles, QrCode, ClipboardList } from 'lucide-react';
 import { Template } from '@/types';
 import { cn } from '@/lib/utils';
 import { TimePickerInput } from '@/components/ui/time-picker';
@@ -133,7 +133,16 @@ function ThemeSelector({ templates, value, onChange }: {
 export default function CreateEventPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const [form, setForm] = useState({ title: '', description: '', event_date: '', end_date: '', location: '', template_id: '' });
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    event_date: '',
+    end_date: '',
+    location: '',
+    template_id: '',
+    enable_qr_checkin: false,
+    enable_agenda: false,
+  });
 
   const { data: tmplData } = useQuery({ queryKey: ['templates'], queryFn: () => api.get('/templates').then(r => r.data) });
   const templates: Template[] = tmplData?.templates || [];
@@ -150,7 +159,7 @@ export default function CreateEventPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.title || !form.event_date) { toast.error(t('events.validationRequired')); return; }
-    const payload: Record<string, string | null> = { ...form, end_date: form.end_date || null };
+    const payload: Record<string, string | boolean | null> = { ...form, end_date: form.end_date || null };
     mutation.mutate(payload as any);
   };
 
@@ -250,6 +259,40 @@ export default function CreateEventPage() {
           <SectionCard icon={<Palette className="h-4 w-4" />} title={t('events.eventTheme')}>
             <p className="text-xs text-slate-500 -mt-1">{t('events.themeControlsDesc')}</p>
             <ThemeSelector templates={templates} value={form.template_id} onChange={id => setForm({ ...form, template_id: id })} />
+          </SectionCard>
+
+          <SectionCard icon={<Sparkles className="h-4 w-4" />} title={t('events.optionalFeatures')}>
+            <p className="text-xs text-slate-500 -mt-1">{t('events.optionalFeaturesDesc')}</p>
+            <label className="flex items-start gap-3 rounded-lg border border-slate-200 p-3 cursor-pointer hover:border-slate-300 transition-colors">
+              <input
+                type="checkbox"
+                checked={form.enable_qr_checkin}
+                onChange={e => setForm({ ...form, enable_qr_checkin: e.target.checked })}
+                className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              />
+              <div className="space-y-0.5">
+                <p className="text-sm font-medium text-slate-800 flex items-center gap-1.5">
+                  <QrCode className="h-4 w-4 text-slate-500" />
+                  {t('events.enableQrCheckin')}
+                </p>
+                <p className="text-xs text-slate-500">{t('events.enableQrCheckinDesc')}</p>
+              </div>
+            </label>
+            <label className="flex items-start gap-3 rounded-lg border border-slate-200 p-3 cursor-pointer hover:border-slate-300 transition-colors">
+              <input
+                type="checkbox"
+                checked={form.enable_agenda}
+                onChange={e => setForm({ ...form, enable_agenda: e.target.checked })}
+                className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              />
+              <div className="space-y-0.5">
+                <p className="text-sm font-medium text-slate-800 flex items-center gap-1.5">
+                  <ClipboardList className="h-4 w-4 text-slate-500" />
+                  {t('events.enableAgenda')}
+                </p>
+                <p className="text-xs text-slate-500">{t('events.enableAgendaDesc')}</p>
+              </div>
+            </label>
           </SectionCard>
 
           <Button

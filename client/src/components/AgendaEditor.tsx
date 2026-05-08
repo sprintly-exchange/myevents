@@ -13,65 +13,19 @@ import { AgendaItem } from '@/types';
 
 interface Props { eventId: string }
 
-export default function AgendaEditor({ eventId }: Props) {
+type FormState = { title: string; start_time: string; description: string };
+
+interface FormBlockProps {
+  form: FormState;
+  setForm: React.Dispatch<React.SetStateAction<FormState>>;
+  onSubmit: () => void;
+  onCancel: () => void;
+  submitting: boolean;
+}
+
+function FormBlock({ form, setForm, onSubmit, onCancel, submitting }: FormBlockProps) {
   const { t } = useTranslation();
-  const qc = useQueryClient();
-  const [editing, setEditing] = useState<AgendaItem | null>(null);
-  const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ title: '', start_time: '', description: '' });
-
-  const { data } = useQuery({
-    queryKey: ['agenda', eventId],
-    queryFn: () => api.get(`/events/${eventId}/agenda`).then(r => r.data),
-  });
-  const items: AgendaItem[] = data?.items || [];
-
-  const invalidate = () => qc.invalidateQueries({ queryKey: ['agenda', eventId] });
-
-  const addMutation = useMutation({
-    mutationFn: (body: typeof form) => api.post(`/events/${eventId}/agenda`, body),
-    onSuccess: () => { toast.success(t('agenda.itemAdded')); setAdding(false); setForm({ title: '', start_time: '', description: '' }); invalidate(); },
-    onError: () => toast.error(t('agenda.addError')),
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, body }: { id: string; body: typeof form }) => api.put(`/events/${eventId}/agenda/${id}`, body),
-    onSuccess: () => { toast.success(t('agenda.itemUpdated')); setEditing(null); invalidate(); },
-    onError: () => toast.error(t('agenda.updateError')),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/events/${eventId}/agenda/${id}`),
-    onSuccess: () => { toast.success(t('agenda.itemDeleted')); invalidate(); },
-    onError: () => toast.error(t('agenda.deleteError')),
-  });
-
-  const reorderMutation = useMutation({
-    mutationFn: (order: string[]) => api.patch(`/events/${eventId}/agenda/reorder`, { order }),
-    onSuccess: invalidate,
-  });
-
-  function moveItem(index: number, dir: -1 | 1) {
-    const newItems = [...items];
-    const swap = index + dir;
-    if (swap < 0 || swap >= newItems.length) return;
-    [newItems[index], newItems[swap]] = [newItems[swap], newItems[index]];
-    reorderMutation.mutate(newItems.map(i => i.id));
-  }
-
-  function startEdit(item: AgendaItem) {
-    setEditing(item);
-    setForm({ title: item.title, start_time: item.start_time || '', description: item.description || '' });
-    setAdding(false);
-  }
-
-  function startAdd() {
-    setAdding(true);
-    setEditing(null);
-    setForm({ title: '', start_time: '', description: '' });
-  }
-
-  const FormBlock = ({ onSubmit, onCancel, submitting }: { onSubmit: () => void; onCancel: () => void; submitting: boolean }) => (
+  return (
     <div className="bg-slate-50 rounded-lg p-4 space-y-3 border border-slate-200">
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
@@ -110,6 +64,65 @@ export default function AgendaEditor({ eventId }: Props) {
       </div>
     </div>
   );
+}
+
+export default function AgendaEditor({ eventId }: Props) {
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  const [editing, setEditing] = useState<AgendaItem | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState<FormState>({ title: '', start_time: '', description: '' });
+
+  const { data } = useQuery({
+    queryKey: ['agenda', eventId],
+    queryFn: () => api.get(`/events/${eventId}/agenda`).then(r => r.data),
+  });
+  const items: AgendaItem[] = data?.items || [];
+
+  const invalidate = () => qc.invalidateQueries({ queryKey: ['agenda', eventId] });
+
+  const addMutation = useMutation({
+    mutationFn: (body: FormState) => api.post(`/events/${eventId}/agenda`, body),
+    onSuccess: () => { toast.success(t('agenda.itemAdded')); setAdding(false); setForm({ title: '', start_time: '', description: '' }); invalidate(); },
+    onError: () => toast.error(t('agenda.addError')),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: FormState }) => api.put(`/events/${eventId}/agenda/${id}`, body),
+    onSuccess: () => { toast.success(t('agenda.itemUpdated')); setEditing(null); invalidate(); },
+    onError: () => toast.error(t('agenda.updateError')),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/events/${eventId}/agenda/${id}`),
+    onSuccess: () => { toast.success(t('agenda.itemDeleted')); invalidate(); },
+    onError: () => toast.error(t('agenda.deleteError')),
+  });
+
+  const reorderMutation = useMutation({
+    mutationFn: (order: string[]) => api.patch(`/events/${eventId}/agenda/reorder`, { order }),
+    onSuccess: invalidate,
+  });
+
+  function moveItem(index: number, dir: -1 | 1) {
+    const newItems = [...items];
+    const swap = index + dir;
+    if (swap < 0 || swap >= newItems.length) return;
+    [newItems[index], newItems[swap]] = [newItems[swap], newItems[index]];
+    reorderMutation.mutate(newItems.map(i => i.id));
+  }
+
+  function startEdit(item: AgendaItem) {
+    setEditing(item);
+    setForm({ title: item.title, start_time: item.start_time || '', description: item.description || '' });
+    setAdding(false);
+  }
+
+  function startAdd() {
+    setAdding(true);
+    setEditing(null);
+    setForm({ title: '', start_time: '', description: '' });
+  }
 
   return (
     <div className="space-y-4">
@@ -124,6 +137,8 @@ export default function AgendaEditor({ eventId }: Props) {
 
       {adding && (
         <FormBlock
+          form={form}
+          setForm={setForm}
           onSubmit={() => addMutation.mutate(form)}
           onCancel={() => setAdding(false)}
           submitting={addMutation.isPending}
@@ -142,6 +157,8 @@ export default function AgendaEditor({ eventId }: Props) {
             <div key={item.id}>
               {editing?.id === item.id ? (
                 <FormBlock
+                  form={form}
+                  setForm={setForm}
                   onSubmit={() => updateMutation.mutate({ id: item.id, body: form })}
                   onCancel={() => setEditing(null)}
                   submitting={updateMutation.isPending}

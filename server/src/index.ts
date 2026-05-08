@@ -91,6 +91,8 @@ async function start() {
     `ALTER TABLE events ADD COLUMN end_date TEXT`,
     `ALTER TABLE events ADD COLUMN share_token TEXT`,
     `ALTER TABLE events ADD COLUMN theme_settings TEXT`,
+    `ALTER TABLE events ADD COLUMN enable_qr_checkin INTEGER NOT NULL DEFAULT 1`,
+    `ALTER TABLE events ADD COLUMN enable_agenda INTEGER NOT NULL DEFAULT 1`,
     `ALTER TABLE plans ADD COLUMN guest_limit INTEGER NOT NULL DEFAULT -1`,
     `ALTER TABLE plans ADD COLUMN currency TEXT NOT NULL DEFAULT 'SEK'`,
     `ALTER TABLE plans ADD COLUMN description TEXT`,
