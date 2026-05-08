@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { TimePickerInput } from '@/components/ui/time-picker';
 import { AgendaItem } from '@/types';
 
 interface Props { eventId: string }
@@ -75,11 +76,12 @@ export default function AgendaEditor({ eventId }: Props) {
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <Label className="text-xs font-medium text-slate-600">{t('agenda.startTime')}</Label>
-          <Input
+          <TimePickerInput
             value={form.start_time}
-            onChange={e => setForm(f => ({ ...f, start_time: e.target.value }))}
-            placeholder={t('agenda.startTimePlaceholder')}
-            className="h-8 text-sm"
+            onChange={val => setForm(f => ({ ...f, start_time: val }))}
+            placeholder={t('agenda.timePlaceholder')}
+            label={t('agenda.timeLabel')}
+            confirmLabel={t('agenda.setTime')}
           />
         </div>
         <div className="space-y-1">

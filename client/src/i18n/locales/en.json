@@ -383,7 +383,10 @@
     "itemDeleted": "Agenda item deleted",
     "addError": "Failed to add agenda item",
     "updateError": "Failed to update agenda item",
-    "deleteError": "Failed to delete agenda item"
+    "deleteError": "Failed to delete agenda item",
+    "timePlaceholder": "--:--",
+    "setTime": "Set time",
+    "timeLabel": "Time"
   },
   "guidance": {
     "title": "Guidance",
@@ -408,7 +411,7 @@
     "subtitle": "Scan guests in as they arrive",
     "scannerLabel": "Point camera at guest's QR code",
     "guestList": "Guest List",
-    "noGuests": "No accepted guests yet",
+    "noGuests": "No RSVPed guests yet",
     "checkedIn": "Checked in",
     "notCheckedIn": "Not checked in",
     "checkInButton": "Check In",
@@ -424,7 +427,9 @@
     "yourQrCode": "Your Check-in QR Code",
     "qrInstructions": "Show this to the organiser at the entrance",
     "confirmed": "You're confirmed!",
-    "confirmationSubtitle": "Your spot is confirmed. See you there!"
+    "confirmationSubtitle": "Your spot is confirmed. See you there!",
+    "maybeAttending": "Maybe attending",
+    "alreadyCheckedInName": "{{name}} is already checked in"
   },
   "guestBook": {
     "title": "Guest Book",

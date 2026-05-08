@@ -231,20 +231,35 @@ router.post('/checkin/:token', requireAuth, async (req: Request, res: Response) 
   if (!invitation) return res.status(404).json({ error: 'Invitation not found' });
   if (invitation.event?.creatorId !== userId && (req as any).user.role !== 'admin')
     return res.status(403).json({ error: 'Not authorized' });
-  if (invitation.status !== 'accepted')
-    return res.status(400).json({ error: 'Guest has not accepted the invitation' });
+  if (!['accepted', 'maybe'].includes(invitation.status))
+    return res.status(400).json({ error: 'Guest has not RSVPed for this event' });
+
+  if (invitation.checkedInAt) {
+    return res.json({
+      already_checked_in: true,
+      invitation: {
+        id: invitation.id,
+        recipient_name: invitation.recipientName || null,
+        recipient_email: invitation.recipientEmail,
+        status: invitation.status,
+        checked_in_at: invitation.checkedInAt.toISOString(),
+        event_title: invitation.event?.title || null,
+      },
+    });
+  }
 
   const updated = await prisma.invitation.update({
     where: { id: invitation.id },
     data: { checkedInAt: new Date() },
   });
   return res.json({
+    already_checked_in: false,
     invitation: {
       id: updated.id,
       recipient_name: updated.recipientName || null,
       recipient_email: updated.recipientEmail,
       status: updated.status,
-      checked_in_at: (updated as any).checkedInAt || null,
+      checked_in_at: updated.checkedInAt?.toISOString() || null,
       event_title: invitation.event?.title || null,
     },
   });

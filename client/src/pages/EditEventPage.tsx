@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Template, ThemeSettings } from '@/types';
 import { cn } from '@/lib/utils';
+import { TimePickerInput } from '@/components/ui/time-picker';
 
 const THEME_META: Record<string, { gradient: string; emoji: string; descKey: string; primary: string; accent: string }> = {
   Elegant:     { gradient: 'from-[#1a1a2e] to-[#c9a84c]', emoji: '✨', descKey: 'events.themeElegantDesc',    primary: '#1a1a2e', accent: '#c9a84c' },
@@ -67,17 +68,13 @@ function DateTimeInput({
             )}
           />
         </div>
-        <div className="relative w-[110px]">
-          <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none z-10" />
-          <input
-            type="time"
+        <div className="w-[120px]">
+          <TimePickerInput
             value={time}
-            onChange={e => set(date, e.target.value)}
-            className={cn(
-              'w-full h-10 pl-9 pr-2 rounded-lg border border-slate-200 text-sm text-slate-700',
-              'focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 bg-white',
-              'hover:border-slate-300 transition-colors'
-            )}
+            onChange={tt => set(date, tt)}
+            label={t('agenda.timeLabel')}
+            confirmLabel={t('agenda.setTime')}
+            triggerClassName="h-10 rounded-lg"
           />
         </div>
       </div>

@@ -14,6 +14,7 @@ interface Guest {
   id: string;
   recipient_name: string | null;
   recipient_email: string;
+  status: string;
   token: string;
   checked_in_at: string | null;
 }
@@ -44,7 +45,11 @@ export default function CheckinPage() {
     mutationFn: (token: string) => api.post(`/invitations/checkin/${token}`),
     onSuccess: (res) => {
       const name = res.data.invitation?.recipient_name || res.data.invitation?.recipient_email || 'Guest';
-      toast.success(t('checkin.checkinSuccess', { name }));
+      if (res.data.already_checked_in) {
+        toast.info(t('checkin.alreadyCheckedInName', { name }));
+      } else {
+        toast.success(t('checkin.checkinSuccess', { name }));
+      }
       qc.invalidateQueries({ queryKey: ['checkin-guests', id] });
     },
     onError: (err: any) => {
@@ -209,9 +214,16 @@ export default function CheckinPage() {
                     <Circle className="h-5 w-5 text-slate-300 flex-shrink-0" />
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-800 truncate">
-                      {guest.recipient_name || guest.recipient_email}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-slate-800 truncate">
+                        {guest.recipient_name || guest.recipient_email}
+                      </p>
+                      {guest.status === 'maybe' && (
+                        <span className="shrink-0 text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-medium">
+                          {t('checkin.maybeAttending')}
+                        </span>
+                      )}
+                    </div>
                     {guest.recipient_name && (
                       <p className="text-xs text-slate-400 truncate">{guest.recipient_email}</p>
                     )}

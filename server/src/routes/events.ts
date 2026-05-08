@@ -153,16 +153,19 @@ router.put('/:id', async (req: Request, res: Response) => {
 });
 
 router.get('/:id/checkin', async (req: Request, res: Response) => {
-  const userId = (req as any).user.id;
+  const user = (req as any).user;
+  const where = user.role === 'admin'
+    ? { id: req.params.id, status: { not: 'deleted' } }
+    : { id: req.params.id, creatorId: user.id, status: { not: 'deleted' } };
   const event = await prisma.event.findFirst({
-    where: { id: req.params.id, creatorId: userId, status: { not: 'deleted' } },
+    where,
     select: { id: true, title: true },
   });
   if (!event) return res.status(404).json({ error: 'Event not found' });
 
   const invitations = await prisma.invitation.findMany({
-    where: { eventId: req.params.id, status: 'accepted' },
-    orderBy: { recipientName: 'asc' },
+    where: { eventId: req.params.id, status: { in: ['accepted', 'maybe'] } },
+    orderBy: [{ checkedInAt: 'asc' }, { recipientName: 'asc' }],
   });
 
   return res.json({
@@ -171,8 +174,9 @@ router.get('/:id/checkin', async (req: Request, res: Response) => {
       id: inv.id,
       recipient_name: inv.recipientName || null,
       recipient_email: inv.recipientEmail,
+      status: inv.status,
       token: inv.token,
-      checked_in_at: (inv as any).checkedInAt || null,
+      checked_in_at: inv.checkedInAt?.toISOString() || null,
     })),
   });
 });
