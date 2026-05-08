@@ -231,6 +231,15 @@ router.post('/checkin/:token', requireAuth, async (req: Request, res: Response) 
   if (!invitation) return res.status(404).json({ error: 'Invitation not found' });
   if (invitation.event?.creatorId !== userId && (req as any).user.role !== 'admin')
     return res.status(403).json({ error: 'Not authorized' });
+  if (invitation.event) {
+    const rows = await prisma.$queryRawUnsafe<{ enable_qr_checkin: number | null }[]>(
+      `SELECT enable_qr_checkin FROM events WHERE id = ?`,
+      invitation.eventId
+    );
+    if (rows[0]?.enable_qr_checkin === 0) {
+      return res.status(403).json({ error: 'QR check-in is disabled for this event' });
+    }
+  }
   if (invitation.status !== 'accepted')
     return res.status(400).json({ error: 'Guest has not accepted the invitation' });
 
@@ -288,12 +297,18 @@ router.post('/rsvp/:token', async (req: Request, res: Response) => {
 
   // Send QR confirmation email when accepted
   if (status === 'accepted' && invitation.event) {
-    sendCheckinConfirmationEmail(
-      invitation.recipientEmail,
-      name || invitation.recipientName || null,
-      invitation.event,
-      invitation.token
-    ).catch((err: Error) => console.error('Confirmation email failed:', err.message));
+    const rows = await prisma.$queryRawUnsafe<{ enable_qr_checkin: number | null }[]>(
+      `SELECT enable_qr_checkin FROM events WHERE id = ?`,
+      invitation.eventId
+    );
+    if (rows[0]?.enable_qr_checkin !== 0) {
+      sendCheckinConfirmationEmail(
+        invitation.recipientEmail,
+        name || invitation.recipientName || null,
+        invitation.event,
+        invitation.token
+      ).catch((err: Error) => console.error('Confirmation email failed:', err.message));
+    }
   }
 
   return res.json({ invitation: updated });

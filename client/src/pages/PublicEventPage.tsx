@@ -25,6 +25,8 @@ interface PublicEvent {
   end_date?: string | null;
   location: string;
   template_name: string | null;
+  enable_qr_checkin?: boolean;
+  enable_agenda?: boolean;
   theme_settings?: { primary_color?: string; accent_color?: string; tagline?: string } | null;
   agenda_items?: AgendaItem[];
   guidance_items?: GuidanceItem[];
@@ -303,7 +305,9 @@ function ElegantPage({
         ))}
       </div>
 
-      <AgendaSection items={event.agenda_items || []} accentColor={gold} textColor={cream} bgCard="rgba(255,255,255,0.05)" />
+      {event.enable_agenda !== false && (
+        <AgendaSection items={event.agenda_items || []} accentColor={gold} textColor={cream} bgCard="rgba(255,255,255,0.05)" />
+      )}
       <GuidanceSection items={event.guidance_items || []} accentColor={gold} textColor={cream} bgCard="rgba(255,255,255,0.05)" />
 
       {/* RSVP */}
@@ -326,7 +330,7 @@ function ElegantPage({
                   ? 'We hope to see you there.'
                   : 'You will be missed.'}
               </p>
-              {confirmedAttending === 'yes' && inviteToken && (
+              {confirmedAttending === 'yes' && inviteToken && event.enable_qr_checkin !== false && (
                 <QrCodeBlock token={inviteToken} darkBg />
               )}
             </div>
@@ -570,7 +574,9 @@ function StudentfestPage({
         ))}
       </div>
 
-      <AgendaSection items={event.agenda_items || []} accentColor={yellow} textColor="#ffffff" bgCard="rgba(255,255,255,0.08)" />
+      {event.enable_agenda !== false && (
+        <AgendaSection items={event.agenda_items || []} accentColor={yellow} textColor="#ffffff" bgCard="rgba(255,255,255,0.08)" />
+      )}
       <GuidanceSection items={event.guidance_items || []} accentColor={yellow} textColor="#ffffff" bgCard="rgba(255,255,255,0.08)" />
 
       {/* RSVP */}
@@ -589,7 +595,7 @@ function StudentfestPage({
                   ? 'Vi hoppas att du kan komma!'
                   : 'Tråkigt att du inte kan — vi saknar dig!'}
               </p>
-              {confirmedAttending === 'yes' && inviteToken && (
+              {confirmedAttending === 'yes' && inviteToken && event.enable_qr_checkin !== false && (
                 <QrCodeBlock token={inviteToken} darkBg />
               )}
             </div>
@@ -803,7 +809,9 @@ function PartyPage({
         ))}
       </div>
 
-      <AgendaSection items={event.agenda_items || []} accentColor="#c084fc" textColor="#1f2937" bgCard="rgba(255,255,255,0.9)" />
+      {event.enable_agenda !== false && (
+        <AgendaSection items={event.agenda_items || []} accentColor="#c084fc" textColor="#1f2937" bgCard="rgba(255,255,255,0.9)" />
+      )}
       <GuidanceSection items={event.guidance_items || []} accentColor="#f472b6" textColor="#1f2937" bgCard="rgba(255,255,255,0.9)" />
 
       {/* RSVP */}
@@ -820,7 +828,7 @@ function PartyPage({
                   : 'Sorry you can\'t make it!'}
               </h2>
               <p className="text-gray-500 text-sm">Your RSVP is confirmed 🥳</p>
-              {confirmedAttending === 'yes' && inviteToken && (
+              {confirmedAttending === 'yes' && inviteToken && event.enable_qr_checkin !== false && (
                 <QrCodeBlock token={inviteToken} />
               )}
             </div>
@@ -1009,7 +1017,9 @@ function CorporatePage({
           {/* Agenda & Guidance */}
           {(event.agenda_items?.length ?? 0) > 0 && (
             <div className="mb-8">
-              <AgendaSection items={event.agenda_items || []} accentColor={corpAccent} textColor="#1e293b" bgCard="#f8fafc" />
+              {event.enable_agenda !== false && (
+                <AgendaSection items={event.agenda_items || []} accentColor={corpAccent} textColor="#1e293b" bgCard="#f8fafc" />
+              )}
             </div>
           )}
           {(event.guidance_items?.length ?? 0) > 0 && (
@@ -1034,7 +1044,7 @@ function CorporatePage({
                   ? 'We have noted your tentative response.'
                   : 'Thank you for letting us know.'}
               </p>
-              {confirmedAttending === 'yes' && inviteToken && (
+              {confirmedAttending === 'yes' && inviteToken && event.enable_qr_checkin !== false && (
                 <QrCodeBlock token={inviteToken} />
               )}
             </div>

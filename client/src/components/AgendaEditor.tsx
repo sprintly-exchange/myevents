@@ -12,12 +12,65 @@ import { AgendaItem } from '@/types';
 
 interface Props { eventId: string }
 
+type FormState = { title: string; start_time: string; description: string };
+
+interface FormBlockProps {
+  form: FormState;
+  setForm: React.Dispatch<React.SetStateAction<FormState>>;
+  onSubmit: () => void;
+  onCancel: () => void;
+  submitting: boolean;
+}
+
+function FormBlock({ form, setForm, onSubmit, onCancel, submitting }: FormBlockProps) {
+  const { t } = useTranslation();
+  return (
+    <div className="bg-slate-50 rounded-lg p-4 space-y-3 border border-slate-200">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <Label className="text-xs font-medium text-slate-600">{t('agenda.startTime')}</Label>
+          <Input
+            type="time"
+            value={form.start_time}
+            onChange={e => setForm(f => ({ ...f, start_time: e.target.value }))}
+            placeholder={t('agenda.startTimePlaceholder')}
+            className="h-8 text-sm"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs font-medium text-slate-600">{t('agenda.itemTitle')} <span className="text-red-500">*</span></Label>
+          <Input
+            value={form.title}
+            onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+            placeholder={t('agenda.itemTitlePlaceholder')}
+            className="h-8 text-sm"
+          />
+        </div>
+      </div>
+      <div className="space-y-1">
+        <Label className="text-xs font-medium text-slate-600">{t('agenda.itemDescription')}</Label>
+        <Textarea
+          value={form.description}
+          onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+          placeholder={t('agenda.itemDescriptionPlaceholder')}
+          rows={2}
+          className="text-sm resize-none"
+        />
+      </div>
+      <div className="flex gap-2 justify-end">
+        <Button variant="ghost" size="sm" onClick={onCancel}>{t('common.cancel')}</Button>
+        <Button size="sm" onClick={onSubmit} disabled={!form.title.trim() || submitting}>{t('common.save')}</Button>
+      </div>
+    </div>
+  );
+}
+
 export default function AgendaEditor({ eventId }: Props) {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const [editing, setEditing] = useState<AgendaItem | null>(null);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ title: '', start_time: '', description: '' });
+  const [form, setForm] = useState<FormState>({ title: '', start_time: '', description: '' });
 
   const { data } = useQuery({
     queryKey: ['agenda', eventId],
@@ -28,13 +81,13 @@ export default function AgendaEditor({ eventId }: Props) {
   const invalidate = () => qc.invalidateQueries({ queryKey: ['agenda', eventId] });
 
   const addMutation = useMutation({
-    mutationFn: (body: typeof form) => api.post(`/events/${eventId}/agenda`, body),
+    mutationFn: (body: FormState) => api.post(`/events/${eventId}/agenda`, body),
     onSuccess: () => { toast.success(t('agenda.itemAdded')); setAdding(false); setForm({ title: '', start_time: '', description: '' }); invalidate(); },
     onError: () => toast.error(t('agenda.addError')),
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, body }: { id: string; body: typeof form }) => api.put(`/events/${eventId}/agenda/${id}`, body),
+    mutationFn: ({ id, body }: { id: string; body: FormState }) => api.put(`/events/${eventId}/agenda/${id}`, body),
     onSuccess: () => { toast.success(t('agenda.itemUpdated')); setEditing(null); invalidate(); },
     onError: () => toast.error(t('agenda.updateError')),
   });
@@ -70,45 +123,6 @@ export default function AgendaEditor({ eventId }: Props) {
     setForm({ title: '', start_time: '', description: '' });
   }
 
-  const FormBlock = ({ onSubmit, onCancel, submitting }: { onSubmit: () => void; onCancel: () => void; submitting: boolean }) => (
-    <div className="bg-slate-50 rounded-lg p-4 space-y-3 border border-slate-200">
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <Label className="text-xs font-medium text-slate-600">{t('agenda.startTime')}</Label>
-          <Input
-            value={form.start_time}
-            onChange={e => setForm(f => ({ ...f, start_time: e.target.value }))}
-            placeholder={t('agenda.startTimePlaceholder')}
-            className="h-8 text-sm"
-          />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs font-medium text-slate-600">{t('agenda.itemTitle')} <span className="text-red-500">*</span></Label>
-          <Input
-            value={form.title}
-            onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-            placeholder={t('agenda.itemTitlePlaceholder')}
-            className="h-8 text-sm"
-          />
-        </div>
-      </div>
-      <div className="space-y-1">
-        <Label className="text-xs font-medium text-slate-600">{t('agenda.itemDescription')}</Label>
-        <Textarea
-          value={form.description}
-          onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-          placeholder={t('agenda.itemDescriptionPlaceholder')}
-          rows={2}
-          className="text-sm resize-none"
-        />
-      </div>
-      <div className="flex gap-2 justify-end">
-        <Button variant="ghost" size="sm" onClick={onCancel}>{t('common.cancel')}</Button>
-        <Button size="sm" onClick={onSubmit} disabled={!form.title.trim() || submitting}>{t('common.save')}</Button>
-      </div>
-    </div>
-  );
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -122,6 +136,8 @@ export default function AgendaEditor({ eventId }: Props) {
 
       {adding && (
         <FormBlock
+          form={form}
+          setForm={setForm}
           onSubmit={() => addMutation.mutate(form)}
           onCancel={() => setAdding(false)}
           submitting={addMutation.isPending}
@@ -140,6 +156,8 @@ export default function AgendaEditor({ eventId }: Props) {
             <div key={item.id}>
               {editing?.id === item.id ? (
                 <FormBlock
+                  form={form}
+                  setForm={setForm}
                   onSubmit={() => updateMutation.mutate({ id: item.id, body: form })}
                   onCancel={() => setEditing(null)}
                   submitting={updateMutation.isPending}

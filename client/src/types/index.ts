@@ -59,6 +59,8 @@ export interface Event {
   template_id?: string;
   template_name?: string;
   share_token?: string;
+  enable_qr_checkin?: boolean;
+  enable_agenda?: boolean;
   theme_settings?: import('./index').ThemeSettings | null;
   status: string;
   created_at: string;
