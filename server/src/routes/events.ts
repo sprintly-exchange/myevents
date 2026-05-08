@@ -64,6 +64,12 @@ function parseFeatureFlag(value: unknown, fallback: boolean): boolean {
   return fallback;
 }
 
+function readStoredFeatureFlag(value: number | null | undefined, fallback = true): boolean {
+  if (value === 1) return true;
+  if (value === 0) return false;
+  return fallback;
+}
+
 router.get('/', async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
   const events = await prisma.event.findMany({
@@ -139,8 +145,8 @@ router.get('/:id', async (req: Request, res: Response) => {
   );
   const themeSettingsRaw = rawRows[0]?.theme_settings || null;
   const end_date = rawRows[0]?.end_date || null;
-  const enable_qr_checkin = rawRows[0]?.enable_qr_checkin !== 0;
-  const enable_agenda = rawRows[0]?.enable_agenda !== 0;
+  const enable_qr_checkin = readStoredFeatureFlag(rawRows[0]?.enable_qr_checkin, true);
+  const enable_agenda = readStoredFeatureFlag(rawRows[0]?.enable_agenda, true);
   let theme_settings = null;
   try { if (themeSettingsRaw) theme_settings = JSON.parse(themeSettingsRaw); } catch { /* ignore */ }
 
@@ -165,8 +171,8 @@ router.put('/:id', async (req: Request, res: Response) => {
     ? (theme_settings ? JSON.stringify(theme_settings) : null)
     : (existingRow?.theme_settings ?? null);
   const resolvedEndDateSql = end_date !== undefined ? (end_date || null) : (existingRow?.end_date ?? null);
-  const resolvedQrEnabled = parseFeatureFlag(enable_qr_checkin, existingRow?.enable_qr_checkin !== 0);
-  const resolvedAgendaEnabled = parseFeatureFlag(enable_agenda, existingRow?.enable_agenda !== 0);
+  const resolvedQrEnabled = parseFeatureFlag(enable_qr_checkin, readStoredFeatureFlag(existingRow?.enable_qr_checkin, true));
+  const resolvedAgendaEnabled = parseFeatureFlag(enable_agenda, readStoredFeatureFlag(existingRow?.enable_agenda, true));
 
   const event = await prisma.event.update({
     where: { id: req.params.id },

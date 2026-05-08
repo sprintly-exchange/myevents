@@ -3,6 +3,12 @@ import prisma from '../db';
 
 const router = Router();
 
+function readStoredFeatureFlag(value: number | null | undefined, fallback = true): boolean {
+  if (value === 1) return true;
+  if (value === 0) return false;
+  return fallback;
+}
+
 router.get('/events/:shareToken', async (req: Request, res: Response) => {
   const event = await prisma.event.findFirst({
     where: { shareToken: req.params.shareToken, status: { not: 'deleted' } },
@@ -24,8 +30,8 @@ router.get('/events/:shareToken', async (req: Request, res: Response) => {
     if (raw) theme_settings = JSON.parse(raw);
   } catch { /* ignore */ }
   const end_date = rawRows[0]?.end_date || null;
-  const enable_qr_checkin = rawRows[0]?.enable_qr_checkin !== 0;
-  const enable_agenda = rawRows[0]?.enable_agenda !== 0;
+  const enable_qr_checkin = readStoredFeatureFlag(rawRows[0]?.enable_qr_checkin, true);
+  const enable_agenda = readStoredFeatureFlag(rawRows[0]?.enable_agenda, true);
 
   return res.json({
     event: {
