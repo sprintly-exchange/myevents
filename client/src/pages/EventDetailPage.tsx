@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -114,6 +114,14 @@ export default function EventDetailPage() {
   const invitations: Invitation[] = data?.invitations || [];
   const usedInvites = invitations.length;
   const limitReached = !isPaid && freeLimit > 0 && usedInvites >= freeLimit;
+  const isQrEnabled = event?.enable_qr_checkin !== false;
+  const isAgendaEnabled = event?.enable_agenda !== false;
+
+  useEffect(() => {
+    if (activeTab === 'agenda' && !isAgendaEnabled) {
+      setActiveTab('guests');
+    }
+  }, [activeTab, isAgendaEnabled]);
 
   const addGuest = () => {
     const email = emailInput.trim().toLowerCase();
@@ -231,11 +239,13 @@ export default function EventDetailPage() {
                   <Edit className="h-3.5 w-3.5 mr-1.5" />{t('common.edit')}
                 </Button>
               </Link>
-              <Link to={`/events/${id}/checkin`}>
-                <Button variant="outline" size="sm" className="bg-white/10 border-white/30 text-white hover:bg-white/20">
-                  <QrCode className="h-3.5 w-3.5 mr-1.5" />{t('checkin.title')}
-                </Button>
-              </Link>
+              {isQrEnabled && (
+                <Link to={`/events/${id}/checkin`}>
+                  <Button variant="outline" size="sm" className="bg-white/10 border-white/30 text-white hover:bg-white/20">
+                    <QrCode className="h-3.5 w-3.5 mr-1.5" />{t('checkin.title')}
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -283,7 +293,7 @@ export default function EventDetailPage() {
         <div className="flex gap-1 bg-slate-100 rounded-xl p-1 mb-5">
           {([
             { key: 'guests', label: t('events.guestList'), icon: Users },
-            { key: 'agenda', label: t('agenda.title'), icon: ClipboardList },
+            ...(isAgendaEnabled ? [{ key: 'agenda', label: t('agenda.title'), icon: ClipboardList }] as const : []),
             { key: 'guidance', label: t('guidance.title'), icon: Info },
           ] as const).map(({ key, label, icon: Icon }) => (
             <button
@@ -300,7 +310,7 @@ export default function EventDetailPage() {
         </div>
 
         {/* ── Agenda Tab ── */}
-        {activeTab === 'agenda' && id && (
+        {activeTab === 'agenda' && isAgendaEnabled && id && (
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 p-6 mb-5">
             <h2 className="text-base font-semibold text-slate-900 mb-4">{t('agenda.title')}</h2>
             <AgendaEditor eventId={id} />
