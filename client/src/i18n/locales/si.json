@@ -194,7 +194,9 @@
     "themeElegantDesc": "ඔපවත් සහ සම්භාව්‍ය",
     "themePartyDesc": "විනෝදය සහ ප්‍රාණවත්",
     "themeCorporateDesc": "වෘත්තීය",
-    "themeStudentfestDesc": "ස්වීඩිෂ් උපාධිය"
+    "themeStudentfestDesc": "ස්වීඩිෂ් උපාධිය",
+    "timezone": "වේලා කලාපය",
+    "timezoneHint": "සියලු ආරාධිතයන් සඳහා කාලය මෙම කලාපයෙන් පෙන්වනු ලැබේ"
   },
   "invitations": {
     "title": "මගේ ආරාධනා",

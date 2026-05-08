@@ -55,6 +55,7 @@ export interface Event {
   description?: string;
   event_date: string;
   end_date?: string | null;
+  timezone: string;
   location?: string;
   template_id?: string;
   template_name?: string;

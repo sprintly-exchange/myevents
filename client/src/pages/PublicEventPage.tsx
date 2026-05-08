@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import QRCode from 'qrcode';
+import { formatEventDateTime, formatEventDateRange } from '@/lib/tz';
 
 interface AgendaItem {
   id: string;
@@ -23,6 +24,7 @@ interface PublicEvent {
   description: string;
   event_date: string;
   end_date?: string | null;
+  timezone?: string | null;
   location: string;
   template_name: string | null;
   enable_qr_checkin?: boolean;
@@ -136,17 +138,12 @@ function resolveTheme(name: string | null): Theme {
   return 'Elegant';
 }
 
-function formatDate(raw: string): string {
-  return new Date(raw).toLocaleString('sv-SE', { dateStyle: 'full', timeStyle: 'short' });
+function formatDate(raw: string, tz = 'Europe/Stockholm'): string {
+  return formatEventDateTime(raw, tz, 'sv-SE');
 }
 
-function formatDateRange(start: string, end?: string | null): string {
-  const startFmt = new Date(start).toLocaleString('sv-SE', { dateStyle: 'full', timeStyle: 'short' });
-  if (!end) return startFmt;
-  const startDay = new Date(start).toDateString();
-  const endDay = new Date(end).toDateString();
-  const endTime = new Date(end).toLocaleTimeString('sv-SE', { timeStyle: 'short' });
-  return startDay === endDay ? `${startFmt} – ${endTime}` : `${startFmt} – ${new Date(end).toLocaleString('sv-SE', { dateStyle: 'full', timeStyle: 'short' })}`;
+function formatDateRange(start: string, end: string | null | undefined, tz = 'Europe/Stockholm'): string {
+  return formatEventDateRange(start, end, tz, 'sv-SE');
 }
 
 // ─── Spinner ────────────────────────────────────────────────────────────────
@@ -276,7 +273,7 @@ function ElegantPage({
       {/* Details */}
       <div className="flex flex-col md:flex-row gap-4 justify-center px-6 md:px-12 max-w-3xl mx-auto w-full mb-12">
         {[
-          { label: 'Date & Time', value: formatDateRange(event.event_date, event.end_date), icon: '📅' },
+          { label: 'Date & Time', value: formatDateRange(event.event_date, event.end_date, event.timezone || 'Europe/Stockholm'), icon: '📅' },
           { label: 'Location', value: event.location, icon: '📍' },
         ].map((item) => (
           <div
@@ -555,7 +552,7 @@ function StudentfestPage({
       {/* Details */}
       <div className="flex flex-col md:flex-row gap-4 justify-center px-6 md:px-12 max-w-3xl mx-auto w-full mb-12 relative">
         {[
-          { label: 'Datum', value: formatDateRange(event.event_date, event.end_date), icon: '📅' },
+          { label: 'Datum', value: formatDateRange(event.event_date, event.end_date, event.timezone || 'Europe/Stockholm'), icon: '📅' },
           { label: 'Plats', value: event.location, icon: '📍' },
         ].map((item) => (
           <div
@@ -787,7 +784,7 @@ function PartyPage({
       {/* Details */}
       <div className="flex flex-col md:flex-row gap-4 justify-center px-6 md:px-12 max-w-3xl mx-auto w-full mb-12 relative">
         {[
-          { label: 'When', value: formatDateRange(event.event_date, event.end_date), icon: '📅', border: '#f472b6' },
+          { label: 'When', value: formatDateRange(event.event_date, event.end_date, event.timezone || 'Europe/Stockholm'), icon: '📅', border: '#f472b6' },
           { label: 'Where', value: event.location, icon: '📍', border: '#c084fc' },
         ].map((item) => (
           <div
@@ -994,7 +991,7 @@ function CorporatePage({
                   Date & Time
                 </p>
                 <p className="text-sm font-semibold text-slate-800">
-                  {formatDateRange(event.event_date, event.end_date)}
+                  {formatDateRange(event.event_date, event.end_date, event.timezone || 'Europe/Stockholm')}
                 </p>
               </div>
             </div>

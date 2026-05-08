@@ -13,6 +13,8 @@ import { ArrowLeft, Check, Palette, Ban, Calendar, Clock, MapPin, FileText, Spar
 import { Template } from '@/types';
 import { cn } from '@/lib/utils';
 import { TimePickerInput } from '@/components/ui/time-picker';
+import { TimezoneSelect } from '@/components/ui/timezone-select';
+import { getBrowserTimezone } from '@/lib/tz';
 
 const THEME_META: Record<string, { gradient: string; emoji: string; descKey: string }> = {
   Elegant:     { gradient: 'from-[#1a1a2e] to-[#c9a84c]', emoji: '✨', descKey: 'events.themeElegantDesc' },
@@ -142,6 +144,7 @@ export default function CreateEventPage() {
     template_id: '',
     enable_qr_checkin: false,
     enable_agenda: false,
+    timezone: getBrowserTimezone(),
   });
 
   const { data: tmplData } = useQuery({ queryKey: ['templates'], queryFn: () => api.get('/templates').then(r => r.data) });
@@ -238,6 +241,15 @@ export default function CreateEventPage() {
                   {t('events.duration')}: {duration}
                 </div>
               )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-sm font-semibold text-slate-700">{t('events.timezone')}</Label>
+              <TimezoneSelect
+                value={form.timezone}
+                onChange={tz => setForm({ ...form, timezone: tz })}
+              />
+              <p className="text-xs text-slate-400">{t('events.timezoneHint')}</p>
             </div>
 
             <div className="space-y-1.5">

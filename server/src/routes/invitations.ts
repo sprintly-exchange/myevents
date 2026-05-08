@@ -47,6 +47,11 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
   const event = await prisma.event.findFirst({ where: { id: event_id, creatorId: user.id, status: { not: 'deleted' } } });
   if (!event) return res.status(404).json({ error: 'Event not found' });
 
+  const tzRows = await prisma.$queryRawUnsafe<{ timezone: string | null }[]>(
+    `SELECT timezone FROM events WHERE id = ?`, event_id
+  );
+  const eventWithTz = { ...event, timezone: tzRows[0]?.timezone || 'Europe/Stockholm' };
+
   let template = template_id
     ? await prisma.template.findUnique({ where: { id: template_id } })
     : await prisma.template.findFirst();
@@ -65,7 +70,7 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
     created.push(inv);
 
     if (template) {
-      sendInvitationEmail(trimmed, inv, event, template, senderName).catch((err: Error) => console.error('Email send failed:', err.message));
+      sendInvitationEmail(trimmed, inv, eventWithTz, template, senderName).catch((err: Error) => console.error('Email send failed:', err.message));
     }
   }
   return res.status(201).json({ invitations: created, count: created.length });
@@ -208,11 +213,15 @@ router.patch('/:id/resend', requireAuth, async (req: Request, res: Response) => 
   if (invitation.event) {
     let template = await prisma.template.findFirst();
     const senderName = invitation.event.creator?.name || 'Someone';
+    const tzRows2 = await prisma.$queryRawUnsafe<{ timezone: string | null }[]>(
+      `SELECT timezone FROM events WHERE id = ?`, invitation.eventId
+    );
+    const evtWithTz = { ...invitation.event, timezone: tzRows2[0]?.timezone || 'Europe/Stockholm' };
     if (template) {
       sendInvitationEmail(
         invitation.recipientEmail,
         { token: invitation.token, recipientName: invitation.recipientName },
-        invitation.event,
+        evtWithTz,
         template,
         senderName
       ).catch((err: Error) => console.error('Resend email failed:', err.message));
@@ -314,15 +323,15 @@ router.post('/rsvp/:token', async (req: Request, res: Response) => {
 
   // Send QR confirmation email when accepted
   if (status === 'accepted' && invitation.event) {
-    const rows = await prisma.$queryRawUnsafe<{ enable_qr_checkin: number | null }[]>(
-      `SELECT enable_qr_checkin FROM events WHERE id = ?`,
+    const rows = await prisma.$queryRawUnsafe<{ enable_qr_checkin: number | null; timezone: string | null }[]>(
+      `SELECT enable_qr_checkin, timezone FROM events WHERE id = ?`,
       invitation.eventId
     );
     if (rows[0]?.enable_qr_checkin !== 0) {
       sendCheckinConfirmationEmail(
         invitation.recipientEmail,
         name || invitation.recipientName || null,
-        invitation.event,
+        { ...invitation.event, timezone: rows[0]?.timezone || 'Europe/Stockholm' },
         invitation.token
       ).catch((err: Error) => console.error('Confirmation email failed:', err.message));
     }

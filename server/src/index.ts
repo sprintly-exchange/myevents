@@ -97,6 +97,7 @@ async function start() {
     `ALTER TABLE plans ADD COLUMN currency TEXT NOT NULL DEFAULT 'SEK'`,
     `ALTER TABLE plans ADD COLUMN description TEXT`,
     `ALTER TABLE users ADD COLUMN payment_reference TEXT`,
+    `ALTER TABLE events ADD COLUMN timezone TEXT NOT NULL DEFAULT 'Europe/Stockholm'`,
   ];
   for (const sql of migrations) {
     try { await prisma.$executeRawUnsafe(sql); } catch { /* column already exists */ }

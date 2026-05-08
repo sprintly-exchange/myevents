@@ -194,7 +194,9 @@
     "themeElegantDesc": "Formal & classic",
     "themePartyDesc": "Fun & vibrant",
     "themeCorporateDesc": "Professional",
-    "themeStudentfestDesc": "Swedish graduation"
+    "themeStudentfestDesc": "Swedish graduation",
+    "timezone": "Timezone",
+    "timezoneHint": "Times are shown in this timezone for all guests"
   },
   "invitations": {
     "title": "My Invitations",

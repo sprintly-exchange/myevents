@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Calendar, MapPin, Users, Send, Copy, Edit, ArrowLeft, Lock, X, UserPlus, Share2, Eye, Ban, RefreshCw, Pencil, BookUser, Check, Search, ClipboardList, Info, QrCode } from 'lucide-react';
+import { Calendar, MapPin, Users, Send, Copy, Edit, ArrowLeft, Lock, X, UserPlus, Share2, Eye, Ban, RefreshCw, Pencil, BookUser, Check, Search, ClipboardList, Info, QrCode, Globe } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
 import { useAuth } from '@/hooks/useAuth';
@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { Contact, ContactGroup, Invitation } from '@/types';
 import AgendaEditor from '@/components/AgendaEditor';
 import GuidanceEditor from '@/components/GuidanceEditor';
+import { formatEventDate, formatEventTime, isEventUpcoming, getTzDisplayName } from '@/lib/tz';
 
 export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -168,21 +169,12 @@ export default function EventDetailPage() {
     </AppLayout>
   );
 
-  const isUpcoming = new Date(event.event_date) > new Date();
-  const dateDisplay = new Date(event.event_date).toLocaleDateString(
-    i18n.language === 'sv' ? 'sv-SE' : 'en-US',
-    { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }
-  );
-  const timeDisplay = new Date(event.event_date).toLocaleTimeString(
-    i18n.language === 'sv' ? 'sv-SE' : 'en-US',
-    { hour: '2-digit', minute: '2-digit' }
-  );
-  const endTimeDisplay = event.end_date
-    ? new Date(event.end_date).toLocaleTimeString(
-        i18n.language === 'sv' ? 'sv-SE' : 'en-US',
-        { hour: '2-digit', minute: '2-digit' }
-      )
-    : null;
+  const isUpcoming = isEventUpcoming(event.event_date, event.timezone || 'Europe/Stockholm');
+  const locale = i18n.language === 'sv' ? 'sv-SE' : i18n.language === 'si' ? 'si-LK' : 'en-US';
+  const tz = event.timezone || 'Europe/Stockholm';
+  const dateDisplay = formatEventDate(event.event_date, tz, locale);
+  const timeDisplay = formatEventTime(event.event_date, tz, locale);
+  const endTimeDisplay = event.end_date ? formatEventTime(event.end_date, tz, locale) : null;
 
   return (
     <AppLayout>
@@ -261,6 +253,7 @@ export default function EventDetailPage() {
               <p className="text-sm font-semibold text-slate-800 truncate">{dateDisplay}</p>
               <p className="text-xs text-slate-500 mt-0.5">
                 {timeDisplay}{endTimeDisplay ? ` – ${endTimeDisplay}` : ''}
+                {tz && <span className="text-slate-400 ml-1">({getTzDisplayName(tz)})</span>}
               </p>
             </div>
           </div>

@@ -9,6 +9,7 @@ import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Event } from '@/types';
 import { cn } from '@/lib/utils';
+import { isEventUpcoming, formatEventDate } from '@/lib/tz';
 
 export default function EventsPage() {
   const { user } = useAuth();
@@ -89,11 +90,10 @@ export default function EventsPage() {
           /* ── Card grid ── */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {events.map((event: Event) => {
-              const isUpcoming = new Date(event.event_date) > new Date();
-              const dateDisplay = new Date(event.event_date).toLocaleDateString(
-                i18n.language === 'sv' ? 'sv-SE' : 'en-US',
-                { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }
-              );
+              const tz = event.timezone || 'Europe/Stockholm';
+              const locale = i18n.language === 'sv' ? 'sv-SE' : i18n.language === 'si' ? 'si-LK' : 'en-US';
+              const upcoming = isEventUpcoming(event.event_date, tz);
+              const dateDisplay = formatEventDate(event.event_date, tz, locale).replace(/^\w+day,\s*/i, '').substring(0, 30);
               return (
                 <div
                   key={event.id}
@@ -102,7 +102,7 @@ export default function EventsPage() {
                   {/* Accent strip */}
                   <div className={cn(
                     'h-1.5 w-full',
-                    isUpcoming
+                    upcoming
                       ? 'bg-gradient-to-r from-indigo-500 to-blue-500'
                       : 'bg-slate-200'
                   )} />
@@ -115,11 +115,11 @@ export default function EventsPage() {
                       </h3>
                       <span className={cn(
                         'shrink-0 mt-0.5 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
-                        isUpcoming
+                        upcoming
                           ? 'bg-emerald-100 text-emerald-700'
                           : 'bg-slate-100 text-slate-500'
                       )}>
-                        {isUpcoming ? t('common.upcoming') : t('common.past')}
+                        {upcoming ? t('common.upcoming') : t('common.past')}
                       </span>
                     </div>
 

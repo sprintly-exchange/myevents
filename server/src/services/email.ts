@@ -18,6 +18,30 @@ async function getSmtpConfig() {
   };
 }
 
+function formatEventDateInTz(naiveStr: string, tz: string): string {
+  if (!naiveStr) return '';
+  // Convert naive datetime string to a proper Date in the given timezone
+  const [datePart = '', timePart = '00:00'] = naiveStr.split('T');
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hours, minutes] = timePart.split(':').map(Number);
+  if (!year || !month || !day) return naiveStr;
+  const placeholder = Date.UTC(year, month - 1, day, hours || 0, minutes || 0);
+  const getOffset = (date: Date) => {
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+    });
+    const parts = fmt.formatToParts(date);
+    const get = (t: string) => Number(parts.find(p => p.type === t)?.value ?? 0);
+    return Date.UTC(get('year'), get('month') - 1, get('day'), get('hour') % 24, get('minute'), get('second')) - date.getTime();
+  };
+  const offset = getOffset(new Date(placeholder));
+  const approxUtc = placeholder - offset;
+  const offset2 = getOffset(new Date(approxUtc));
+  const date = new Date(placeholder - offset2);
+  return date.toLocaleString('sv-SE', { timeZone: tz, dateStyle: 'long', timeStyle: 'short' });
+}
+
 function createTransport(config: { host: string; port: number; user: string; pass: string }) {
   return nodemailer.createTransport({
     host: config.host, port: config.port, secure: config.port === 465,
@@ -28,7 +52,7 @@ function createTransport(config: { host: string; port: number; user: string; pas
 export async function sendInvitationEmail(
   to: string,
   invitation: { token: string; recipientName?: string | null },
-  event: { title: string; eventDate: string; location?: string | null; themeSettings?: string | null },
+  event: { title: string; eventDate: string; location?: string | null; themeSettings?: string | null; timezone?: string | null },
   template: { htmlContent: string },
   senderName: string
 ): Promise<void> {
@@ -42,6 +66,7 @@ export async function sendInvitationEmail(
 
   const appUrl = process.env.APP_URL || 'http://localhost:3000';
   let html = template.htmlContent;
+  const tz = event.timezone || 'Europe/Stockholm';
 
   // Replace {{var|default}} pattern (theme vars with per-template defaults)
   html = html.replace(/\{\{(\w+)\|([^}]*)\}\}/g, (_: string, key: string, defaultVal: string) => {
@@ -52,7 +77,7 @@ export async function sendInvitationEmail(
   });
 
   html = html.replace(/{{event_title}}/g, event.title);
-  html = html.replace(/{{event_date}}/g, new Date(event.eventDate).toLocaleString('sv-SE'));
+  html = html.replace(/{{event_date}}/g, formatEventDateInTz(event.eventDate, tz));
   html = html.replace(/{{event_location}}/g, event.location || 'TBD');
   html = html.replace(/{{rsvp_url}}/g, `${appUrl}/rsvp/${invitation.token}`);
   html = html.replace(/{{sender_name}}/g, senderName);
@@ -64,7 +89,7 @@ export async function sendInvitationEmail(
 export async function sendCheckinConfirmationEmail(
   to: string,
   recipientName: string | null,
-  event: { title: string; eventDate: string; location?: string | null },
+  event: { title: string; eventDate: string; location?: string | null; timezone?: string | null },
   invitationToken: string
 ): Promise<void> {
   const config = await getSmtpConfig();
@@ -75,7 +100,8 @@ export async function sendCheckinConfirmationEmail(
   const qrDataUrl = await QRCode.toDataURL(checkinUrl, { width: 200, margin: 2 });
 
   const displayName = recipientName || to;
-  const eventDateStr = new Date(event.eventDate).toLocaleString('sv-SE');
+  const tz = event.timezone || 'Europe/Stockholm';
+  const eventDateStr = formatEventDateInTz(event.eventDate, tz);
 
   const html = `
 <!DOCTYPE html>

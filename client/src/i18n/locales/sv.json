@@ -194,7 +194,9 @@
     "themeElegantDesc": "Formell & klassisk",
     "themePartyDesc": "Rolig & livfull",
     "themeCorporateDesc": "Professionell",
-    "themeStudentfestDesc": "Studentfest"
+    "themeStudentfestDesc": "Studentfest",
+    "timezone": "Tidszon",
+    "timezoneHint": "Tider visas i denna tidszon för alla gäster"
   },
   "invitations": {
     "title": "Mina inbjudningar",

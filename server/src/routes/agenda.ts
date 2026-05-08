@@ -29,7 +29,15 @@ router.get('/:eventId/agenda', async (req: Request, res: Response) => {
     where: { eventId: req.params.eventId },
     orderBy: { sortOrder: 'asc' },
   });
-  return res.json({ items });
+  return res.json({
+    items: items.map(item => ({
+      id: item.id,
+      title: item.title,
+      start_time: item.startTime || null,
+      description: item.description || null,
+      sort_order: item.sortOrder,
+    })),
+  });
 });
 
 router.post('/:eventId/agenda', async (req: Request, res: Response) => {

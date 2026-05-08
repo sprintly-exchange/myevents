@@ -78,13 +78,30 @@ router.get('/', async (req: Request, res: Response) => {
     orderBy: { eventDate: 'desc' },
   });
 
+  // Batch-fetch raw columns for all events
+  const ids = events.map(e => e.id);
+  const rawRows = ids.length
+    ? await prisma.$queryRawUnsafe<{ id: string; timezone: string }[]>(
+        `SELECT id, timezone FROM events WHERE id IN (${ids.map(() => '?').join(',')})`,
+        ...ids
+      )
+    : [];
+  const rawById: Record<string, string> = Object.fromEntries(
+    rawRows.map(r => [r.id, r.timezone || 'Europe/Stockholm'])
+  );
+
   const eventsWithCounts = await Promise.all(events.map(async (e) => {
     const [accepted, pending, total] = await Promise.all([
       prisma.invitation.count({ where: { eventId: e.id, status: 'accepted' } }),
       prisma.invitation.count({ where: { eventId: e.id, status: 'pending' } }),
       prisma.invitation.count({ where: { eventId: e.id } }),
     ]);
-    return formatEvent(e, { accepted_count: accepted, pending_count: pending, invitation_count: total });
+    return formatEvent(e, {
+      accepted_count: accepted,
+      pending_count: pending,
+      invitation_count: total,
+      timezone: rawById[e.id] ?? 'Europe/Stockholm',
+    });
   }));
 
   return res.json({ events: eventsWithCounts });
@@ -92,11 +109,12 @@ router.get('/', async (req: Request, res: Response) => {
 
 router.post('/', checkEventLimit, async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
-  const { title, description, event_date, end_date, location, template_id, theme_settings, enable_qr_checkin, enable_agenda } = req.body;
+  const { title, description, event_date, end_date, location, template_id, theme_settings, enable_qr_checkin, enable_agenda, timezone } = req.body;
   if (!title || !event_date)
     return res.status(400).json({ error: 'Title and event_date are required' });
   const qrEnabled = parseFeatureFlag(enable_qr_checkin, true);
   const agendaEnabled = parseFeatureFlag(enable_agenda, true);
+  const tz = timezone || 'Europe/Stockholm';
 
   const event = await prisma.event.create({
     data: {
@@ -109,11 +127,12 @@ router.post('/', checkEventLimit, async (req: Request, res: Response) => {
 
   // Write raw columns via raw SQL (added via ALTER TABLE)
   await prisma.$executeRawUnsafe(
-    `UPDATE events SET theme_settings = ?, end_date = ?, enable_qr_checkin = ?, enable_agenda = ? WHERE id = ?`,
+    `UPDATE events SET theme_settings = ?, end_date = ?, enable_qr_checkin = ?, enable_agenda = ?, timezone = ? WHERE id = ?`,
     theme_settings ? JSON.stringify(theme_settings) : null,
     end_date || null,
     qrEnabled ? 1 : 0,
     agendaEnabled ? 1 : 0,
+    tz,
     event.id
   );
 
@@ -124,6 +143,7 @@ router.post('/', checkEventLimit, async (req: Request, res: Response) => {
       end_date: end_date || null,
       enable_qr_checkin: qrEnabled,
       enable_agenda: agendaEnabled,
+      timezone: tz,
     },
   });
 });
@@ -140,18 +160,19 @@ router.get('/:id', async (req: Request, res: Response) => {
   if (!event) return res.status(404).json({ error: 'Event not found' });
 
   // Read raw columns via raw SQL since they were added via ALTER TABLE
-  const rawRows = await prisma.$queryRawUnsafe<{ theme_settings: string | null; end_date: string | null; enable_qr_checkin: number | null; enable_agenda: number | null }[]>(
-    `SELECT theme_settings, end_date, enable_qr_checkin, enable_agenda FROM events WHERE id = ?`, event.id
+  const rawRows = await prisma.$queryRawUnsafe<{ theme_settings: string | null; end_date: string | null; enable_qr_checkin: number | null; enable_agenda: number | null; timezone: string | null }[]>(
+    `SELECT theme_settings, end_date, enable_qr_checkin, enable_agenda, timezone FROM events WHERE id = ?`, event.id
   );
   const themeSettingsRaw = rawRows[0]?.theme_settings || null;
   const end_date = rawRows[0]?.end_date || null;
   const enable_qr_checkin = readStoredFeatureFlag(rawRows[0]?.enable_qr_checkin, true);
   const enable_agenda = readStoredFeatureFlag(rawRows[0]?.enable_agenda, true);
+  const timezone = rawRows[0]?.timezone || 'Europe/Stockholm';
   let theme_settings = null;
   try { if (themeSettingsRaw) theme_settings = JSON.parse(themeSettingsRaw); } catch { /* ignore */ }
 
   return res.json({
-    event: { ...formatEvent(event), theme_settings, end_date, enable_qr_checkin, enable_agenda },
+    event: { ...formatEvent(event), theme_settings, end_date, enable_qr_checkin, enable_agenda, timezone },
     invitations: event.invitations.map(inv => formatInvitation(inv)),
   });
 });
@@ -161,9 +182,9 @@ router.put('/:id', async (req: Request, res: Response) => {
   const existing = await prisma.event.findFirst({ where: { id: req.params.id, creatorId: userId, status: { not: 'deleted' } } });
   if (!existing) return res.status(404).json({ error: 'Event not found' });
 
-  const { title, description, event_date, end_date, location, template_id, theme_settings, status, enable_qr_checkin, enable_agenda } = req.body;
-  const rawExisting = await prisma.$queryRawUnsafe<{ theme_settings: string | null; end_date: string | null; enable_qr_checkin: number | null; enable_agenda: number | null }[]>(
-    `SELECT theme_settings, end_date, enable_qr_checkin, enable_agenda FROM events WHERE id = ?`,
+  const { title, description, event_date, end_date, location, template_id, theme_settings, status, enable_qr_checkin, enable_agenda, timezone } = req.body;
+  const rawExisting = await prisma.$queryRawUnsafe<{ theme_settings: string | null; end_date: string | null; enable_qr_checkin: number | null; enable_agenda: number | null; timezone: string | null }[]>(
+    `SELECT theme_settings, end_date, enable_qr_checkin, enable_agenda, timezone FROM events WHERE id = ?`,
     req.params.id
   );
   const existingRow = rawExisting[0] || null;
@@ -173,6 +194,7 @@ router.put('/:id', async (req: Request, res: Response) => {
   const resolvedEndDateSql = end_date !== undefined ? (end_date || null) : (existingRow?.end_date ?? null);
   const resolvedQrEnabled = parseFeatureFlag(enable_qr_checkin, readStoredFeatureFlag(existingRow?.enable_qr_checkin, true));
   const resolvedAgendaEnabled = parseFeatureFlag(enable_agenda, readStoredFeatureFlag(existingRow?.enable_agenda, true));
+  const resolvedTimezone = timezone !== undefined ? timezone : (existingRow?.timezone || 'Europe/Stockholm');
 
   const event = await prisma.event.update({
     where: { id: req.params.id },
@@ -185,11 +207,12 @@ router.put('/:id', async (req: Request, res: Response) => {
 
   // Update raw columns via raw SQL
   await prisma.$executeRawUnsafe(
-    `UPDATE events SET theme_settings = ?, end_date = ?, enable_qr_checkin = ?, enable_agenda = ? WHERE id = ?`,
+    `UPDATE events SET theme_settings = ?, end_date = ?, enable_qr_checkin = ?, enable_agenda = ?, timezone = ? WHERE id = ?`,
     resolvedThemeSql,
     resolvedEndDateSql,
     resolvedQrEnabled ? 1 : 0,
     resolvedAgendaEnabled ? 1 : 0,
+    resolvedTimezone,
     req.params.id
   );
 
@@ -206,6 +229,7 @@ router.put('/:id', async (req: Request, res: Response) => {
       end_date: resolvedEndDate,
       enable_qr_checkin: resolvedQrEnabled,
       enable_agenda: resolvedAgendaEnabled,
+      timezone: resolvedTimezone,
     },
   });
 });

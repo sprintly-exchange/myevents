@@ -13,6 +13,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Template, ThemeSettings } from '@/types';
 import { cn } from '@/lib/utils';
 import { TimePickerInput } from '@/components/ui/time-picker';
+import { TimezoneSelect } from '@/components/ui/timezone-select';
+import { getBrowserTimezone } from '@/lib/tz';
 
 const THEME_META: Record<string, { gradient: string; emoji: string; descKey: string; primary: string; accent: string }> = {
   Elegant:     { gradient: 'from-[#1a1a2e] to-[#c9a84c]', emoji: '✨', descKey: 'events.themeElegantDesc',    primary: '#1a1a2e', accent: '#c9a84c' },
@@ -125,7 +127,7 @@ export default function EditEventPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const qc = useQueryClient();
-  const [form, setForm] = useState({ title: '', description: '', event_date: '', end_date: '', location: '', template_id: '' });
+  const [form, setForm] = useState({ title: '', description: '', event_date: '', end_date: '', location: '', template_id: '', timezone: getBrowserTimezone() });
   const [themeSettings, setThemeSettings] = useState<ThemeSettings>({});
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [shareToken, setShareToken] = useState<string | null>(null);
@@ -137,7 +139,7 @@ export default function EditEventPage() {
   useEffect(() => {
     if (data?.event) {
       const e = data.event;
-      setForm({ title: e.title, description: e.description || '', event_date: e.event_date ? e.event_date.slice(0, 16) : '', end_date: e.end_date ? e.end_date.slice(0, 16) : '', location: e.location || '', template_id: e.template_id || '' });
+      setForm({ title: e.title, description: e.description || '', event_date: e.event_date ? e.event_date.slice(0, 16) : '', end_date: e.end_date ? e.end_date.slice(0, 16) : '', location: e.location || '', template_id: e.template_id || '', timezone: e.timezone || getBrowserTimezone() });
       setThemeSettings(e.theme_settings || {});
       setShareToken(e.share_token || null);
     }
@@ -214,6 +216,14 @@ export default function EditEventPage() {
                 {t('events.duration')}: {formatDuration(form.event_date, form.end_date)}
               </div>
             )}
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-slate-700">{t('events.timezone')}</Label>
+            <TimezoneSelect
+              value={form.timezone}
+              onChange={tz => setForm(f => ({ ...f, timezone: tz }))}
+            />
+            <p className="text-xs text-slate-400">{t('events.timezoneHint')}</p>
           </div>
           <div className="space-y-1.5">
             <Label className="text-sm font-medium text-slate-700 flex items-center gap-1.5">
