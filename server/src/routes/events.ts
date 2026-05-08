@@ -187,7 +187,11 @@ router.put('/:id', async (req: Request, res: Response) => {
     req.params.id
   );
 
-  const resolvedTheme = theme_settings !== undefined ? (theme_settings || null) : (() => { try { return resolvedThemeSql ? JSON.parse(resolvedThemeSql) : null; } catch { return null; } })();
+  let parsedResolvedTheme: any = null;
+  if (resolvedThemeSql) {
+    try { parsedResolvedTheme = JSON.parse(resolvedThemeSql); } catch { parsedResolvedTheme = null; }
+  }
+  const resolvedTheme = theme_settings !== undefined ? (theme_settings || null) : parsedResolvedTheme;
   const resolvedEndDate = resolvedEndDateSql;
   return res.json({
     event: {
