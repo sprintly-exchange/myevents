@@ -206,7 +206,7 @@
     "reminderDaysBefore": "උත්සවයට කීදිනකට පෙර මතක්කිරීම් යවන්නද",
     "reminderDaysBeforeHint": "උත්සවය ආරම්භ වීමට මෙම දින ගණනකට පෙර ස්වයංක්‍රීයව මතක්කිරීම් යවනු ලැබේ",
     "reminderDisabled": "අතින් පමණි (ස්වයංක්‍රීය යැවීමක් නැත)",
-    "reminderDay": "දිනකට {{count}} පෙර",
+    "reminderDay": "{{count}} දිනකට පෙර",
     "remindersSent": "අමුත්තන් {{count}} දෙනෙකුට මතක්කිරීම යවා ඇත",
     "remindersFailed": "මතක්කිරීම් යැවීම අසාර්ථක විය",
     "sendReminderAccepted": "තහවුරු කළ අමුත්තන්ට මතක් කරන්න",
