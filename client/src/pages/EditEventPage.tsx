@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { ArrowLeft, Check, Palette, Ban, ChevronDown, ChevronUp, Eye, ExternalLink, Calendar, Clock, MapPin } from 'lucide-react';
+import { ArrowLeft, Check, Palette, Ban, ChevronDown, ChevronUp, Eye, ExternalLink, Calendar, Clock, MapPin, BellRing } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
 import AppLayout from '@/components/AppLayout';
@@ -127,7 +127,7 @@ export default function EditEventPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const qc = useQueryClient();
-  const [form, setForm] = useState({ title: '', description: '', event_date: '', end_date: '', location: '', template_id: '', timezone: getBrowserTimezone() });
+  const [form, setForm] = useState({ title: '', description: '', event_date: '', end_date: '', location: '', template_id: '', timezone: getBrowserTimezone(), enable_reminder_accepted: false, enable_reminder_pending: false, reminder_days_before: 0 });
   const [themeSettings, setThemeSettings] = useState<ThemeSettings>({});
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [shareToken, setShareToken] = useState<string | null>(null);
@@ -139,7 +139,7 @@ export default function EditEventPage() {
   useEffect(() => {
     if (data?.event) {
       const e = data.event;
-      setForm({ title: e.title, description: e.description || '', event_date: e.event_date ? e.event_date.slice(0, 16) : '', end_date: e.end_date ? e.end_date.slice(0, 16) : '', location: e.location || '', template_id: e.template_id || '', timezone: e.timezone || getBrowserTimezone() });
+      setForm({ title: e.title, description: e.description || '', event_date: e.event_date ? e.event_date.slice(0, 16) : '', end_date: e.end_date ? e.end_date.slice(0, 16) : '', location: e.location || '', template_id: e.template_id || '', timezone: e.timezone || getBrowserTimezone(), enable_reminder_accepted: e.enable_reminder_accepted ?? false, enable_reminder_pending: e.enable_reminder_pending ?? false, reminder_days_before: e.reminder_days_before ?? 0 });
       setThemeSettings(e.theme_settings || {});
       setShareToken(e.share_token || null);
     }
@@ -349,6 +349,56 @@ export default function EditEventPage() {
               )}
             </div>
           )}
+
+          {/* Reminders section */}
+          <div className="space-y-3 pt-1">
+            <div className="flex items-center gap-2">
+              <BellRing className="h-4 w-4 text-amber-500" />
+              <label className="text-sm font-medium text-slate-700">{t('events.reminders')}</label>
+              <span className="text-xs text-slate-400 ml-1">— {t('events.remindersDesc')}</span>
+            </div>
+            <label className="flex items-start gap-3 rounded-lg border border-slate-200 p-3 cursor-pointer hover:border-slate-300 transition-colors">
+              <input
+                type="checkbox"
+                checked={form.enable_reminder_accepted}
+                onChange={e => setForm(f => ({ ...f, enable_reminder_accepted: e.target.checked }))}
+                className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              />
+              <div className="space-y-0.5">
+                <p className="text-sm font-medium text-slate-800">{t('events.enableReminderAccepted')}</p>
+                <p className="text-xs text-slate-500">{t('events.enableReminderAcceptedDesc')}</p>
+              </div>
+            </label>
+            <label className="flex items-start gap-3 rounded-lg border border-slate-200 p-3 cursor-pointer hover:border-slate-300 transition-colors">
+              <input
+                type="checkbox"
+                checked={form.enable_reminder_pending}
+                onChange={e => setForm(f => ({ ...f, enable_reminder_pending: e.target.checked }))}
+                className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              />
+              <div className="space-y-0.5">
+                <p className="text-sm font-medium text-slate-800">{t('events.enableReminderPending')}</p>
+                <p className="text-xs text-slate-500">{t('events.enableReminderPendingDesc')}</p>
+              </div>
+            </label>
+            {(form.enable_reminder_accepted || form.enable_reminder_pending) && (
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-700">{t('events.reminderDaysBefore')}</label>
+                <select
+                  value={form.reminder_days_before}
+                  onChange={e => setForm(f => ({ ...f, reminder_days_before: parseInt(e.target.value, 10) }))}
+                  className="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400"
+                >
+                  <option value={0}>{t('events.reminderDisabled')}</option>
+                  <option value={1}>{t('events.reminderDay', { count: 1 })}</option>
+                  <option value={2}>{t('events.reminderDay', { count: 2 })}</option>
+                  <option value={3}>{t('events.reminderDay', { count: 3 })}</option>
+                  <option value={7}>{t('events.reminderDay', { count: 7 })}</option>
+                </select>
+                <p className="text-xs text-slate-400">{t('events.reminderDaysBeforeHint')}</p>
+              </div>
+            )}
+          </div>
 
           <div className="flex gap-3 pt-1">
             <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 h-11" disabled={mutation.isPending}>

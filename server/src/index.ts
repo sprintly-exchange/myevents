@@ -17,6 +17,7 @@ import agendaRoutes from './routes/agenda';
 import guidanceRoutes from './routes/guidance';
 import { requireAuth } from './middleware/auth';
 import prisma from './db';
+import { startReminderScheduler } from './services/reminder-scheduler';
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '6080', 10);
@@ -98,6 +99,10 @@ async function start() {
     `ALTER TABLE plans ADD COLUMN description TEXT`,
     `ALTER TABLE users ADD COLUMN payment_reference TEXT`,
     `ALTER TABLE events ADD COLUMN timezone TEXT NOT NULL DEFAULT 'Europe/Stockholm'`,
+    `ALTER TABLE events ADD COLUMN enable_reminder_accepted INTEGER NOT NULL DEFAULT 0`,
+    `ALTER TABLE events ADD COLUMN enable_reminder_pending INTEGER NOT NULL DEFAULT 0`,
+    `ALTER TABLE events ADD COLUMN reminder_days_before INTEGER NOT NULL DEFAULT 0`,
+    `ALTER TABLE events ADD COLUMN reminder_sent_at TEXT`,
   ];
   for (const sql of migrations) {
     try { await prisma.$executeRawUnsafe(sql); } catch { /* column already exists */ }
@@ -170,6 +175,7 @@ async function start() {
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on http://0.0.0.0:${PORT} [${process.env.NODE_ENV || 'development'}]`);
+    startReminderScheduler();
   });
 }
 

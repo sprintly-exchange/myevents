@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Check, Palette, Ban, Calendar, Clock, MapPin, FileText, Sparkles, QrCode, ClipboardList } from 'lucide-react';
+import { ArrowLeft, Check, Palette, Ban, Calendar, Clock, MapPin, FileText, Sparkles, QrCode, ClipboardList, BellRing } from 'lucide-react';
 import { Template } from '@/types';
 import { cn } from '@/lib/utils';
 import { TimePickerInput } from '@/components/ui/time-picker';
@@ -144,6 +144,9 @@ export default function CreateEventPage() {
     template_id: '',
     enable_qr_checkin: false,
     enable_agenda: false,
+    enable_reminder_accepted: false,
+    enable_reminder_pending: false,
+    reminder_days_before: 0,
     timezone: getBrowserTimezone(),
   });
 
@@ -305,6 +308,51 @@ export default function CreateEventPage() {
                 <p className="text-xs text-slate-500">{t('events.enableAgendaDesc')}</p>
               </div>
             </label>
+          </SectionCard>
+
+          <SectionCard icon={<BellRing className="h-4 w-4" />} title={t('events.reminders')}>
+            <p className="text-xs text-slate-500 -mt-1">{t('events.remindersDesc')}</p>
+            <label className="flex items-start gap-3 rounded-lg border border-slate-200 p-3 cursor-pointer hover:border-slate-300 transition-colors">
+              <input
+                type="checkbox"
+                checked={form.enable_reminder_accepted}
+                onChange={e => setForm({ ...form, enable_reminder_accepted: e.target.checked })}
+                className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              />
+              <div className="space-y-0.5">
+                <p className="text-sm font-medium text-slate-800">{t('events.enableReminderAccepted')}</p>
+                <p className="text-xs text-slate-500">{t('events.enableReminderAcceptedDesc')}</p>
+              </div>
+            </label>
+            <label className="flex items-start gap-3 rounded-lg border border-slate-200 p-3 cursor-pointer hover:border-slate-300 transition-colors">
+              <input
+                type="checkbox"
+                checked={form.enable_reminder_pending}
+                onChange={e => setForm({ ...form, enable_reminder_pending: e.target.checked })}
+                className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              />
+              <div className="space-y-0.5">
+                <p className="text-sm font-medium text-slate-800">{t('events.enableReminderPending')}</p>
+                <p className="text-xs text-slate-500">{t('events.enableReminderPendingDesc')}</p>
+              </div>
+            </label>
+            {(form.enable_reminder_accepted || form.enable_reminder_pending) && (
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-700">{t('events.reminderDaysBefore')}</label>
+                <select
+                  value={form.reminder_days_before}
+                  onChange={e => setForm({ ...form, reminder_days_before: parseInt(e.target.value, 10) })}
+                  className="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400"
+                >
+                  <option value={0}>{t('events.reminderDisabled')}</option>
+                  <option value={1}>{t('events.reminderDay', { count: 1 })}</option>
+                  <option value={2}>{t('events.reminderDay', { count: 2 })}</option>
+                  <option value={3}>{t('events.reminderDay', { count: 3 })}</option>
+                  <option value={7}>{t('events.reminderDay', { count: 7 })}</option>
+                </select>
+                <p className="text-xs text-slate-400">{t('events.reminderDaysBeforeHint')}</p>
+              </div>
+            )}
           </SectionCard>
 
           <Button
