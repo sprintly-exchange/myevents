@@ -154,7 +154,7 @@ export default function CreateEventPage() {
   const templates: Template[] = tmplData?.templates || [];
 
   const mutation = useMutation({
-    mutationFn: (data: typeof form) => api.post('/events', data),
+    mutationFn: (data: Omit<typeof form, 'end_date'> & { end_date: string | null }) => api.post('/events', data),
     onSuccess: (res) => { toast.success(t('events.eventCreated')); navigate(`/events/${res.data.event.id}`); },
     onError: (err: any) => {
       if (err.response?.status === 403) { toast.error(t('events.eventLimitReached')); navigate('/upgrade'); }
@@ -165,8 +165,8 @@ export default function CreateEventPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.title || !form.event_date) { toast.error(t('events.validationRequired')); return; }
-    const payload: Record<string, string | boolean | null> = { ...form, end_date: form.end_date || null };
-    mutation.mutate(payload as any);
+    const payload: Omit<typeof form, 'end_date'> & { end_date: string | null } = { ...form, end_date: form.end_date || null };
+    mutation.mutate(payload);
   };
 
   const duration = formatDuration(form.event_date, form.end_date);
