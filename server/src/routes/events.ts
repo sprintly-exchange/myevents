@@ -3,6 +3,7 @@ import { randomBytes } from 'crypto';
 import prisma from '../db';
 import { requireAuth } from '../middleware/auth';
 import { checkEventLimit } from '../middleware/planLimit';
+import { sendEventReminders } from '../services/reminder-scheduler';
 
 const router = Router();
 router.use(requireAuth);
@@ -81,13 +82,13 @@ router.get('/', async (req: Request, res: Response) => {
   // Batch-fetch raw columns for all events
   const ids = events.map(e => e.id);
   const rawRows = ids.length
-    ? await prisma.$queryRawUnsafe<{ id: string; timezone: string }[]>(
-        `SELECT id, timezone FROM events WHERE id IN (${ids.map(() => '?').join(',')})`,
+    ? await prisma.$queryRawUnsafe<{ id: string; timezone: string; enable_reminder_accepted: number | null; enable_reminder_pending: number | null; reminder_days_before: number | null; reminder_sent_at: string | null }[]>(
+        `SELECT id, timezone, enable_reminder_accepted, enable_reminder_pending, reminder_days_before, reminder_sent_at FROM events WHERE id IN (${ids.map(() => '?').join(',')})`,
         ...ids
       )
     : [];
-  const rawById: Record<string, string> = Object.fromEntries(
-    rawRows.map(r => [r.id, r.timezone || 'Europe/Stockholm'])
+  const rawById: Record<string, typeof rawRows[0]> = Object.fromEntries(
+    rawRows.map(r => [r.id, r])
   );
 
   const eventsWithCounts = await Promise.all(events.map(async (e) => {
@@ -100,7 +101,11 @@ router.get('/', async (req: Request, res: Response) => {
       accepted_count: accepted,
       pending_count: pending,
       invitation_count: total,
-      timezone: rawById[e.id] ?? 'Europe/Stockholm',
+      timezone: rawById[e.id]?.timezone ?? 'Europe/Stockholm',
+      enable_reminder_accepted: readStoredFeatureFlag(rawById[e.id]?.enable_reminder_accepted, false),
+      enable_reminder_pending: readStoredFeatureFlag(rawById[e.id]?.enable_reminder_pending, false),
+      reminder_days_before: rawById[e.id]?.reminder_days_before ?? 0,
+      reminder_sent_at: rawById[e.id]?.reminder_sent_at ?? null,
     });
   }));
 
@@ -109,11 +114,14 @@ router.get('/', async (req: Request, res: Response) => {
 
 router.post('/', checkEventLimit, async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
-  const { title, description, event_date, end_date, location, template_id, theme_settings, enable_qr_checkin, enable_agenda, timezone } = req.body;
+  const { title, description, event_date, end_date, location, template_id, theme_settings, enable_qr_checkin, enable_agenda, timezone, enable_reminder_accepted, enable_reminder_pending, reminder_days_before } = req.body;
   if (!title || !event_date)
     return res.status(400).json({ error: 'Title and event_date are required' });
   const qrEnabled = parseFeatureFlag(enable_qr_checkin, true);
   const agendaEnabled = parseFeatureFlag(enable_agenda, true);
+  const reminderAccepted = parseFeatureFlag(enable_reminder_accepted, false);
+  const reminderPending = parseFeatureFlag(enable_reminder_pending, false);
+  const reminderDays = Math.max(0, parseInt(reminder_days_before ?? '0', 10) || 0);
   const tz = timezone || 'Europe/Stockholm';
 
   const event = await prisma.event.create({
@@ -127,12 +135,15 @@ router.post('/', checkEventLimit, async (req: Request, res: Response) => {
 
   // Write raw columns via raw SQL (added via ALTER TABLE)
   await prisma.$executeRawUnsafe(
-    `UPDATE events SET theme_settings = ?, end_date = ?, enable_qr_checkin = ?, enable_agenda = ?, timezone = ? WHERE id = ?`,
+    `UPDATE events SET theme_settings = ?, end_date = ?, enable_qr_checkin = ?, enable_agenda = ?, timezone = ?, enable_reminder_accepted = ?, enable_reminder_pending = ?, reminder_days_before = ? WHERE id = ?`,
     theme_settings ? JSON.stringify(theme_settings) : null,
     end_date || null,
     qrEnabled ? 1 : 0,
     agendaEnabled ? 1 : 0,
     tz,
+    reminderAccepted ? 1 : 0,
+    reminderPending ? 1 : 0,
+    reminderDays,
     event.id
   );
 
@@ -144,6 +155,10 @@ router.post('/', checkEventLimit, async (req: Request, res: Response) => {
       enable_qr_checkin: qrEnabled,
       enable_agenda: agendaEnabled,
       timezone: tz,
+      enable_reminder_accepted: reminderAccepted,
+      enable_reminder_pending: reminderPending,
+      reminder_days_before: reminderDays,
+      reminder_sent_at: null,
     },
   });
 });
@@ -160,19 +175,23 @@ router.get('/:id', async (req: Request, res: Response) => {
   if (!event) return res.status(404).json({ error: 'Event not found' });
 
   // Read raw columns via raw SQL since they were added via ALTER TABLE
-  const rawRows = await prisma.$queryRawUnsafe<{ theme_settings: string | null; end_date: string | null; enable_qr_checkin: number | null; enable_agenda: number | null; timezone: string | null }[]>(
-    `SELECT theme_settings, end_date, enable_qr_checkin, enable_agenda, timezone FROM events WHERE id = ?`, event.id
+  const rawRows = await prisma.$queryRawUnsafe<{ theme_settings: string | null; end_date: string | null; enable_qr_checkin: number | null; enable_agenda: number | null; timezone: string | null; enable_reminder_accepted: number | null; enable_reminder_pending: number | null; reminder_days_before: number | null; reminder_sent_at: string | null }[]>(
+    `SELECT theme_settings, end_date, enable_qr_checkin, enable_agenda, timezone, enable_reminder_accepted, enable_reminder_pending, reminder_days_before, reminder_sent_at FROM events WHERE id = ?`, event.id
   );
   const themeSettingsRaw = rawRows[0]?.theme_settings || null;
   const end_date = rawRows[0]?.end_date || null;
   const enable_qr_checkin = readStoredFeatureFlag(rawRows[0]?.enable_qr_checkin, true);
   const enable_agenda = readStoredFeatureFlag(rawRows[0]?.enable_agenda, true);
   const timezone = rawRows[0]?.timezone || 'Europe/Stockholm';
+  const enable_reminder_accepted = readStoredFeatureFlag(rawRows[0]?.enable_reminder_accepted, false);
+  const enable_reminder_pending = readStoredFeatureFlag(rawRows[0]?.enable_reminder_pending, false);
+  const reminder_days_before = rawRows[0]?.reminder_days_before ?? 0;
+  const reminder_sent_at = rawRows[0]?.reminder_sent_at ?? null;
   let theme_settings = null;
   try { if (themeSettingsRaw) theme_settings = JSON.parse(themeSettingsRaw); } catch { /* ignore */ }
 
   return res.json({
-    event: { ...formatEvent(event), theme_settings, end_date, enable_qr_checkin, enable_agenda, timezone },
+    event: { ...formatEvent(event), theme_settings, end_date, enable_qr_checkin, enable_agenda, timezone, enable_reminder_accepted, enable_reminder_pending, reminder_days_before, reminder_sent_at },
     invitations: event.invitations.map(inv => formatInvitation(inv)),
   });
 });
@@ -182,9 +201,9 @@ router.put('/:id', async (req: Request, res: Response) => {
   const existing = await prisma.event.findFirst({ where: { id: req.params.id, creatorId: userId, status: { not: 'deleted' } } });
   if (!existing) return res.status(404).json({ error: 'Event not found' });
 
-  const { title, description, event_date, end_date, location, template_id, theme_settings, status, enable_qr_checkin, enable_agenda, timezone } = req.body;
-  const rawExisting = await prisma.$queryRawUnsafe<{ theme_settings: string | null; end_date: string | null; enable_qr_checkin: number | null; enable_agenda: number | null; timezone: string | null }[]>(
-    `SELECT theme_settings, end_date, enable_qr_checkin, enable_agenda, timezone FROM events WHERE id = ?`,
+  const { title, description, event_date, end_date, location, template_id, theme_settings, status, enable_qr_checkin, enable_agenda, timezone, enable_reminder_accepted, enable_reminder_pending, reminder_days_before } = req.body;
+  const rawExisting = await prisma.$queryRawUnsafe<{ theme_settings: string | null; end_date: string | null; enable_qr_checkin: number | null; enable_agenda: number | null; timezone: string | null; enable_reminder_accepted: number | null; enable_reminder_pending: number | null; reminder_days_before: number | null; reminder_sent_at: string | null }[]>(
+    `SELECT theme_settings, end_date, enable_qr_checkin, enable_agenda, timezone, enable_reminder_accepted, enable_reminder_pending, reminder_days_before, reminder_sent_at FROM events WHERE id = ?`,
     req.params.id
   );
   const existingRow = rawExisting[0] || null;
@@ -195,6 +214,18 @@ router.put('/:id', async (req: Request, res: Response) => {
   const resolvedQrEnabled = parseFeatureFlag(enable_qr_checkin, readStoredFeatureFlag(existingRow?.enable_qr_checkin, true));
   const resolvedAgendaEnabled = parseFeatureFlag(enable_agenda, readStoredFeatureFlag(existingRow?.enable_agenda, true));
   const resolvedTimezone = timezone !== undefined ? timezone : (existingRow?.timezone || 'Europe/Stockholm');
+  const resolvedReminderAccepted = enable_reminder_accepted !== undefined
+    ? parseFeatureFlag(enable_reminder_accepted, false)
+    : readStoredFeatureFlag(existingRow?.enable_reminder_accepted, false);
+  const resolvedReminderPending = enable_reminder_pending !== undefined
+    ? parseFeatureFlag(enable_reminder_pending, false)
+    : readStoredFeatureFlag(existingRow?.enable_reminder_pending, false);
+  const resolvedReminderDays = reminder_days_before !== undefined
+    ? Math.max(0, parseInt(reminder_days_before ?? '0', 10) || 0)
+    : (existingRow?.reminder_days_before ?? 0);
+  // Reset reminder_sent_at when reminder settings change so it will be sent again
+  const reminderSettingsChanged = enable_reminder_accepted !== undefined || enable_reminder_pending !== undefined || reminder_days_before !== undefined;
+  const resolvedReminderSentAt = reminderSettingsChanged ? null : (existingRow?.reminder_sent_at ?? null);
 
   const event = await prisma.event.update({
     where: { id: req.params.id },
@@ -207,12 +238,16 @@ router.put('/:id', async (req: Request, res: Response) => {
 
   // Update raw columns via raw SQL
   await prisma.$executeRawUnsafe(
-    `UPDATE events SET theme_settings = ?, end_date = ?, enable_qr_checkin = ?, enable_agenda = ?, timezone = ? WHERE id = ?`,
+    `UPDATE events SET theme_settings = ?, end_date = ?, enable_qr_checkin = ?, enable_agenda = ?, timezone = ?, enable_reminder_accepted = ?, enable_reminder_pending = ?, reminder_days_before = ?, reminder_sent_at = ? WHERE id = ?`,
     resolvedThemeSql,
     resolvedEndDateSql,
     resolvedQrEnabled ? 1 : 0,
     resolvedAgendaEnabled ? 1 : 0,
     resolvedTimezone,
+    resolvedReminderAccepted ? 1 : 0,
+    resolvedReminderPending ? 1 : 0,
+    resolvedReminderDays,
+    resolvedReminderSentAt,
     req.params.id
   );
 
@@ -230,6 +265,10 @@ router.put('/:id', async (req: Request, res: Response) => {
       enable_qr_checkin: resolvedQrEnabled,
       enable_agenda: resolvedAgendaEnabled,
       timezone: resolvedTimezone,
+      enable_reminder_accepted: resolvedReminderAccepted,
+      enable_reminder_pending: resolvedReminderPending,
+      reminder_days_before: resolvedReminderDays,
+      reminder_sent_at: resolvedReminderSentAt,
     },
   });
 });
@@ -267,6 +306,37 @@ router.get('/:id/checkin', async (req: Request, res: Response) => {
       checked_in_at: inv.checkedInAt?.toISOString() || null,
     })),
   });
+});
+
+router.post('/:id/send-reminders', async (req: Request, res: Response) => {
+  const userId = (req as any).user.id;
+  const event = await prisma.event.findFirst({
+    where: { id: req.params.id, creatorId: userId, status: { not: 'deleted' } },
+  });
+  if (!event) return res.status(404).json({ error: 'Event not found' });
+
+  const rawRows = await prisma.$queryRawUnsafe<{ enable_reminder_accepted: number | null; enable_reminder_pending: number | null; reminder_days_before: number | null; timezone: string | null }[]>(
+    `SELECT enable_reminder_accepted, enable_reminder_pending, reminder_days_before, timezone FROM events WHERE id = ?`,
+    req.params.id
+  );
+  const raw = rawRows[0] || {};
+
+  const { type } = req.body; // 'accepted' | 'pending' | 'both'
+  const sendAccepted = type === 'accepted' || type === 'both';
+  const sendPending = type === 'pending' || type === 'both';
+
+  const eventInfo = {
+    title: event.title,
+    event_date: typeof event.eventDate === 'string' ? event.eventDate : (event.eventDate as Date).toISOString(),
+    location: event.location || null,
+    timezone: raw.timezone || 'Europe/Stockholm',
+    creator_id: event.creatorId,
+    enable_reminder_accepted: sendAccepted ? 1 : 0,
+    enable_reminder_pending: sendPending ? 1 : 0,
+  };
+
+  const count = await sendEventReminders(req.params.id, eventInfo, 'manual');
+  return res.json({ sent: count });
 });
 
 router.delete('/:id', async (req: Request, res: Response) => {

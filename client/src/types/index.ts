@@ -62,6 +62,10 @@ export interface Event {
   share_token?: string;
   enable_qr_checkin?: boolean;
   enable_agenda?: boolean;
+  enable_reminder_accepted?: boolean;
+  enable_reminder_pending?: boolean;
+  reminder_days_before?: number;
+  reminder_sent_at?: string | null;
   theme_settings?: import('./index').ThemeSettings | null;
   status: string;
   created_at: string;

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Calendar, MapPin, Users, Send, Copy, Edit, ArrowLeft, Lock, X, UserPlus, Share2, Eye, Ban, RefreshCw, Pencil, BookUser, Check, Search, ClipboardList, Info, QrCode, Globe } from 'lucide-react';
+import { Calendar, MapPin, Users, Send, Copy, Edit, ArrowLeft, Lock, X, UserPlus, Share2, Eye, Ban, RefreshCw, Pencil, BookUser, Check, Search, ClipboardList, Info, QrCode, Globe, BellRing } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
 import { useAuth } from '@/hooks/useAuth';
@@ -104,6 +104,16 @@ export default function EventDetailPage() {
     onError: () => toast.error(t('invitations.guestUpdateError')),
   });
 
+  const sendReminderMutation = useMutation({
+    mutationFn: (type: 'accepted' | 'pending' | 'both') =>
+      api.post(`/events/${id}/send-reminders`, { type }),
+    onSuccess: (res, type) => {
+      const count = res.data.sent as number;
+      toast.success(t('events.remindersSent', { count }));
+    },
+    onError: () => toast.error(t('events.remindersFailed')),
+  });
+
   const openEdit = (inv: Invitation) => {
     setEditingInv(inv);
     setEditName(inv.recipient_name || '');
@@ -117,6 +127,10 @@ export default function EventDetailPage() {
   const limitReached = !isPaid && freeLimit > 0 && usedInvites >= freeLimit;
   const isQrEnabled = event?.enable_qr_checkin !== false;
   const isAgendaEnabled = event?.enable_agenda !== false;
+  const isReminderAccepted = event?.enable_reminder_accepted === true;
+  const isReminderPending = event?.enable_reminder_pending === true;
+  const reminderDaysBefore = event?.reminder_days_before ?? 0;
+  const hasAnyReminder = isReminderAccepted || isReminderPending;
 
   useEffect(() => {
     if (activeTab === 'agenda' && !isAgendaEnabled) {
@@ -608,6 +622,56 @@ export default function EventDetailPage() {
           </div>
         </div>
       )}
+
+        {/* ── Reminders Card ── */}
+        {hasAnyReminder && isUpcoming && (
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 p-6 mb-5">
+            <div className="flex items-center gap-2 mb-1">
+              <BellRing className="h-4 w-4 text-amber-500" />
+              <h2 className="text-base font-semibold text-slate-900">{t('events.reminders')}</h2>
+            </div>
+            <p className="text-sm text-slate-500 mb-4">
+              {reminderDaysBefore > 0
+                ? t('events.remindersAutoNote', { count: reminderDaysBefore })
+                : t('events.remindersManualNote')}
+            </p>
+            <div className="flex flex-wrap gap-3">
+              {isReminderAccepted && (
+                <Button
+                  variant="outline"
+                  className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 gap-2"
+                  disabled={sendReminderMutation.isPending}
+                  onClick={() => sendReminderMutation.mutate('accepted')}
+                >
+                  <BellRing className="h-4 w-4" />
+                  {t('events.sendReminderAccepted')}
+                </Button>
+              )}
+              {isReminderPending && (
+                <Button
+                  variant="outline"
+                  className="border-amber-200 text-amber-700 hover:bg-amber-50 gap-2"
+                  disabled={sendReminderMutation.isPending}
+                  onClick={() => sendReminderMutation.mutate('pending')}
+                >
+                  <BellRing className="h-4 w-4" />
+                  {t('events.sendReminderPending')}
+                </Button>
+              )}
+              {isReminderAccepted && isReminderPending && (
+                <Button
+                  variant="outline"
+                  className="border-blue-200 text-blue-700 hover:bg-blue-50 gap-2"
+                  disabled={sendReminderMutation.isPending}
+                  onClick={() => sendReminderMutation.mutate('both')}
+                >
+                  <BellRing className="h-4 w-4" />
+                  {t('events.sendReminderBoth')}
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
 
     </AppLayout>
   );

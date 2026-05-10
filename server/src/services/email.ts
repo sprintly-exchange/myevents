@@ -130,6 +130,63 @@ export async function sendCheckinConfirmationEmail(
   });
 }
 
+export async function sendReminderEmail(
+  to: string,
+  recipientName: string | null,
+  event: { title: string; eventDate: string; location?: string | null; timezone?: string | null },
+  senderName: string,
+  type: 'accepted' | 'pending'
+): Promise<void> {
+  const config = await getSmtpConfig();
+  if (!config) { console.warn('SMTP not configured, skipping reminder email'); return; }
+
+  const displayName = recipientName || to;
+  const tz = event.timezone || 'Europe/Stockholm';
+  const eventDateStr = formatEventDateInTz(event.eventDate, tz);
+
+  const isAccepted = type === 'accepted';
+  const subject = isAccepted
+    ? `Reminder: ${event.title} is coming up!`
+    : `Don't forget to RSVP for ${event.title}`;
+
+  const appUrl = process.env.APP_URL || 'http://localhost:3000';
+
+  const html = isAccepted
+    ? `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="font-family:sans-serif;background:#f5f5f5;margin:0;padding:24px">
+  <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:12px;padding:32px;text-align:center">
+    <h2 style="color:#1a1a2e;margin-bottom:4px">Event Reminder 🗓️</h2>
+    <p style="color:#555;margin-top:0">Hi ${displayName}, just a reminder that <strong>${event.title}</strong> is coming up soon!</p>
+    <p style="color:#555"><strong>📅</strong> ${eventDateStr}</p>
+    ${event.location ? `<p style="color:#555"><strong>📍</strong> ${event.location}</p>` : ''}
+    <p style="color:#555;font-size:14px">You've already confirmed your attendance — we look forward to seeing you!</p>
+    <p style="color:#aaa;font-size:12px;margin-top:16px">Sent by ${senderName} via MyEvents</p>
+  </div>
+</body>
+</html>`
+    : `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="font-family:sans-serif;background:#f5f5f5;margin:0;padding:24px">
+  <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:12px;padding:32px;text-align:center">
+    <h2 style="color:#1a1a2e;margin-bottom:4px">Have you responded yet? 📩</h2>
+    <p style="color:#555;margin-top:0">Hi ${displayName}, <strong>${senderName}</strong> would like to know if you're coming to <strong>${event.title}</strong>.</p>
+    <p style="color:#555"><strong>📅</strong> ${eventDateStr}</p>
+    ${event.location ? `<p style="color:#555"><strong>📍</strong> ${event.location}</p>` : ''}
+    <p style="color:#555;font-size:14px">Please check your invitation and let us know if you can make it.</p>
+    <p style="color:#555;font-size:12px"><a href="${appUrl}" style="color:#3b82f6">Open MyEvents</a></p>
+  </div>
+</body>
+</html>`;
+
+  const transport = createTransport(config);
+  await transport.sendMail({ from: `"MyEvents" <${config.from}>`, to, subject, html });
+}
+
 export async function sendTestEmail(to: string): Promise<void> {
   const config = await getSmtpConfig();
   if (!config) throw new Error('SMTP not configured');
