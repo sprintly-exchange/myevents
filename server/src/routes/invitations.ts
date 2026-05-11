@@ -8,9 +8,15 @@ const router = Router();
 router.post('/', requireAuth, async (req: Request, res: Response) => {
   const user = (req as any).user;
 
-  const { event_id, emails, template_id } = req.body;
-  if (!event_id || !Array.isArray(emails) || emails.length === 0)
-    return res.status(400).json({ error: 'event_id and emails array required' });
+  const { event_id, guests, emails, template_id } = req.body;
+  // Accept either guests:[{email,name?}] (new) or emails:string[] (legacy)
+  const guestList: { email: string; name?: string }[] = Array.isArray(guests)
+    ? guests
+    : Array.isArray(emails)
+      ? emails.map((e: string) => ({ email: e }))
+      : [];
+  if (!event_id || guestList.length === 0)
+    return res.status(400).json({ error: 'event_id and guests array required' });
 
   if (user.payment_status !== 'paid' && user.role !== 'admin') {
     const limitSetting = await prisma.appSetting.findUnique({ where: { key: 'free_tier_invite_limit' } });
@@ -60,13 +66,20 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
   const senderName = sender?.name || 'Someone';
 
   const created: any[] = [];
-  for (const email of emails) {
-    const trimmed = email.trim().toLowerCase();
+  for (const guest of guestList) {
+    const trimmed = guest.email.trim().toLowerCase();
     if (!trimmed) continue;
     const existing = await prisma.invitation.findFirst({ where: { eventId: event_id, recipientEmail: trimmed } });
     if (existing) continue;
 
-    const inv = await prisma.invitation.create({ data: { eventId: event_id, senderId: user.id, recipientEmail: trimmed } });
+    const inv = await prisma.invitation.create({
+      data: {
+        eventId: event_id,
+        senderId: user.id,
+        recipientEmail: trimmed,
+        ...(guest.name?.trim() ? { recipientName: guest.name.trim() } : {}),
+      },
+    });
     created.push(inv);
 
     if (template) {

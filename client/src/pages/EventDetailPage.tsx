@@ -60,8 +60,8 @@ export default function EventDetailPage() {
   const allGroups: ContactGroup[] = groupsData?.groups || [];
 
   const sendMutation = useMutation({
-    mutationFn: (emails: string[]) =>
-      api.post('/invitations', { event_id: id, emails, template_id: event?.template_id }),
+    mutationFn: (guests: { email: string; name: string }[]) =>
+      api.post('/invitations', { event_id: id, guests, template_id: event?.template_id }),
     onSuccess: (res) => {
       toast.success(t('events.invitationsSent', { count: res.data.count }));
       setStagingGuests([]);
@@ -140,9 +140,11 @@ export default function EventDetailPage() {
 
   const addGuest = () => {
     const email = emailInput.trim().toLowerCase();
+    const name = nameInput.trim();
     if (!email || !email.includes('@')) return;
+    if (!name) { toast.error(t('events.guestNameRequired')); return; }
     if (stagingGuests.find(g => g.email === email)) return;
-    setStagingGuests(prev => [...prev, { email, name: nameInput.trim() }]);
+    setStagingGuests(prev => [...prev, { email, name }]);
     setEmailInput('');
     setNameInput('');
   };
@@ -152,7 +154,7 @@ export default function EventDetailPage() {
 
   const sendInvitations = () => {
     if (stagingGuests.length === 0) return;
-    sendMutation.mutate(stagingGuests.map(g => g.email));
+    sendMutation.mutate(stagingGuests);
   };
 
   const copyRsvpLink = (token: string) => {
@@ -386,7 +388,7 @@ export default function EventDetailPage() {
                   className="flex-1 border-slate-200 focus:border-blue-400"
                 />
                 <Input
-                  placeholder="Name (optional)"
+                  placeholder={t('common.name')}
                   value={nameInput}
                   onChange={e => setNameInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addGuest())}
@@ -484,6 +486,17 @@ export default function EventDetailPage() {
                     )}
                     {inv.recipient_phone && (
                       <p className="text-xs text-slate-400">{inv.recipient_phone}</p>
+                    )}
+                    {inv.status !== 'cancelled' && (
+                      <a
+                        href={`${window.location.origin}/rsvp/${inv.token}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-400 hover:text-blue-600 hover:underline truncate block max-w-xs"
+                        title={`${window.location.origin}/rsvp/${inv.token}`}
+                      >
+                        {t('events.rsvpLink')}
+                      </a>
                     )}
                   </div>
                   <div className="flex items-center gap-3 ml-4 shrink-0">
