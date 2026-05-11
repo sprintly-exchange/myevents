@@ -81,6 +81,7 @@ export async function sendInvitationEmail(
   html = html.replace(/{{event_location}}/g, event.location || 'TBD');
   html = html.replace(/{{rsvp_url}}/g, `${appUrl}/rsvp/${invitation.token}`);
   html = html.replace(/{{sender_name}}/g, senderName);
+  html = html.replace(/{{recipient_name}}/g, invitation.recipientName || '');
 
   const transport = createTransport(config);
   await transport.sendMail({ from: `"MyEvents" <${config.from}>`, to, subject: `You're invited to ${event.title}`, html });

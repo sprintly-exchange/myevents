@@ -213,7 +213,8 @@
     "sendReminderPending": "Nudge pending guests",
     "sendReminderBoth": "Remind all",
     "remindersAutoNote": "Automatic reminders will be sent {{count}} day(s) before the event. You can also send them now.",
-    "remindersManualNote": "Use the buttons below to send reminders to your guests now."
+    "remindersManualNote": "Use the buttons below to send reminders to your guests now.",
+    "guestNameRequired": "Guest name is required"
   },
   "invitations": {
     "title": "My Invitations",

@@ -213,7 +213,8 @@
     "sendReminderPending": "Påminn väntande gäster",
     "sendReminderBoth": "Påminn alla",
     "remindersAutoNote": "Automatiska påminnelser skickas {{count}} dag(ar) innan evenemanget. Du kan också skicka dem nu.",
-    "remindersManualNote": "Använd knapparna nedan för att skicka påminnelser till dina gäster nu."
+    "remindersManualNote": "Använd knapparna nedan för att skicka påminnelser till dina gäster nu.",
+    "guestNameRequired": "Gästens namn krävs"
   },
   "invitations": {
     "title": "Mina inbjudningar",
