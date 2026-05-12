@@ -237,7 +237,7 @@ export default function UpgradePage() {
                   )}
                   <div className="flex items-baseline justify-center gap-1 mb-1">
                     <span className="text-4xl font-bold text-slate-900">{plan.price_sek}</span>
-                        <span className="text-slate-500 text-sm">{plan.currency || 'SEK'}</span>
+                        <span className="text-slate-500 text-sm">{plan.currency ?? 'SEK'}</span>
                   </div>
                 </div>
 
@@ -273,9 +273,9 @@ export default function UpgradePage() {
                       onClick={() => upgradeMutation.mutate(plan.id)}
                       disabled={upgradeMutation.isPending}
                     >
-                        {upgradeMutation.isPending
-                          ? t('upgrade.requesting')
-                          : isCurrentPlan
+                      {upgradeMutation.isPending
+                        ? t('upgrade.requesting')
+                        : isCurrentPlan
                           ? t('upgrade.payNow')
                           : t('upgrade.selectPlan', { name: plan.name })}
                     </Button>
