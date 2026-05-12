@@ -17,6 +17,7 @@ const formatUser = (user: any) => ({
   plan_name: user.plan?.name ?? null,
   event_limit: user.plan?.eventLimit ?? null,
   price_sek: user.plan?.priceSek ?? null,
+  plan_currency: user.plan?.currency ?? null,
   is_active: user.isActive ? 1 : 0,
   created_at: user.createdAt,
 });
@@ -91,4 +92,3 @@ router.get('/me', requireAuth, async (req: Request, res: Response) => {
 });
 
 export default router;
-

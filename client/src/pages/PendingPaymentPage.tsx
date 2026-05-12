@@ -5,15 +5,16 @@ import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
+import { buildPaymentQrValue, type PaymentSettings } from '@/lib/payment';
 import AuthLayout from '@/components/AuthLayout';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 
 interface PaymentData {
-  swishNumber?: string;
-  swishHolder?: string;
+  payment?: PaymentSettings;
   price?: number;
   planName?: string;
+  currency?: string;
 }
 
 export default function PendingPaymentPage() {
@@ -29,15 +30,25 @@ export default function PendingPaymentPage() {
     retry: false,
   });
 
-  const swishNumber = stateData.swishNumber || pendingData?.swish?.number || '';
-  const swishHolder = stateData.swishHolder || pendingData?.swish?.holder || '';
+  const payment: PaymentSettings | null = stateData.payment || pendingData?.payment || (pendingData?.swish ? {
+    method_name: 'Swish',
+    recipient_label: t('upgrade.paymentDestination'),
+    recipient_value: pendingData.swish.number || '',
+    holder_label: t('upgrade.recipient'),
+    holder_value: pendingData.swish.holder || '',
+    qr_template: '',
+  } : null);
   const price = stateData.price || pendingData?.request?.plan_price || 0;
+  const currency = stateData.currency || pendingData?.request?.plan_currency || 'SEK';
   const planName = stateData.planName || pendingData?.request?.plan_name || 'Basic';
   const reference = pendingData?.request?.paymentReference || pendingData?.request?.payment_reference || '';
 
-  const swishQrData = swishNumber
-    ? `swish://payment?version=1&payee=${swishNumber}&amount=${price}&message=${encodeURIComponent(reference || 'MyEvents')}&editable=false`
-    : '';
+  const paymentQrData = buildPaymentQrValue(payment, {
+    amount: price,
+    currency,
+    reference,
+    appName: 'MyEvents',
+  });
 
   const handleCheckStatus = async () => {
     setChecking(true);
@@ -67,8 +78,7 @@ export default function PendingPaymentPage() {
         </div>
         <h2 className="text-2xl font-bold text-slate-900 mb-2">{t('pendingPayment.title')}</h2>
         <p className="text-slate-500 text-sm">
-          Complete your registration by paying for the{' '}
-          <span className="font-semibold text-slate-700">{planName}</span> plan.
+          {t('pendingPayment.subtitle', { plan: planName })}
         </p>
       </div>
 
@@ -76,43 +86,45 @@ export default function PendingPaymentPage() {
       <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 mb-5">
         <h3 className="text-sm font-semibold text-blue-800 mb-3">{t('upgrade.paymentDetails')}</h3>
         <div className="space-y-2.5">
-          <div className="flex justify-between text-sm">
-            <span className="text-blue-700">Plan</span>
-            <span className="font-semibold text-blue-900">{planName}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-blue-700">{t('upgrade.amount')}</span>
-            <span className="font-bold text-xl text-blue-700">{price} SEK</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-blue-700">{t('upgrade.paymentReference')}</span>
+            <div className="flex justify-between text-sm">
+              <span className="text-blue-700">{t('common.plan')}</span>
+              <span className="font-semibold text-blue-900">{planName}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-blue-700">{t('upgrade.amount')}</span>
+              <span className="font-bold text-xl text-blue-700">{price} {currency}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-blue-700">{t('upgrade.paymentReference')}</span>
             <span className="font-mono font-semibold text-blue-900">
               {reference || <span className="text-slate-400 italic">loading…</span>}
             </span>
           </div>
-          {swishNumber && (
-            <>
-              <div className="border-t border-blue-200 pt-2.5 mt-2.5">
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-blue-700">{t('upgrade.swishNumber')}</span>
-                  <span className="font-mono font-semibold text-blue-900">{swishNumber}</span>
+            {payment?.recipient_value && (
+              <>
+                <div className="border-t border-blue-200 pt-2.5 mt-2.5">
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-blue-700">{payment.recipient_label}</span>
+                    <span className="font-mono font-semibold text-blue-900">{payment.recipient_value}</span>
+                  </div>
+                  {payment.holder_value && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-blue-700">{payment.holder_label}</span>
+                      <span className="font-semibold text-blue-900">{payment.holder_value}</span>
+                    </div>
+                  )}
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-blue-700">{t('upgrade.recipient')}</span>
-                  <span className="font-semibold text-blue-900">{swishHolder}</span>
-                </div>
-              </div>
-            </>
-          )}
+              </>
+            )}
         </div>
       </div>
 
       {/* QR code */}
-      {swishQrData && (
+      {paymentQrData && (
         <div className="flex flex-col items-center mb-5">
-          <p className="text-sm text-slate-500 mb-3">Scan to pay with Swish</p>
+          <p className="text-sm text-slate-500 mb-3">{t('pendingPayment.scanQr', { method: payment?.method_name || t('upgrade.paymentMethodFallback') })}</p>
           <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
-            <QRCodeSVG value={swishQrData} size={160} />
+            <QRCodeSVG value={paymentQrData} size={160} />
           </div>
         </div>
       )}
@@ -122,10 +134,10 @@ export default function PendingPaymentPage() {
         <p className="text-sm font-semibold text-amber-800 mb-2">{t('pendingPayment.instructions')}</p>
         <ol className="list-decimal list-inside space-y-1.5 text-sm text-amber-700">
           <li>{t('pendingPayment.step1')}</li>
-          <li>{t('pendingPayment.step2')}</li>
-          <li>{t('pendingPayment.step3', { price })}</li>
-          {reference && <li>In the message field, enter your reference: <strong>{reference}</strong></li>}
-          <li>{t('pendingPayment.step4')}</li>
+          <li>{t('pendingPayment.step2', { method: payment?.method_name || t('upgrade.paymentMethodFallback') })}</li>
+          <li>{t('pendingPayment.step3', { price, currency })}</li>
+          {reference && <li>{t('pendingPayment.step4', { ref: reference })}</li>}
+          <li>{t('pendingPayment.step5')}</li>
         </ol>
       </div>
 

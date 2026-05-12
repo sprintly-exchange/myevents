@@ -17,6 +17,7 @@ import agendaRoutes from './routes/agenda';
 import guidanceRoutes from './routes/guidance';
 import { requireAuth } from './middleware/auth';
 import prisma from './db';
+import { getPaymentSettings } from './services/payment-settings';
 import { startReminderScheduler } from './services/reminder-scheduler';
 
 const app = express();
@@ -39,16 +40,6 @@ app.use('/api/events', guidanceRoutes);
 // Upgrade requests (user-facing)
 const upgradeRouter = Router();
 
-async function getSwishSettings() {
-  const rows = await prisma.appSetting.findMany({
-    where: { key: { in: ['swish_number', 'swish_holder_name'] } },
-  });
-  return {
-    number: rows.find(r => r.key === 'swish_number')?.value || '',
-    holder: rows.find(r => r.key === 'swish_holder_name')?.value || '',
-  };
-}
-
 upgradeRouter.post('/', requireAuth, async (req, res) => {
   const user = (req as any).user;
   const { plan_id } = req.body;
@@ -57,8 +48,12 @@ upgradeRouter.post('/', requireAuth, async (req, res) => {
   if (!plan) return res.status(404).json({ error: 'Plan not found' });
   const paymentReference = Math.random().toString(36).substring(2, 8).toUpperCase();
   const request = await prisma.upgradeRequest.create({ data: { userId: user.id, planId: plan_id, paymentReference } });
-  const swish = await getSwishSettings();
-  return res.status(201).json({ request: { ...request, plan_name: plan.name, plan_price: plan.priceSek }, swish });
+  const payment = await getPaymentSettings();
+  return res.status(201).json({
+    request: { ...request, plan_name: plan.name, plan_price: plan.priceSek, plan_currency: plan.currency ?? 'SEK' },
+    payment,
+    swish: { number: payment.recipient_value, holder: payment.holder_value },
+  });
 });
 
 upgradeRouter.get('/pending', requireAuth, async (req, res) => {
@@ -68,9 +63,13 @@ upgradeRouter.get('/pending', requireAuth, async (req, res) => {
     include: { plan: true },
     orderBy: { requestedAt: 'desc' },
   });
-  if (!request) return res.json({ request: null, swish: null });
-  const swish = await getSwishSettings();
-  return res.json({ request: { ...request, plan_name: request.plan.name, plan_price: request.plan.priceSek }, swish });
+  if (!request) return res.json({ request: null, payment: null, swish: null });
+  const payment = await getPaymentSettings();
+  return res.json({
+    request: { ...request, plan_name: request.plan.name, plan_price: request.plan.priceSek, plan_currency: request.plan.currency ?? 'SEK' },
+    payment,
+    swish: { number: payment.recipient_value, holder: payment.holder_value },
+  });
 });
 
 upgradeRouter.get('/mine', requireAuth, async (req, res) => {
@@ -131,6 +130,8 @@ async function start() {
   const defaultSettings: [string, string][] = [
     ['smtp_host', ''], ['smtp_port', '587'], ['smtp_user', ''], ['smtp_pass', ''],
     ['smtp_from', ''], ['swish_number', ''], ['swish_holder_name', ''],
+    ['payment_method_name', 'Swish'], ['payment_recipient_label', 'Swish number'], ['payment_recipient_value', ''],
+    ['payment_holder_label', 'Recipient'], ['payment_holder_name', ''], ['payment_qr_template', ''],
     ['app_name', 'MyEvents'], ['free_tier_invite_limit', '1'],
   ];
   for (const [key, value] of defaultSettings) {

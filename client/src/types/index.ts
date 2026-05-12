@@ -44,6 +44,7 @@ export interface User {
   plan_name?: string;
   event_limit?: number;
   price_sek?: number;
+  plan_currency?: string;
   is_active: number;
   created_at: string;
 }
@@ -122,6 +123,12 @@ export interface AppSettings {
   smtp_user: string;
   smtp_pass: string;
   smtp_from: string;
+  payment_method_name: string;
+  payment_recipient_label: string;
+  payment_recipient_value: string;
+  payment_holder_label: string;
+  payment_holder_name: string;
+  payment_qr_template: string;
   swish_number: string;
   swish_holder_name: string;
   app_name: string;
@@ -130,10 +137,17 @@ export interface AppSettings {
 
 export interface PendingPaymentData {
   status: 'pending_payment';
-  swishNumber: string;
-  swishHolder: string;
+  payment?: {
+    method_name: string;
+    recipient_label: string;
+    recipient_value: string;
+    holder_label: string;
+    holder_value: string;
+    qr_template?: string;
+  };
   price: number;
   planName: string;
+  currency?: string;
 }
 
 

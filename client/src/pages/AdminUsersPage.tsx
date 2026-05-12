@@ -81,7 +81,7 @@ export default function AdminUsersPage() {
                       <p className="font-medium text-sm text-slate-800">{req.user_name} <span className="text-slate-400 font-normal">({req.user_email})</span></p>
                       <p className="text-xs text-slate-500 mt-0.5">
                         {t('admin.users.wantsToUpgrade')} <strong className="text-slate-700">{req.plan_name}</strong>
-                        {req.plan_price ? <span className="ml-1 text-slate-400">· {req.plan_price} SEK</span> : null}
+                        {req.plan_price ? <span className="ml-1 text-slate-400">· {req.plan_price} {req.plan_currency || 'SEK'}</span> : null}
                       </p>
                       {req.payment_reference && (
                         <div className="mt-2 flex items-center gap-2">

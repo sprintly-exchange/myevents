@@ -209,6 +209,12 @@ async function main() {
     { key: 'smtp_from', value: '' },
     { key: 'swish_number', value: '' },
     { key: 'swish_holder_name', value: '' },
+    { key: 'payment_method_name', value: 'Swish' },
+    { key: 'payment_recipient_label', value: 'Swish number' },
+    { key: 'payment_recipient_value', value: '' },
+    { key: 'payment_holder_label', value: 'Recipient' },
+    { key: 'payment_holder_name', value: '' },
+    { key: 'payment_qr_template', value: '' },
     { key: 'app_name', value: 'MyEvents' },
     { key: 'free_tier_invite_limit', value: '1' },
   ];
