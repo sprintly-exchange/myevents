@@ -71,7 +71,7 @@
     "fullNamePlaceholder": "Γιάννης Παπαδόπουλος",
     "emailOrUsername": "Email ή Όνομα Χρήστη",
     "emailPlaceholder": "you@example.com",
-    "passwordPlaceholder": "Τουλ. 8 χαρακτήρες",
+    "passwordPlaceholder": "Τουλάχιστον 8 χαρακτήρες",
     "confirmPassword": "Επιβεβαίωση Κωδικού",
     "confirmPasswordPlaceholder": "Επανάληψη κωδικού",
     "accountCreated": "Ο λογαριασμός δημιουργήθηκε! Παρακαλώ συνδεθείτε.",
