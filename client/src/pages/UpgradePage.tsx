@@ -212,6 +212,7 @@ export default function UpgradePage() {
             const isPaid = user?.payment_status === 'paid';
             const isPopular = plan.name === 'Pro';
             const planFeatures = getPlanFeatures(plan);
+            const planCurrency = plan.currency ?? 'SEK';
 
             return (
               <div
@@ -237,7 +238,7 @@ export default function UpgradePage() {
                   )}
                   <div className="flex items-baseline justify-center gap-1 mb-1">
                     <span className="text-4xl font-bold text-slate-900">{plan.price_sek}</span>
-                        <span className="text-slate-500 text-sm">{plan.currency ?? 'SEK'}</span>
+                    <span className="text-slate-500 text-sm">{planCurrency}</span>
                   </div>
                 </div>
 

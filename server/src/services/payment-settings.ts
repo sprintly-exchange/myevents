@@ -1,4 +1,4 @@
-import prisma from '../db/index';
+import prisma from '../db';
 
 const PAYMENT_SETTING_KEYS = [
   'payment_method_name',
