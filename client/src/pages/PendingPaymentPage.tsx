@@ -19,10 +19,18 @@ interface PaymentData {
 }
 
 function calculateDynamicStepNumbers(hasHolder: boolean, hasReference: boolean) {
+  const amount = hasHolder ? '4.' : '3.';
+  const reference = hasHolder ? '5.' : '4.';
+  let checkStatus = '4.';
+
+  if (hasHolder && hasReference) checkStatus = '6.';
+  else if (hasHolder && !hasReference) checkStatus = '5.';
+  else if (!hasHolder && hasReference) checkStatus = '5.';
+
   return {
-    amount: hasHolder ? '4.' : '3.',
-    reference: hasHolder ? '5.' : '4.',
-    checkStatus: hasHolder ? (hasReference ? '6.' : '5.') : (hasReference ? '5.' : '4.'),
+    amount,
+    reference,
+    checkStatus,
   };
 }
 

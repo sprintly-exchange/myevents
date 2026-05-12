@@ -61,7 +61,7 @@ const getDefaultPaymentForm = () => ({
   is_active: true,
 });
 
-function mapProfileToPayload(profile: PaymentProfile, priority: number): PaymentProfilePayload {
+function createPaymentProfilePayload(profile: PaymentProfile, priority: number): PaymentProfilePayload {
   return {
     id: profile.id,
     country_code: profile.country_code,
@@ -249,8 +249,8 @@ export default function AdminSettingsPage() {
     if (!target || currentIndex < 0) return;
 
     reorderPaymentProfiles.mutate([
-      mapProfileToPayload(profile, target.priority ?? DEFAULT_PAYMENT_PRIORITY),
-      mapProfileToPayload(target, profile.priority ?? DEFAULT_PAYMENT_PRIORITY),
+      createPaymentProfilePayload(profile, target.priority ?? DEFAULT_PAYMENT_PRIORITY),
+      createPaymentProfilePayload(target, profile.priority ?? DEFAULT_PAYMENT_PRIORITY),
     ]);
   };
 
