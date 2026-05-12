@@ -451,6 +451,8 @@
       "countryOptionNO": "නෝර්වේ (NO)",
       "countryOptionDK": "ඩෙන්මාර්ක් (DK)",
       "countryOptionFI": "ෆින්ලන්තය (FI)",
+      "countryOptionLK": "ශ්‍රී ලංකාව (LK)",
+      "countryOptionCY": "සයිප්‍රස් (CY)",
       "countryHelp": "මෙම ගෙවීම් ක්‍රමය පෙන්විය යුතු රටේ පරිශීලකයන් තෝරන්න.",
       "paymentRecipientLabelPlaceholder": "දුරකථන අංකය",
       "paymentRecipientValuePlaceholder": "+46701234567",
