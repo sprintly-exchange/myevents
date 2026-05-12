@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Mail, CreditCard, Lock, Send, Users } from 'lucide-react';
+import { Mail, CreditCard, Lock, Send, Users, Pencil, Power, ArrowUp, ArrowDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
 import AppLayout from '@/components/AppLayout';
@@ -24,25 +24,36 @@ interface PaymentProfile {
   priority: number;
 }
 
+const COMMON_COUNTRIES = [
+  { value: 'GLOBAL', labelKey: 'admin.settings.countryOptionGlobal' },
+  { value: 'SE', labelKey: 'admin.settings.countryOptionSE' },
+  { value: 'NO', labelKey: 'admin.settings.countryOptionNO' },
+  { value: 'DK', labelKey: 'admin.settings.countryOptionDK' },
+  { value: 'FI', labelKey: 'admin.settings.countryOptionFI' },
+];
+
+const getDefaultPaymentForm = () => ({
+  id: '',
+  country_code: 'SE',
+  payment_method_name: 'Swish',
+  payment_recipient_label: 'Swish number',
+  payment_recipient_value: '',
+  payment_holder_label: 'Recipient',
+  payment_holder_name: '',
+  payment_qr_template: '',
+  is_default: true,
+  priority: '100',
+  is_active: true,
+});
+
 export default function AdminSettingsPage() {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const [smtpForm, setSmtpForm] = useState({
     smtp_host: '', smtp_port: '587', smtp_user: '', smtp_pass: '', smtp_from: '',
   });
-  const [paymentForm, setPaymentForm] = useState({
-    id: '',
-    country_code: 'SE',
-    payment_method_name: 'Swish',
-    payment_recipient_label: 'Swish number',
-    payment_recipient_value: '',
-    payment_holder_label: 'Recipient',
-    payment_holder_name: '',
-    payment_qr_template: '',
-    is_default: true,
-    priority: '100',
-    is_active: true,
-  });
+  const [paymentForm, setPaymentForm] = useState(getDefaultPaymentForm());
+  const [countryPreset, setCountryPreset] = useState<'GLOBAL' | 'SE' | 'NO' | 'DK' | 'FI' | 'OTHER'>('SE');
   const [freeTierForm, setFreeTierForm] = useState({ free_tier_invite_limit: '1' });
   const [testEmail, setTestEmail] = useState('');
 
@@ -66,21 +77,26 @@ export default function AdminSettingsPage() {
         smtp_from: s.smtp_from || '',
       });
       setPaymentForm({
-        id: '',
-        country_code: 'SE',
+        ...getDefaultPaymentForm(),
         payment_method_name: s.payment_method_name || 'Swish',
         payment_recipient_label: s.payment_recipient_label || 'Swish number',
         payment_recipient_value: s.payment_recipient_value || s.swish_number || '',
         payment_holder_label: s.payment_holder_label || 'Recipient',
         payment_holder_name: s.payment_holder_name || s.swish_holder_name || '',
         payment_qr_template: s.payment_qr_template || '',
-        is_default: true,
-        priority: '100',
-        is_active: true,
       });
       setFreeTierForm({ free_tier_invite_limit: s.free_tier_invite_limit || '1' });
     }
   }, [data]);
+
+  useEffect(() => {
+    const normalized = (paymentForm.country_code || '').toUpperCase();
+    if (COMMON_COUNTRIES.some((country) => country.value === normalized)) {
+      setCountryPreset(normalized as 'GLOBAL' | 'SE' | 'NO' | 'DK' | 'FI');
+      return;
+    }
+    setCountryPreset('OTHER');
+  }, [paymentForm.country_code]);
 
   const [passwordForm, setPasswordForm] = useState({ current_password: '', new_password: '', confirm_password: '' });
 
@@ -126,21 +142,28 @@ export default function AdminSettingsPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-payment-profiles'] });
       toast.success(t('admin.settings.paymentProfileSaved'));
-      setPaymentForm({
-        id: '',
-        country_code: 'SE',
-        payment_method_name: 'Swish',
-        payment_recipient_label: 'Swish number',
-        payment_recipient_value: '',
-        payment_holder_label: 'Recipient',
-        payment_holder_name: '',
-        payment_qr_template: '',
-        is_default: true,
-        priority: '100',
-        is_active: true,
-      });
+      setPaymentForm(getDefaultPaymentForm());
     },
     onError: () => toast.error(t('admin.settings.paymentProfileSaveFailed')),
+  });
+
+  const deactivatePaymentProfile = useMutation({
+    mutationFn: (id: string) => api.delete(`/admin/payment-profiles/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-payment-profiles'] });
+      toast.success(t('admin.settings.paymentProfileDeactivated'));
+      if (paymentForm.id) setPaymentForm(getDefaultPaymentForm());
+    },
+    onError: () => toast.error(t('admin.settings.paymentProfileDeactivateFailed')),
+  });
+
+  const reorderPaymentProfiles = useMutation({
+    mutationFn: (payloads: Record<string, any>[]) => Promise.all(payloads.map((payload) => api.post('/admin/payment-profiles', payload))),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-payment-profiles'] });
+      toast.success(t('admin.settings.paymentProfileOrderUpdated'));
+    },
+    onError: () => toast.error(t('admin.settings.paymentProfileOrderUpdateFailed')),
   });
 
   const savePayment = () => {
@@ -161,6 +184,53 @@ export default function AdminSettingsPage() {
 
   const saveFreeTier = () => {
     saveSettings.mutate([{ key: 'free_tier_invite_limit', value: freeTierForm.free_tier_invite_limit }]);
+  };
+
+  const paymentProfiles: PaymentProfile[] = paymentProfilesData?.profiles || [];
+
+  const startEditingPaymentProfile = (profile: PaymentProfile) => {
+    setPaymentForm({
+      id: profile.id,
+      country_code: profile.country_code || 'GLOBAL',
+      payment_method_name: profile.method_name || '',
+      payment_recipient_label: profile.recipient_label || '',
+      payment_recipient_value: profile.recipient_value || '',
+      payment_holder_label: profile.holder_label || '',
+      payment_holder_name: profile.holder_value || '',
+      payment_qr_template: profile.qr_template || '',
+      is_default: !!profile.is_default,
+      priority: String(profile.priority ?? 100),
+      is_active: !!profile.is_active,
+    });
+  };
+
+  const movePaymentProfile = (profile: PaymentProfile, direction: 'up' | 'down') => {
+    const countryProfiles = paymentProfiles
+      .filter((item) => item.country_code === profile.country_code)
+      .sort((a, b) => (a.priority ?? 100) - (b.priority ?? 100));
+    const currentIndex = countryProfiles.findIndex((item) => item.id === profile.id);
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    const target = countryProfiles[targetIndex];
+    if (!target || currentIndex < 0) return;
+
+    const updatePayload = (item: PaymentProfile, priority: number) => ({
+      id: item.id,
+      country_code: item.country_code,
+      method_name: item.method_name,
+      recipient_label: item.recipient_label,
+      recipient_value: item.recipient_value,
+      holder_label: item.holder_label,
+      holder_value: item.holder_value,
+      qr_template: item.qr_template || '',
+      is_default: item.is_default,
+      is_active: item.is_active,
+      priority,
+    });
+
+    reorderPaymentProfiles.mutate([
+      updatePayload(profile, target.priority ?? 100),
+      updatePayload(target, profile.priority ?? 100),
+    ]);
   };
 
   const fieldClass = "border-slate-200 focus:border-blue-400 h-10";
@@ -298,42 +368,120 @@ export default function AdminSettingsPage() {
                 </div>
               </div>
               <div className="p-6 space-y-5">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-700">{t('admin.settings.savedPaymentProfiles')}</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {(paymentProfilesData?.profiles || []).map((profile: PaymentProfile) => (
-                      <button
-                        key={profile.id}
-                        type="button"
-                        className="px-2.5 py-1 text-xs rounded-md border border-slate-200 hover:bg-slate-50"
-                        onClick={() => setPaymentForm({
-                          id: profile.id,
-                          country_code: profile.country_code || 'GLOBAL',
-                          payment_method_name: profile.method_name || '',
-                          payment_recipient_label: profile.recipient_label || '',
-                          payment_recipient_value: profile.recipient_value || '',
-                          payment_holder_label: profile.holder_label || '',
-                          payment_holder_name: profile.holder_value || '',
-                          payment_qr_template: profile.qr_template || '',
-                          is_default: !!profile.is_default,
-                          priority: String(profile.priority ?? 100),
-                          is_active: !!profile.is_active,
-                        })}
-                      >
-                        {profile.country_code} · {profile.method_name}
-                      </button>
-                    ))}
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium text-slate-700">{t('admin.settings.savedPaymentProfiles')}</Label>
+                    {paymentForm.id && (
+                      <Button variant="outline" className="h-8 border-slate-200 text-xs" onClick={() => setPaymentForm(getDefaultPaymentForm())}>
+                        {t('admin.settings.cancelEdit')}
+                      </Button>
+                    )}
                   </div>
+                  <div className="space-y-2">
+                    {paymentProfiles.length === 0 && (
+                      <p className="text-xs text-slate-500">{t('admin.settings.noPaymentProfiles')}</p>
+                    )}
+                    {paymentProfiles.map((profile) => {
+                      const sameCountryProfiles = paymentProfiles.filter((item) => item.country_code === profile.country_code);
+                      const sorted = sameCountryProfiles.sort((a, b) => (a.priority ?? 100) - (b.priority ?? 100));
+                      const index = sorted.findIndex((item) => item.id === profile.id);
+                      return (
+                        <div key={profile.id} className="rounded-xl border border-slate-200 p-3 bg-slate-50/40">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div>
+                              <p className="text-sm font-semibold text-slate-900">{profile.method_name}</p>
+                              <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
+                                <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2 py-0.5">{profile.country_code}</span>
+                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 ${profile.is_active ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
+                                  {profile.is_active ? t('admin.settings.active') : t('admin.settings.inactive')}
+                                </span>
+                                {profile.is_default && (
+                                  <span className="inline-flex items-center rounded-full px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200">
+                                    {t('admin.settings.defaultForCountry')}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {sameCountryProfiles.length > 1 && (
+                                <>
+                                  <Button
+                                    variant="outline"
+                                    className="h-8 w-8 p-0 border-slate-200"
+                                    onClick={() => movePaymentProfile(profile, 'up')}
+                                    disabled={index <= 0 || reorderPaymentProfiles.isPending}
+                                  >
+                                    <ArrowUp className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    className="h-8 w-8 p-0 border-slate-200"
+                                    onClick={() => movePaymentProfile(profile, 'down')}
+                                    disabled={index >= sameCountryProfiles.length - 1 || reorderPaymentProfiles.isPending}
+                                  >
+                                    <ArrowDown className="h-3.5 w-3.5" />
+                                  </Button>
+                                </>
+                              )}
+                              <Button
+                                variant="outline"
+                                className="h-8 w-8 p-0 border-slate-200"
+                                onClick={() => startEditingPaymentProfile(profile)}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                className="h-8 w-8 p-0 border-slate-200 text-amber-700 hover:text-amber-700"
+                                onClick={() => deactivatePaymentProfile.mutate(profile.id)}
+                                disabled={!profile.is_active || deactivatePaymentProfile.isPending}
+                              >
+                                <Power className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="text-xs text-slate-500">{t('admin.settings.paymentPriorityHelp')}</p>
                 </div>
+
+                <div className="border-t border-slate-100 pt-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-semibold text-slate-900">
+                      {paymentForm.id ? t('admin.settings.editPaymentProfile') : t('admin.settings.addPaymentProfile')}
+                    </h3>
+                    <span className="text-xs text-slate-500">
+                      {paymentForm.id ? t('admin.settings.editMode') : t('admin.settings.createMode')}
+                    </span>
+                  </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-slate-700">{t('common.country')}</Label>
-                    <Input
-                      placeholder="SE / GLOBAL"
-                      value={paymentForm.country_code}
-                      onChange={e => setPaymentForm({ ...paymentForm, country_code: e.target.value.toUpperCase() })}
-                      className={fieldClass}
-                    />
+                    <select
+                      value={countryPreset}
+                      onChange={(e) => {
+                        const selected = e.target.value as 'GLOBAL' | 'SE' | 'NO' | 'DK' | 'FI' | 'OTHER';
+                        setCountryPreset(selected);
+                        if (selected !== 'OTHER') setPaymentForm({ ...paymentForm, country_code: selected });
+                      }}
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:border-blue-400"
+                    >
+                      {COMMON_COUNTRIES.map((country) => (
+                        <option key={country.value} value={country.value}>{t(country.labelKey)}</option>
+                      ))}
+                      <option value="OTHER">{t('admin.settings.otherCountryCode')}</option>
+                    </select>
+                    <p className="text-xs text-slate-500">{t('admin.settings.countryHelp')}</p>
+                    {countryPreset === 'OTHER' && (
+                      <Input
+                        placeholder={t('admin.settings.countryCodePlaceholder')}
+                        value={paymentForm.country_code}
+                        onChange={e => setPaymentForm({ ...paymentForm, country_code: e.target.value.toUpperCase() })}
+                        className={fieldClass}
+                      />
+                    )}
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-slate-700">{t('admin.settings.paymentMethodName')}</Label>
@@ -343,24 +491,27 @@ export default function AdminSettingsPage() {
                       onChange={e => setPaymentForm({ ...paymentForm, payment_method_name: e.target.value })}
                       className={fieldClass}
                     />
+                    <p className="text-xs text-slate-500">{t('admin.settings.paymentMethodNameHelp')}</p>
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-slate-700">{t('admin.settings.paymentRecipientLabel')}</Label>
                     <Input
-                      placeholder="IBAN"
+                      placeholder={t('admin.settings.paymentRecipientLabelPlaceholder')}
                       value={paymentForm.payment_recipient_label}
                       onChange={e => setPaymentForm({ ...paymentForm, payment_recipient_label: e.target.value })}
                       className={fieldClass}
                     />
+                    <p className="text-xs text-slate-500">{t('admin.settings.paymentRecipientLabelHelp')}</p>
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-slate-700">{t('admin.settings.paymentRecipientValue')}</Label>
                     <Input
-                      placeholder="CY17002001280000001200527600"
+                      placeholder={t('admin.settings.paymentRecipientValuePlaceholder')}
                       value={paymentForm.payment_recipient_value}
                       onChange={e => setPaymentForm({ ...paymentForm, payment_recipient_value: e.target.value })}
                       className={fieldClass}
                     />
+                    <p className="text-xs text-slate-500">{t('admin.settings.paymentRecipientValueHelp')}</p>
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-slate-700">{t('admin.settings.paymentHolderLabel')}</Label>
@@ -370,35 +521,17 @@ export default function AdminSettingsPage() {
                       onChange={e => setPaymentForm({ ...paymentForm, payment_holder_label: e.target.value })}
                       className={fieldClass}
                     />
+                    <p className="text-xs text-slate-500">{t('admin.settings.paymentHolderLabelHelp')}</p>
                   </div>
                   <div className="space-y-1.5 sm:col-span-2">
                     <Label className="text-sm font-medium text-slate-700">{t('admin.settings.paymentHolderName')}</Label>
                     <Input
-                      placeholder="MyEvents Ltd"
+                      placeholder={t('admin.settings.paymentHolderNamePlaceholder')}
                       value={paymentForm.payment_holder_name}
                       onChange={e => setPaymentForm({ ...paymentForm, payment_holder_name: e.target.value })}
                       className={fieldClass}
                     />
-                  </div>
-                  <div className="space-y-1.5 sm:col-span-2">
-                    <Label className="text-sm font-medium text-slate-700">{t('admin.settings.paymentQrTemplate')}</Label>
-                    <Input
-                      placeholder="swish://payment?version=1&payee={{recipient}}&amount={{amount}}&message={{reference}}&editable=false"
-                      value={paymentForm.payment_qr_template}
-                      onChange={e => setPaymentForm({ ...paymentForm, payment_qr_template: e.target.value })}
-                      className={fieldClass}
-                    />
-                    <p className="text-xs text-slate-400">{t('admin.settings.paymentQrTemplateHelp')}</p>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">{t('admin.settings.paymentPriority')}</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={paymentForm.priority}
-                      onChange={e => setPaymentForm({ ...paymentForm, priority: e.target.value })}
-                      className={fieldClass}
-                    />
+                    <p className="text-xs text-slate-500">{t('admin.settings.paymentHolderNameHelp')}</p>
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-slate-700">{t('admin.settings.defaultForCountry')}</Label>
@@ -412,9 +545,47 @@ export default function AdminSettingsPage() {
                     </select>
                   </div>
                 </div>
+                <details className="rounded-lg border border-slate-200 p-3 bg-slate-50">
+                  <summary className="cursor-pointer text-sm font-medium text-slate-700">{t('admin.settings.paymentQrAdvanced')}</summary>
+                  <div className="pt-3 space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">{t('admin.settings.paymentQrTemplate')}</Label>
+                    <Input
+                      placeholder="swish://payment?version=1&payee={{recipient}}&amount={{amount}}&message={{reference}}&editable=false"
+                      value={paymentForm.payment_qr_template}
+                      onChange={e => setPaymentForm({ ...paymentForm, payment_qr_template: e.target.value })}
+                      className={fieldClass}
+                    />
+                    <p className="text-xs text-slate-500">{t('admin.settings.paymentQrTemplateHelp')}</p>
+                  </div>
+                </details>
+
+                <details className="rounded-lg border border-slate-200 p-3">
+                  <summary className="cursor-pointer text-sm font-medium text-slate-700">{t('admin.settings.previewTitle')}</summary>
+                  <div className="pt-3">
+                    <div className="rounded-xl border border-slate-200 bg-white p-4">
+                      <p className="text-xs uppercase tracking-wide text-slate-500 mb-2">{t('admin.settings.previewSubtitle')}</p>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">{t('upgrade.paymentMethod')}</span>
+                          <span className="font-semibold text-slate-800">{paymentForm.payment_method_name || '—'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">{paymentForm.payment_recipient_label || t('admin.settings.paymentRecipientLabel')}</span>
+                          <span className="font-mono text-slate-800">{paymentForm.payment_recipient_value || '—'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-500">{paymentForm.payment_holder_label || t('admin.settings.paymentHolderLabel')}</span>
+                          <span className="text-slate-800">{paymentForm.payment_holder_name || '—'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </details>
+
                 <Button onClick={savePayment} disabled={savePaymentProfile.isPending} className="bg-blue-600 hover:bg-blue-700">
                   {savePaymentProfile.isPending ? t('admin.settings.saving') : t('admin.settings.savePaymentSettings')}
                 </Button>
+                </div>
               </div>
             </div>
           </TabsContent>

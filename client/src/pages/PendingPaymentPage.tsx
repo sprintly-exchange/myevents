@@ -154,13 +154,32 @@ export default function PendingPaymentPage() {
       {/* Instructions */}
       <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 mb-5">
         <p className="text-sm font-semibold text-amber-800 mb-2">{t('pendingPayment.instructions')}</p>
-        <ol className="list-decimal list-inside space-y-1.5 text-sm text-amber-700">
-          <li>{t('pendingPayment.step1')}</li>
-          <li>{t('pendingPayment.step2', { method: activePaymentMethod?.method_name || t('upgrade.paymentMethodFallback') })}</li>
-          <li>{t('pendingPayment.step3', { price, currency })}</li>
-          {reference && <li>{t('pendingPayment.step4', { ref: reference })}</li>}
-          <li>{t('pendingPayment.step5')}</li>
+        <ol className="space-y-1.5 text-sm text-amber-700">
+          <li className="flex gap-2"><span className="font-bold shrink-0">1.</span> {t('pendingPayment.step1')}</li>
+          <li className="flex gap-2">
+            <span className="font-bold shrink-0">2.</span>
+            {t('pendingPayment.step2Detailed', {
+              method: activePaymentMethod?.method_name || t('upgrade.paymentMethodFallback'),
+              label: activePaymentMethod?.recipient_label || t('upgrade.paymentDestination'),
+              recipient: activePaymentMethod?.recipient_value || '—',
+            })}
+          </li>
+          {activePaymentMethod?.holder_value && (
+            <li className="flex gap-2">
+              <span className="font-bold shrink-0">3.</span>
+              {t('pendingPayment.stepHolder', {
+                label: activePaymentMethod?.holder_label || t('upgrade.recipient'),
+                holder: activePaymentMethod.holder_value,
+              })}
+            </li>
+          )}
+          <li className="flex gap-2"><span className="font-bold shrink-0">{activePaymentMethod?.holder_value ? '4.' : '3.'}</span> {t('pendingPayment.step3', { price, currency })}</li>
+          {reference && <li className="flex gap-2"><span className="font-bold shrink-0">{activePaymentMethod?.holder_value ? '5.' : '4.'}</span> {t('pendingPayment.step4', { ref: reference })}</li>}
+          <li className="flex gap-2"><span className="font-bold shrink-0">{activePaymentMethod?.holder_value ? (reference ? '6.' : '5.') : (reference ? '5.' : '4.')}</span> {t('pendingPayment.step5')}</li>
         </ol>
+        <p className="mt-3 text-xs text-amber-700">
+          {t('pendingPayment.manualApprovalNote')}
+        </p>
       </div>
 
       <Button
@@ -168,7 +187,7 @@ export default function PendingPaymentPage() {
         onClick={handleCheckStatus}
         disabled={checking}
       >
-        {checking ? t('pendingPayment.checking') : t('pendingPayment.checkStatus')}
+        {checking ? t('pendingPayment.checking') : t('pendingPayment.checkStatusDone')}
       </Button>
     </AuthLayout>
   );
