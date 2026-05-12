@@ -192,6 +192,7 @@ export default function UpgradePage() {
                 <li className="flex gap-2"><span className="font-bold shrink-0">4.</span> {t('upgrade.step4', { ref: paymentInfo.reference })}</li>
                 <li className="flex gap-2"><span className="font-bold shrink-0">5.</span> {t('upgrade.step5')}</li>
               </ol>
+              <p className="mt-3 text-xs text-amber-700">{t('upgrade.manualApprovalNote')}</p>
             </div>
 
             <Button
