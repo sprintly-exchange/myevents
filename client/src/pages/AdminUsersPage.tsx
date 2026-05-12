@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { User, Plan } from '@/types';
+import { COUNTRY_CODES } from '@/lib/countries';
 
 export default function AdminUsersPage() {
   const { t } = useTranslation();
@@ -169,12 +170,9 @@ export default function AdminUsersPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="SE">SE</SelectItem>
-                          <SelectItem value="US">US</SelectItem>
-                          <SelectItem value="GB">GB</SelectItem>
-                          <SelectItem value="LK">LK</SelectItem>
-                          <SelectItem value="DE">DE</SelectItem>
-                          <SelectItem value="FR">FR</SelectItem>
+                          {COUNTRY_CODES.map(countryCode => (
+                            <SelectItem key={countryCode} value={countryCode}>{countryCode}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </TableCell>

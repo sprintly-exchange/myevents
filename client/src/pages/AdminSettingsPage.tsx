@@ -10,6 +10,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
+interface PaymentProfile {
+  id: string;
+  country_code: string;
+  method_name: string;
+  recipient_label: string;
+  recipient_value: string;
+  holder_label: string;
+  holder_value: string;
+  qr_template?: string;
+  is_active: boolean;
+  is_default: boolean;
+  priority: number;
+}
+
 export default function AdminSettingsPage() {
   const { t } = useTranslation();
   const qc = useQueryClient();
@@ -287,7 +301,7 @@ export default function AdminSettingsPage() {
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-700">{t('admin.settings.savedPaymentProfiles')}</Label>
                   <div className="flex flex-wrap gap-2">
-                    {(paymentProfilesData?.profiles || []).map((profile: any) => (
+                    {(paymentProfilesData?.profiles || []).map((profile: PaymentProfile) => (
                       <button
                         key={profile.id}
                         type="button"

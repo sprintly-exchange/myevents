@@ -22,6 +22,15 @@ const emptyForm = {
   description: '',
 };
 
+interface CountryPrice {
+  id: string;
+  plan_id: string;
+  country_code: string;
+  price_sek: number;
+  currency: string;
+  is_active: boolean;
+}
+
 export default function AdminPlansPage() {
   const qc = useQueryClient();
   const { t } = useTranslation();
@@ -41,7 +50,7 @@ export default function AdminPlansPage() {
     queryFn: () => api.get(`/plans/${selectedPlanId}/country-prices`).then(r => r.data),
     enabled: !!selectedPlanId,
   });
-  const countryPrices = countryPricesData?.prices || [];
+  const countryPrices: CountryPrice[] = countryPricesData?.prices || [];
 
   const openNew = () => {
     setForm(emptyForm);
@@ -356,7 +365,7 @@ export default function AdminPlansPage() {
                       <Input
                         placeholder="SE"
                         value={countryPriceForm.country_code}
-                        onChange={e => setCountryPriceForm({ ...countryPriceForm, country_code: e.target.value.toUpperCase().slice(0, 10) })}
+                        onChange={e => setCountryPriceForm({ ...countryPriceForm, country_code: e.target.value.toUpperCase().slice(0, 2) })}
                         className="border-slate-200 focus:border-blue-400 h-9 text-xs"
                       />
                       <Input
@@ -384,7 +393,7 @@ export default function AdminPlansPage() {
                     </Button>
                     {countryPrices.length > 0 && (
                       <div className="space-y-1">
-                        {countryPrices.map((price: any) => (
+                        {countryPrices.map((price) => (
                           <div key={price.id} className="flex items-center justify-between text-xs bg-slate-50 rounded-md px-2 py-1.5">
                             <span>{price.country_code}: {price.price_sek} {price.currency}</span>
                             <button

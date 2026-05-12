@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import prisma from '../db';
 import { requireAdmin, requireAuth } from '../middleware/auth';
 import { getEffectivePlanPrices } from '../services/plan-pricing';
-import { normalizeCountryCode } from '../services/payment-settings';
+import { isIsoCountryCode, normalizeCountryCode, sortProfilesForCountry } from '../services/payment-settings';
 
 const router = Router();
 
@@ -22,10 +22,11 @@ function formatPlan(p: any) {
   };
 }
 
-router.get('/', requireAuth, async (req: Request, res: Response) => {
-  const userId = (req as any).user?.id;
-  const user = userId ? await prisma.user.findUnique({ where: { id: userId }, select: { country: true } }) : null;
-  const plans = await getEffectivePlanPrices(user?.country || 'SE');
+router.get('/', async (req: Request, res: Response) => {
+  const requestedCountry = typeof req.query.country === 'string' && isIsoCountryCode(req.query.country)
+    ? req.query.country
+    : 'SE';
+  const plans = await getEffectivePlanPrices(requestedCountry);
   return res.json({ plans: plans.map(formatPlan) });
 });
 
@@ -101,6 +102,7 @@ router.get('/:id/country-prices', requireAdmin, async (req: Request, res: Respon
 router.put('/:id/country-prices/:countryCode', requireAdmin, async (req: Request, res: Response) => {
   const countryCode = normalizeCountryCode(req.params.countryCode);
   if (countryCode === 'GLOBAL') return res.status(400).json({ error: 'Use base plan price for global pricing' });
+  if (!isIsoCountryCode(countryCode)) return res.status(400).json({ error: 'countryCode must be a 2-letter ISO code' });
   const existing = await prisma.plan.findUnique({ where: { id: req.params.id } });
   if (!existing) return res.status(404).json({ error: 'Plan not found' });
   const price = Number(req.body.price_sek);
@@ -148,20 +150,14 @@ router.get('/upgrade-requests/pending', requireAuth, async (req: Request, res: R
   });
   if (!request) return res.json({ request: null, payment: null, swish: null, payment_methods: [] });
   const userRow = await prisma.user.findUnique({ where: { id: user.id }, select: { country: true } });
-  const countryCode = normalizeCountryCode(userRow?.country || request.countryCode || 'SE');
+  const countryCode = normalizeCountryCode(request.countryCode || userRow?.country || 'SE');
   const profiles = await prisma.paymentProfile.findMany({
     where: {
       isActive: true,
       OR: [{ countryCode }, { countryCode: 'GLOBAL' }],
     },
   });
-  const sortedProfiles = [...profiles].sort((a, b) => {
-    const aLocal = a.countryCode === countryCode ? 0 : 1;
-    const bLocal = b.countryCode === countryCode ? 0 : 1;
-    if (aLocal !== bLocal) return aLocal - bLocal;
-    if (a.isDefault !== b.isDefault) return a.isDefault ? -1 : 1;
-    return (a.priority ?? 100) - (b.priority ?? 100);
-  });
+  const sortedProfiles = sortProfilesForCountry(profiles, countryCode);
   const selectedProfile = request.paymentProfileId
     ? sortedProfiles.find(p => p.id === request.paymentProfileId) || null
     : sortedProfiles[0] || null;
@@ -221,13 +217,7 @@ router.post('/upgrade-requests', requireAuth, async (req: Request, res: Response
       OR: [{ countryCode }, { countryCode: 'GLOBAL' }],
     },
   });
-  const sortedProfiles = [...paymentProfiles].sort((a, b) => {
-    const aLocal = a.countryCode === countryCode ? 0 : 1;
-    const bLocal = b.countryCode === countryCode ? 0 : 1;
-    if (aLocal !== bLocal) return aLocal - bLocal;
-    if (a.isDefault !== b.isDefault) return a.isDefault ? -1 : 1;
-    return (a.priority ?? 100) - (b.priority ?? 100);
-  });
+  const sortedProfiles = sortProfilesForCountry(paymentProfiles, countryCode);
   const selectedProfile = sortedProfiles.find(p => p.id === payment_profile_id) || sortedProfiles[0] || null;
   const paymentReference = Math.random().toString(36).substring(2, 8).toUpperCase();
   const countryPrice = await prisma.planCountryPrice.findUnique({

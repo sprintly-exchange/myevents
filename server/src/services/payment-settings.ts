@@ -51,6 +51,10 @@ export function normalizeCountryCode(country?: string | null): string {
   return normalized || 'GLOBAL';
 }
 
+export function isIsoCountryCode(country?: string | null): boolean {
+  return /^[A-Z]{2}$/.test((country || '').trim().toUpperCase());
+}
+
 function mapPaymentProfile(profile: any): PaymentSettings {
   return {
     id: profile.id,
@@ -66,7 +70,7 @@ function mapPaymentProfile(profile: any): PaymentSettings {
   };
 }
 
-function sortProfilesForCountry<T extends { countryCode: string; isDefault: boolean; priority: number }>(
+export function sortProfilesForCountry<T extends { countryCode: string; isDefault: boolean; priority: number }>(
   profiles: T[],
   countryCode: string
 ): T[] {

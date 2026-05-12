@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../db';
 import { requireAuth } from '../middleware/auth';
+import { isIsoCountryCode } from '../services/payment-settings';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_change_me';
@@ -36,12 +37,16 @@ router.post('/register', async (req: Request, res: Response) => {
   const defaultPlan = await prisma.plan.findFirst({ where: { isDefault: true, isActive: true } });
   const passwordHash = bcrypt.hashSync(password, 10);
 
+  const normalizedCountry = typeof country === 'string' ? country.trim().toUpperCase() : 'SE';
+  if (!isIsoCountryCode(normalizedCountry))
+    return res.status(400).json({ error: 'country must be a 2-letter ISO code' });
+
   const user = await prisma.user.create({
     data: {
       email,
       passwordHash,
       name,
-      country: typeof country === 'string' && country.trim() ? country.trim().toUpperCase() : 'SE',
+      country: normalizedCountry || 'SE',
       role: 'user',
       planId: defaultPlan?.id ?? null,
       paymentStatus: 'pending',

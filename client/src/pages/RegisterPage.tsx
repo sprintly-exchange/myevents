@@ -7,6 +7,7 @@ import AuthLayout from '@/components/AuthLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { COUNTRY_CODES } from '@/lib/countries';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -69,14 +70,16 @@ export default function RegisterPage() {
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="country" className="text-sm font-medium text-slate-700">{t('common.country')}</Label>
-          <Input
+          <select
             id="country"
-            placeholder={t('auth.countryPlaceholder')}
             value={form.country}
-            onChange={e => setForm({ ...form, country: e.target.value.toUpperCase().slice(0, 2) })}
-            required
-            className="border-slate-200 focus:border-blue-400 h-11"
-          />
+            onChange={e => setForm({ ...form, country: e.target.value })}
+            className="w-full h-11 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:border-blue-400"
+          >
+            {COUNTRY_CODES.map(code => (
+              <option key={code} value={code}>{code}</option>
+            ))}
+          </select>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="password" className="text-sm font-medium text-slate-700">{t('common.password')}</Label>

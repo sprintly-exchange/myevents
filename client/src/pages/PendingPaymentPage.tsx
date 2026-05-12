@@ -45,7 +45,7 @@ export default function PendingPaymentPage() {
   const currency = stateData.currency || pendingData?.request?.plan_currency || 'SEK';
   const planName = stateData.planName || pendingData?.request?.plan_name || 'Basic';
   const reference = pendingData?.request?.paymentReference || pendingData?.request?.payment_reference || '';
-  const activePaymentMethod = paymentMethods.find((method: any) => method.id === selectedPaymentMethodId) || payment;
+  const activePaymentMethod = paymentMethods.find((method) => method.id === selectedPaymentMethodId) || payment;
 
   const paymentQrData = buildPaymentQrValue(activePaymentMethod, {
     amount: price,
@@ -104,7 +104,7 @@ export default function PendingPaymentPage() {
               {reference || <span className="text-slate-400 italic">loading…</span>}
             </span>
           </div>
-            {payment?.recipient_value && (
+            {activePaymentMethod?.recipient_value && (
               <>
                 {paymentMethods.length > 1 && (
                   <div className="border-t border-blue-200 pt-2.5 mt-2.5">
@@ -115,7 +115,7 @@ export default function PendingPaymentPage() {
                         value={selectedPaymentMethodId}
                         onChange={(e) => setSelectedPaymentMethodId(e.target.value)}
                       >
-                        {paymentMethods.map((method: any, index) => (
+                        {paymentMethods.map((method, index) => (
                           <option key={method.id || index} value={method.id || ''}>
                             {method.method_name} {method.country_code ? `(${method.country_code})` : ''}
                           </option>

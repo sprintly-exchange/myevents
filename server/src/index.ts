@@ -87,7 +87,7 @@ upgradeRouter.get('/pending', requireAuth, async (req, res) => {
   });
   if (!request) return res.json({ request: null, payment: null, swish: null, payment_methods: [] });
   const fullUser = await prisma.user.findUnique({ where: { id: user.id }, select: { country: true } });
-  const countryCode = normalizeCountryCode(fullUser?.country || request.countryCode || 'SE');
+  const countryCode = normalizeCountryCode(request.countryCode || fullUser?.country || 'SE');
   const { selected, methods } = await getPaymentSettingsForCountry(countryCode);
   const selectedPayment = request.paymentProfileId
     ? methods.find(method => method.id === request.paymentProfileId) || selected
@@ -108,7 +108,7 @@ upgradeRouter.get('/pending', requireAuth, async (req, res) => {
   });
 });
 
-  upgradeRouter.get('/mine', requireAuth, async (req, res) => {
+upgradeRouter.get('/mine', requireAuth, async (req, res) => {
   const user = (req as any).user;
   const requests = await prisma.upgradeRequest.findMany({
     where: { userId: user.id },

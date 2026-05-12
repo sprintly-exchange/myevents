@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import prisma from '../db';
 import { requireAdmin, requireAuth } from '../middleware/auth';
 import { sendTestEmail } from '../services/email';
-import { normalizeCountryCode } from '../services/payment-settings';
+import { isIsoCountryCode, normalizeCountryCode, sortProfilesForCountry } from '../services/payment-settings';
 
 const router = Router();
 
@@ -91,6 +91,8 @@ router.patch('/users/:id', requireAdmin, async (req: Request, res: Response) => 
   const { role, is_active, payment_status, plan_id, country } = req.body;
   const user = await prisma.user.findUnique({ where: { id: req.params.id } });
   if (!user) return res.status(404).json({ error: 'User not found' });
+  if (country !== undefined && country !== null && String(country).trim() !== '' && !isIsoCountryCode(String(country)))
+    return res.status(400).json({ error: 'country must be a 2-letter ISO code' });
 
   const updated = await prisma.user.update({
     where: { id: req.params.id },
@@ -99,7 +101,7 @@ router.patch('/users/:id', requireAdmin, async (req: Request, res: Response) => 
       ...(is_active !== undefined ? { isActive: !!is_active } : {}),
       ...(payment_status !== undefined ? { paymentStatus: payment_status } : {}),
       ...(plan_id !== undefined ? { planId: plan_id } : {}),
-      ...(country !== undefined ? { country: country ? normalizeCountryCode(country) : null } : {}),
+      ...(country !== undefined ? { country: country ? String(country).trim().toUpperCase() : null } : {}),
     },
     include: { plan: { select: { name: true } } },
   });
@@ -186,13 +188,7 @@ router.post('/upgrade-requests', requireAuth, async (req: Request, res: Response
       OR: [{ countryCode }, { countryCode: 'GLOBAL' }],
     },
   });
-  const sortedProfiles = [...paymentProfiles].sort((a, b) => {
-    const aLocal = a.countryCode === countryCode ? 0 : 1;
-    const bLocal = b.countryCode === countryCode ? 0 : 1;
-    if (aLocal !== bLocal) return aLocal - bLocal;
-    if (a.isDefault !== b.isDefault) return a.isDefault ? -1 : 1;
-    return (a.priority ?? 100) - (b.priority ?? 100);
-  });
+  const sortedProfiles = sortProfilesForCountry(paymentProfiles, countryCode);
   const selectedProfile = sortedProfiles.find(p => p.id === payment_profile_id) || sortedProfiles[0] || null;
 
   // Cancel any existing pending request for this user
@@ -297,15 +293,16 @@ router.post('/payment-profiles', requireAdmin, async (req: Request, res: Respons
   if (!method_name) return res.status(400).json({ error: 'method_name required' });
   const normalizedCountry = normalizeCountryCode(country_code || 'GLOBAL');
 
-  if (is_default) {
-    await prisma.paymentProfile.updateMany({
-      where: { countryCode: normalizedCountry, ...(id ? { id: { not: id } } : {}) },
-      data: { isDefault: false },
-    });
-  }
+  const saved = await prisma.$transaction(async (tx) => {
+    if (is_default) {
+      await tx.paymentProfile.updateMany({
+        where: { countryCode: normalizedCountry, ...(id ? { id: { not: id } } : {}) },
+        data: { isDefault: false },
+      });
+    }
 
-  const saved = id
-    ? await prisma.paymentProfile.update({
+    if (id) {
+      return tx.paymentProfile.update({
         where: { id },
         data: {
           countryCode: normalizedCountry,
@@ -319,21 +316,24 @@ router.post('/payment-profiles', requireAdmin, async (req: Request, res: Respons
           isDefault: !!is_default,
           priority: priority !== undefined ? Number(priority) : 100,
         },
-      })
-    : await prisma.paymentProfile.create({
-        data: {
-          countryCode: normalizedCountry,
-          methodName: method_name,
-          recipientLabel: recipient_label || 'Payment details',
-          recipientValue: recipient_value || '',
-          holderLabel: holder_label || 'Recipient',
-          holderValue: holder_value || '',
-          qrTemplate: qr_template || '',
-          isActive: is_active !== undefined ? !!is_active : true,
-          isDefault: !!is_default,
-          priority: priority !== undefined ? Number(priority) : 100,
-        },
       });
+    }
+
+    return tx.paymentProfile.create({
+      data: {
+        countryCode: normalizedCountry,
+        methodName: method_name,
+        recipientLabel: recipient_label || 'Payment details',
+        recipientValue: recipient_value || '',
+        holderLabel: holder_label || 'Recipient',
+        holderValue: holder_value || '',
+        qrTemplate: qr_template || '',
+        isActive: is_active !== undefined ? !!is_active : true,
+        isDefault: !!is_default,
+        priority: priority !== undefined ? Number(priority) : 100,
+      },
+    });
+  });
 
   return res.json({
     profile: {

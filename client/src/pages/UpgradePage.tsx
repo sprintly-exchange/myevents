@@ -28,8 +28,8 @@ export default function UpgradePage() {
   const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState<string>('');
 
   const { data } = useQuery({
-    queryKey: ['plans'],
-    queryFn: () => api.get('/plans').then(r => r.data),
+    queryKey: ['plans', user?.country],
+    queryFn: () => api.get('/plans', { params: { country: user?.country || 'SE' } }).then(r => r.data),
   });
 
   const plans: Plan[] = data?.plans || [];
@@ -67,7 +67,7 @@ export default function UpgradePage() {
   };
 
   const activePaymentMethod = paymentInfo
-    ? paymentInfo.paymentMethods.find((method: any) => method.id === selectedPaymentMethodId) || paymentInfo.payment
+    ? paymentInfo.paymentMethods.find((method) => method.id === selectedPaymentMethodId) || paymentInfo.payment
     : null;
 
   const paymentQrData = buildPaymentQrValue(activePaymentMethod, {
@@ -139,7 +139,7 @@ export default function UpgradePage() {
                       value={selectedPaymentMethodId}
                       onChange={(e) => setSelectedPaymentMethodId(e.target.value)}
                     >
-                      {paymentInfo.paymentMethods.map((method: any, index) => (
+                      {paymentInfo.paymentMethods.map((method, index) => (
                         <option key={method.id || index} value={method.id || ''}>
                           {method.method_name} {method.country_code ? `(${method.country_code})` : ''}
                         </option>

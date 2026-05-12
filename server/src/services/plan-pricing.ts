@@ -7,7 +7,21 @@ export interface EffectivePlanPrice {
   pricing_country: string | null;
 }
 
-export async function getEffectivePlanPrices(country?: string | null) {
+export interface EffectivePlanRecord {
+  id: string;
+  name: string;
+  description: string | null;
+  eventLimit: number;
+  guestLimit: number;
+  priceSek: number;
+  currency: string;
+  isActive: boolean;
+  isDefault: boolean;
+  createdAt: Date;
+  pricingCountry: string | null;
+}
+
+export async function getEffectivePlanPrices(country?: string | null): Promise<EffectivePlanRecord[]> {
   const countryCode = normalizeCountryCode(country);
   const plans = await prisma.plan.findMany({
     where: { isActive: true },
