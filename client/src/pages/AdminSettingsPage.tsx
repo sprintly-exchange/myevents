@@ -45,6 +45,7 @@ const COMMON_COUNTRIES = [
   { value: 'DK', labelKey: 'admin.settings.countryOptionDK' },
   { value: 'FI', labelKey: 'admin.settings.countryOptionFI' },
 ];
+const DEFAULT_PAYMENT_PRIORITY = 100;
 
 const getDefaultPaymentForm = () => ({
   id: '',
@@ -56,11 +57,11 @@ const getDefaultPaymentForm = () => ({
   payment_holder_name: '',
   payment_qr_template: '',
   is_default: true,
-  priority: '100',
+  priority: String(DEFAULT_PAYMENT_PRIORITY),
   is_active: true,
 });
 
-function toPaymentProfilePayload(profile: PaymentProfile, priority: number): PaymentProfilePayload {
+function mapProfileToPayload(profile: PaymentProfile, priority: number): PaymentProfilePayload {
   return {
     id: profile.id,
     country_code: profile.country_code,
@@ -79,7 +80,7 @@ function toPaymentProfilePayload(profile: PaymentProfile, priority: number): Pay
 function getSortedProfilesForCountry(profiles: PaymentProfile[], countryCode: string) {
   return profiles
     .filter((item) => item.country_code === countryCode)
-    .sort((a, b) => (a.priority ?? 100) - (b.priority ?? 100));
+    .sort((a, b) => (a.priority ?? DEFAULT_PAYMENT_PRIORITY) - (b.priority ?? DEFAULT_PAYMENT_PRIORITY));
 }
 
 export default function AdminSettingsPage() {
@@ -248,8 +249,8 @@ export default function AdminSettingsPage() {
     if (!target || currentIndex < 0) return;
 
     reorderPaymentProfiles.mutate([
-      toPaymentProfilePayload(profile, target.priority ?? 100),
-      toPaymentProfilePayload(target, profile.priority ?? 100),
+      mapProfileToPayload(profile, target.priority ?? DEFAULT_PAYMENT_PRIORITY),
+      mapProfileToPayload(target, profile.priority ?? DEFAULT_PAYMENT_PRIORITY),
     ]);
   };
 

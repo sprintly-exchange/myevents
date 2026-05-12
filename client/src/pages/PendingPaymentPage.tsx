@@ -18,7 +18,7 @@ interface PaymentData {
   currency?: string;
 }
 
-function getChecklistStepNumbers(hasHolder: boolean, hasReference: boolean) {
+function calculateDynamicStepNumbers(hasHolder: boolean, hasReference: boolean) {
   return {
     amount: hasHolder ? '4.' : '3.',
     reference: hasHolder ? '5.' : '4.',
@@ -62,7 +62,7 @@ export default function PendingPaymentPage() {
     appName: 'MyEvents',
   });
   const hasHolder = !!activePaymentMethod?.holder_value;
-  const stepNumbers = getChecklistStepNumbers(hasHolder, !!reference);
+  const stepNumbers = calculateDynamicStepNumbers(hasHolder, !!reference);
 
   const handleCheckStatus = async () => {
     setChecking(true);
