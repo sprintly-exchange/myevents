@@ -20,6 +20,7 @@ model Plan {
 
   users           User[]
   upgradeRequests UpgradeRequest[]
+  countryPrices   PlanCountryPrice[]
 
   @@map("plans")
 }
@@ -29,6 +30,7 @@ model User {
   email         String   @unique
   passwordHash  String   @map("password_hash")
   name          String
+  country       String?  @default("SE")
   role          String   @default("user")
   planId        String?  @map("plan_id")
   paymentStatus String   @default("pending") @map("payment_status")
@@ -49,15 +51,55 @@ model UpgradeRequest {
   id               String    @id @default(cuid())
   userId           String    @map("user_id")
   planId           String    @map("plan_id")
+  countryCode      String?   @map("country_code")
+  paymentProfileId String?   @map("payment_profile_id")
+  paymentMethod    String?   @map("payment_method")
   status           String    @default("pending")
   paymentReference String?   @map("payment_reference")
   requestedAt      DateTime  @default(now()) @map("requested_at")
   resolvedAt       DateTime? @map("resolved_at")
 
-  user User @relation(fields: [userId], references: [id])
-  plan Plan @relation(fields: [planId], references: [id])
+  user           User            @relation(fields: [userId], references: [id])
+  plan           Plan            @relation(fields: [planId], references: [id])
+  paymentProfile PaymentProfile? @relation(fields: [paymentProfileId], references: [id])
 
   @@map("upgrade_requests")
+}
+
+model PlanCountryPrice {
+  id          String   @id @default(cuid())
+  planId      String   @map("plan_id")
+  countryCode String   @map("country_code")
+  price       Float    @map("price")
+  currency    String   @default("SEK") @map("currency")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, countryCode], name: "plan_country_unique")
+  @@map("plan_country_prices")
+}
+
+model PaymentProfile {
+  id             String   @id @default(cuid())
+  countryCode    String   @default("GLOBAL") @map("country_code")
+  methodName     String   @map("method_name")
+  recipientLabel String   @map("recipient_label")
+  recipientValue String   @map("recipient_value")
+  holderLabel    String   @map("holder_label")
+  holderValue    String   @map("holder_value")
+  qrTemplate     String   @default("") @map("qr_template")
+  isActive       Boolean  @default(true) @map("is_active")
+  isDefault      Boolean  @default(false) @map("is_default")
+  priority       Int      @default(100) @map("priority")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  upgradeRequests UpgradeRequest[]
+
+  @@map("payment_profiles")
 }
 
 model Template {

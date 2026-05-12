@@ -17,7 +17,8 @@ import agendaRoutes from './routes/agenda';
 import guidanceRoutes from './routes/guidance';
 import { requireAuth } from './middleware/auth';
 import prisma from './db';
-import { getPaymentSettings } from './services/payment-settings';
+import { getPaymentSettings, getPaymentSettingsForCountry, normalizeCountryCode } from './services/payment-settings';
+import { getEffectivePlanPrice } from './services/plan-pricing';
 import { startReminderScheduler } from './services/reminder-scheduler';
 
 const app = express();
@@ -42,17 +43,38 @@ const upgradeRouter = Router();
 
 upgradeRouter.post('/', requireAuth, async (req, res) => {
   const user = (req as any).user;
-  const { plan_id } = req.body;
+  const { plan_id, payment_profile_id } = req.body;
   if (!plan_id) return res.status(400).json({ error: 'plan_id required' });
   const plan = await prisma.plan.findFirst({ where: { id: plan_id, isActive: true } });
   if (!plan) return res.status(404).json({ error: 'Plan not found' });
+  const fullUser = await prisma.user.findUnique({ where: { id: user.id }, select: { country: true } });
+  const countryCode = normalizeCountryCode(fullUser?.country || 'SE');
+  const { selected, methods } = await getPaymentSettingsForCountry(countryCode);
+  const selectedPayment = methods.find(method => method.id === payment_profile_id) || selected;
+  const effectivePrice = await getEffectivePlanPrice(plan.id, countryCode);
   const paymentReference = Math.random().toString(36).substring(2, 8).toUpperCase();
-  const request = await prisma.upgradeRequest.create({ data: { userId: user.id, planId: plan_id, paymentReference } });
-  const payment = await getPaymentSettings();
+  const request = await prisma.upgradeRequest.create({
+    data: {
+      userId: user.id,
+      planId: plan_id,
+      paymentReference,
+      countryCode,
+      paymentProfileId: selectedPayment.id || null,
+      paymentMethod: selectedPayment.method_name,
+    },
+  });
   return res.status(201).json({
-    request: { ...request, plan_name: plan.name, plan_price: plan.priceSek, plan_currency: plan.currency ?? 'SEK' },
-    payment,
-    swish: { number: payment.recipient_value, holder: payment.holder_value },
+    request: {
+      ...request,
+      plan_name: plan.name,
+      plan_price: effectivePrice?.price_sek ?? plan.priceSek,
+      plan_currency: effectivePrice?.currency ?? plan.currency ?? 'SEK',
+      country_code: countryCode,
+      payment_method: request.paymentMethod,
+    },
+    payment: selectedPayment,
+    payment_methods: methods,
+    swish: { number: selectedPayment.recipient_value, holder: selectedPayment.holder_value },
   });
 });
 
@@ -60,23 +82,37 @@ upgradeRouter.get('/pending', requireAuth, async (req, res) => {
   const user = (req as any).user;
   const request = await prisma.upgradeRequest.findFirst({
     where: { userId: user.id, status: 'pending' },
-    include: { plan: true },
+    include: { plan: true, paymentProfile: true },
     orderBy: { requestedAt: 'desc' },
   });
-  if (!request) return res.json({ request: null, payment: null, swish: null });
-  const payment = await getPaymentSettings();
+  if (!request) return res.json({ request: null, payment: null, swish: null, payment_methods: [] });
+  const fullUser = await prisma.user.findUnique({ where: { id: user.id }, select: { country: true } });
+  const countryCode = normalizeCountryCode(fullUser?.country || request.countryCode || 'SE');
+  const { selected, methods } = await getPaymentSettingsForCountry(countryCode);
+  const selectedPayment = request.paymentProfileId
+    ? methods.find(method => method.id === request.paymentProfileId) || selected
+    : selected;
+  const effectivePrice = await getEffectivePlanPrice(request.plan.id, countryCode);
   return res.json({
-    request: { ...request, plan_name: request.plan.name, plan_price: request.plan.priceSek, plan_currency: request.plan.currency ?? 'SEK' },
-    payment,
-    swish: { number: payment.recipient_value, holder: payment.holder_value },
+    request: {
+      ...request,
+      plan_name: request.plan.name,
+      plan_price: effectivePrice?.price_sek ?? request.plan.priceSek,
+      plan_currency: effectivePrice?.currency ?? request.plan.currency ?? 'SEK',
+      country_code: request.countryCode ?? countryCode,
+      payment_method: request.paymentMethod ?? selectedPayment.method_name,
+    },
+    payment: selectedPayment,
+    payment_methods: methods,
+    swish: { number: selectedPayment.recipient_value, holder: selectedPayment.holder_value },
   });
 });
 
-upgradeRouter.get('/mine', requireAuth, async (req, res) => {
+  upgradeRouter.get('/mine', requireAuth, async (req, res) => {
   const user = (req as any).user;
   const requests = await prisma.upgradeRequest.findMany({
     where: { userId: user.id },
-    include: { plan: { select: { name: true, priceSek: true } } },
+    include: { plan: { select: { name: true, priceSek: true, currency: true } } },
     orderBy: { requestedAt: 'desc' },
   });
   return res.json({ requests });
@@ -97,6 +133,10 @@ async function start() {
     `ALTER TABLE plans ADD COLUMN currency TEXT NOT NULL DEFAULT 'SEK'`,
     `ALTER TABLE plans ADD COLUMN description TEXT`,
     `ALTER TABLE users ADD COLUMN payment_reference TEXT`,
+    `ALTER TABLE users ADD COLUMN country TEXT DEFAULT 'SE'`,
+    `ALTER TABLE upgrade_requests ADD COLUMN country_code TEXT`,
+    `ALTER TABLE upgrade_requests ADD COLUMN payment_profile_id TEXT`,
+    `ALTER TABLE upgrade_requests ADD COLUMN payment_method TEXT`,
     `ALTER TABLE events ADD COLUMN timezone TEXT NOT NULL DEFAULT 'Europe/Stockholm'`,
     `ALTER TABLE events ADD COLUMN enable_reminder_accepted INTEGER NOT NULL DEFAULT 0`,
     `ALTER TABLE events ADD COLUMN enable_reminder_pending INTEGER NOT NULL DEFAULT 0`,
@@ -105,6 +145,38 @@ async function start() {
   ];
   for (const sql of migrations) {
     try { await prisma.$executeRawUnsafe(sql); } catch { /* column already exists */ }
+  }
+  const createTableMigrations = [
+    `CREATE TABLE IF NOT EXISTS payment_profiles (
+      id TEXT PRIMARY KEY,
+      country_code TEXT NOT NULL DEFAULT 'GLOBAL',
+      method_name TEXT NOT NULL,
+      recipient_label TEXT NOT NULL,
+      recipient_value TEXT NOT NULL,
+      holder_label TEXT NOT NULL,
+      holder_value TEXT NOT NULL,
+      qr_template TEXT NOT NULL DEFAULT '',
+      is_active INTEGER NOT NULL DEFAULT 1,
+      is_default INTEGER NOT NULL DEFAULT 0,
+      priority INTEGER NOT NULL DEFAULT 100,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+    `CREATE TABLE IF NOT EXISTS plan_country_prices (
+      id TEXT PRIMARY KEY,
+      plan_id TEXT NOT NULL,
+      country_code TEXT NOT NULL,
+      price REAL NOT NULL,
+      currency TEXT NOT NULL DEFAULT 'SEK',
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(plan_id, country_code),
+      FOREIGN KEY(plan_id) REFERENCES plans(id)
+    )`,
+  ];
+  for (const sql of createTableMigrations) {
+    try { await prisma.$executeRawUnsafe(sql); } catch { /* table already exists */ }
   }
 
   // Seed: plans
@@ -122,7 +194,7 @@ async function start() {
   if (!adminExists) {
     const passwordHash = bcrypt.hashSync('changeme', 10);
     await prisma.user.create({
-      data: { email: 'admin', passwordHash, name: 'Admin', role: 'admin', planId: 'basic', paymentStatus: 'paid', isActive: true },
+      data: { email: 'admin', passwordHash, name: 'Admin', country: 'SE', role: 'admin', planId: 'basic', paymentStatus: 'paid', isActive: true },
     });
   }
 
@@ -136,6 +208,40 @@ async function start() {
   ];
   for (const [key, value] of defaultSettings) {
     await prisma.appSetting.upsert({ where: { key }, update: {}, create: { key, value } });
+  }
+
+  // Seed: payment profiles (country-aware)
+  const profileCount = await prisma.paymentProfile.count();
+  if (profileCount === 0) {
+    const legacy = await getPaymentSettings();
+    await prisma.paymentProfile.create({
+      data: {
+        countryCode: 'SE',
+        methodName: legacy.method_name || 'Swish',
+        recipientLabel: legacy.recipient_label || 'Swish number',
+        recipientValue: legacy.recipient_value || '',
+        holderLabel: legacy.holder_label || 'Recipient',
+        holderValue: legacy.holder_value || '',
+        qrTemplate: legacy.qr_template || '',
+        isActive: true,
+        isDefault: true,
+        priority: 10,
+      },
+    });
+    await prisma.paymentProfile.create({
+      data: {
+        countryCode: 'GLOBAL',
+        methodName: 'PayPal',
+        recipientLabel: 'PayPal email',
+        recipientValue: '',
+        holderLabel: 'Recipient',
+        holderValue: 'MyEvents',
+        qrTemplate: '',
+        isActive: true,
+        isDefault: true,
+        priority: 20,
+      },
+    });
   }
 
   // Seed: templates

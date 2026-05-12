@@ -11,6 +11,7 @@ const formatUser = (user: any) => ({
   id: user.id,
   email: user.email,
   name: user.name,
+  country: user.country ?? null,
   role: user.role,
   payment_status: user.paymentStatus,
   plan_id: user.planId,
@@ -23,7 +24,7 @@ const formatUser = (user: any) => ({
 });
 
 router.post('/register', async (req: Request, res: Response) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, country } = req.body;
   if (!name || !email || !password)
     return res.status(400).json({ error: 'Name, email, and password are required' });
   if (password.length < 8)
@@ -36,7 +37,16 @@ router.post('/register', async (req: Request, res: Response) => {
   const passwordHash = bcrypt.hashSync(password, 10);
 
   const user = await prisma.user.create({
-    data: { email, passwordHash, name, role: 'user', planId: defaultPlan?.id ?? null, paymentStatus: 'pending', isActive: true },
+    data: {
+      email,
+      passwordHash,
+      name,
+      country: typeof country === 'string' && country.trim() ? country.trim().toUpperCase() : 'SE',
+      role: 'user',
+      planId: defaultPlan?.id ?? null,
+      paymentStatus: 'pending',
+      isActive: true,
+    },
     include: { plan: true },
   });
   return res.status(201).json({ user: formatUser(user) });

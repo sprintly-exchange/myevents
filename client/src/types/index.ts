@@ -28,6 +28,7 @@ export interface Plan {
   guest_limit: number;
   price_sek: number;
   currency: string;
+  pricing_country?: string | null;
   description?: string;
   is_active: number;
   is_default: number;
@@ -38,6 +39,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  country?: string | null;
   role: 'user' | 'admin';
   payment_status: 'pending' | 'paid';
   plan_id?: string;
@@ -109,6 +111,8 @@ export interface UpgradeRequest {
   user_id: string;
   plan_id: string;
   status: 'pending' | 'approved' | 'rejected';
+  country_code?: string | null;
+  payment_method?: string | null;
   requested_at: string;
   resolved_at?: string;
   plan_name?: string;
@@ -138,13 +142,29 @@ export interface AppSettings {
 export interface PendingPaymentData {
   status: 'pending_payment';
   payment?: {
+    id?: string;
+    country_code?: string;
     method_name: string;
     recipient_label: string;
     recipient_value: string;
     holder_label: string;
     holder_value: string;
     qr_template?: string;
+    is_default?: boolean;
+    priority?: number;
   };
+  payment_methods?: Array<{
+    id: string;
+    country_code?: string;
+    method_name: string;
+    recipient_label: string;
+    recipient_value: string;
+    holder_label: string;
+    holder_value: string;
+    qr_template?: string;
+    is_default?: boolean;
+    priority?: number;
+  }>;
   price: number;
   planName: string;
   currency?: string;

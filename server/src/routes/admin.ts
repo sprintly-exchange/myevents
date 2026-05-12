@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import prisma from '../db';
 import { requireAdmin, requireAuth } from '../middleware/auth';
 import { sendTestEmail } from '../services/email';
-import { getPaymentSettings } from '../services/payment-settings';
+import { normalizeCountryCode } from '../services/payment-settings';
 
 const router = Router();
 
@@ -76,6 +76,7 @@ router.get('/users', requireAdmin, async (_req: Request, res: Response) => {
       id: u.id,
       email: u.email,
       name: u.name,
+      country: u.country ?? null,
       role: u.role,
       payment_status: u.paymentStatus,
       plan_id: u.planId,
@@ -87,7 +88,7 @@ router.get('/users', requireAdmin, async (_req: Request, res: Response) => {
 });
 
 router.patch('/users/:id', requireAdmin, async (req: Request, res: Response) => {
-  const { role, is_active, payment_status, plan_id } = req.body;
+  const { role, is_active, payment_status, plan_id, country } = req.body;
   const user = await prisma.user.findUnique({ where: { id: req.params.id } });
   if (!user) return res.status(404).json({ error: 'User not found' });
 
@@ -98,6 +99,7 @@ router.patch('/users/:id', requireAdmin, async (req: Request, res: Response) => 
       ...(is_active !== undefined ? { isActive: !!is_active } : {}),
       ...(payment_status !== undefined ? { paymentStatus: payment_status } : {}),
       ...(plan_id !== undefined ? { planId: plan_id } : {}),
+      ...(country !== undefined ? { country: country ? normalizeCountryCode(country) : null } : {}),
     },
     include: { plan: { select: { name: true } } },
   });
@@ -106,7 +108,11 @@ router.patch('/users/:id', requireAdmin, async (req: Request, res: Response) => 
 
 router.get('/upgrade-requests', requireAdmin, async (_req: Request, res: Response) => {
   const requests = await prisma.upgradeRequest.findMany({
-    include: { user: { select: { name: true, email: true } }, plan: { select: { name: true, priceSek: true, currency: true } } },
+    include: {
+      user: { select: { name: true, email: true } },
+      plan: { select: { name: true, priceSek: true, currency: true } },
+      paymentProfile: { select: { methodName: true, countryCode: true } },
+    },
     orderBy: { requestedAt: 'desc' },
   });
   const mapped = requests.map(r => ({
@@ -117,6 +123,9 @@ router.get('/upgrade-requests', requireAdmin, async (_req: Request, res: Respons
     plan_price: r.plan.priceSek,
     plan_currency: r.plan.currency ?? 'SEK',
     payment_reference: r.paymentReference,
+    country_code: r.countryCode ?? null,
+    payment_method: r.paymentMethod ?? r.paymentProfile?.methodName ?? null,
+    payment_method_country: r.paymentProfile?.countryCode ?? null,
   }));
   return res.json({ requests: mapped });
 });
@@ -164,10 +173,27 @@ function generatePaymentReference(): string {
 
 router.post('/upgrade-requests', requireAuth, async (req: Request, res: Response) => {
   const user = (req as any).user;
-  const { plan_id } = req.body;
+  const { plan_id, payment_profile_id } = req.body;
   if (!plan_id) return res.status(400).json({ error: 'plan_id required' });
   const plan = await prisma.plan.findFirst({ where: { id: plan_id, isActive: true } });
   if (!plan) return res.status(404).json({ error: 'Plan not found' });
+  const fullUser = await prisma.user.findUnique({ where: { id: user.id } });
+  const countryCode = normalizeCountryCode(fullUser?.country || 'SE');
+
+  const paymentProfiles = await prisma.paymentProfile.findMany({
+    where: {
+      isActive: true,
+      OR: [{ countryCode }, { countryCode: 'GLOBAL' }],
+    },
+  });
+  const sortedProfiles = [...paymentProfiles].sort((a, b) => {
+    const aLocal = a.countryCode === countryCode ? 0 : 1;
+    const bLocal = b.countryCode === countryCode ? 0 : 1;
+    if (aLocal !== bLocal) return aLocal - bLocal;
+    if (a.isDefault !== b.isDefault) return a.isDefault ? -1 : 1;
+    return (a.priority ?? 100) - (b.priority ?? 100);
+  });
+  const selectedProfile = sortedProfiles.find(p => p.id === payment_profile_id) || sortedProfiles[0] || null;
 
   // Cancel any existing pending request for this user
   await prisma.upgradeRequest.updateMany({
@@ -177,10 +203,40 @@ router.post('/upgrade-requests', requireAuth, async (req: Request, res: Response
 
   const paymentReference = generatePaymentReference();
   const request = await prisma.upgradeRequest.create({
-    data: { userId: user.id, planId: plan_id, paymentReference },
+    data: {
+      userId: user.id,
+      planId: plan_id,
+      paymentReference,
+      countryCode,
+      paymentProfileId: selectedProfile?.id || null,
+      paymentMethod: selectedProfile?.methodName || null,
+    },
   });
 
-  const payment = await getPaymentSettings();
+  const paymentMethods = sortedProfiles.map(p => ({
+    id: p.id,
+    country_code: p.countryCode,
+    method_name: p.methodName,
+    recipient_label: p.recipientLabel,
+    recipient_value: p.recipientValue,
+    holder_label: p.holderLabel,
+    holder_value: p.holderValue,
+    qr_template: p.qrTemplate || '',
+    is_default: p.isDefault,
+    priority: p.priority ?? 100,
+  }));
+  const selectedPayment = selectedProfile ? {
+    id: selectedProfile.id,
+    country_code: selectedProfile.countryCode,
+    method_name: selectedProfile.methodName,
+    recipient_label: selectedProfile.recipientLabel,
+    recipient_value: selectedProfile.recipientValue,
+    holder_label: selectedProfile.holderLabel,
+    holder_value: selectedProfile.holderValue,
+    qr_template: selectedProfile.qrTemplate || '',
+    is_default: selectedProfile.isDefault,
+    priority: selectedProfile.priority ?? 100,
+  } : null;
 
   return res.status(201).json({
     request: {
@@ -189,10 +245,129 @@ router.post('/upgrade-requests', requireAuth, async (req: Request, res: Response
       plan_name: plan.name,
       plan_price: plan.priceSek,
       plan_currency: plan.currency ?? 'SEK',
+      country_code: request.countryCode,
+      payment_method: request.paymentMethod,
     },
-    payment,
-    swish: { number: payment.recipient_value, holder: payment.holder_value },
+    payment: selectedPayment,
+    payment_methods: paymentMethods,
+    swish: selectedPayment ? { number: selectedPayment.recipient_value, holder: selectedPayment.holder_value } : null,
   });
+});
+
+router.get('/payment-profiles', requireAdmin, async (req: Request, res: Response) => {
+  const country = typeof req.query.country === 'string' ? normalizeCountryCode(req.query.country) : undefined;
+  const profiles = await prisma.paymentProfile.findMany({
+    where: {
+      ...(country ? { countryCode: country } : {}),
+    },
+    orderBy: [{ countryCode: 'asc' }, { isDefault: 'desc' }, { priority: 'asc' }],
+  });
+  return res.json({
+    profiles: profiles.map(p => ({
+      id: p.id,
+      country_code: p.countryCode,
+      method_name: p.methodName,
+      recipient_label: p.recipientLabel,
+      recipient_value: p.recipientValue,
+      holder_label: p.holderLabel,
+      holder_value: p.holderValue,
+      qr_template: p.qrTemplate || '',
+      is_active: p.isActive,
+      is_default: p.isDefault,
+      priority: p.priority ?? 100,
+    })),
+  });
+});
+
+router.post('/payment-profiles', requireAdmin, async (req: Request, res: Response) => {
+  const {
+    id,
+    country_code,
+    method_name,
+    recipient_label,
+    recipient_value,
+    holder_label,
+    holder_value,
+    qr_template,
+    is_active,
+    is_default,
+    priority,
+  } = req.body;
+
+  if (!method_name) return res.status(400).json({ error: 'method_name required' });
+  const normalizedCountry = normalizeCountryCode(country_code || 'GLOBAL');
+
+  if (is_default) {
+    await prisma.paymentProfile.updateMany({
+      where: { countryCode: normalizedCountry, ...(id ? { id: { not: id } } : {}) },
+      data: { isDefault: false },
+    });
+  }
+
+  const saved = id
+    ? await prisma.paymentProfile.update({
+        where: { id },
+        data: {
+          countryCode: normalizedCountry,
+          methodName: method_name,
+          recipientLabel: recipient_label || 'Payment details',
+          recipientValue: recipient_value || '',
+          holderLabel: holder_label || 'Recipient',
+          holderValue: holder_value || '',
+          qrTemplate: qr_template || '',
+          isActive: is_active !== undefined ? !!is_active : true,
+          isDefault: !!is_default,
+          priority: priority !== undefined ? Number(priority) : 100,
+        },
+      })
+    : await prisma.paymentProfile.create({
+        data: {
+          countryCode: normalizedCountry,
+          methodName: method_name,
+          recipientLabel: recipient_label || 'Payment details',
+          recipientValue: recipient_value || '',
+          holderLabel: holder_label || 'Recipient',
+          holderValue: holder_value || '',
+          qrTemplate: qr_template || '',
+          isActive: is_active !== undefined ? !!is_active : true,
+          isDefault: !!is_default,
+          priority: priority !== undefined ? Number(priority) : 100,
+        },
+      });
+
+  return res.json({
+    profile: {
+      id: saved.id,
+      country_code: saved.countryCode,
+      method_name: saved.methodName,
+      recipient_label: saved.recipientLabel,
+      recipient_value: saved.recipientValue,
+      holder_label: saved.holderLabel,
+      holder_value: saved.holderValue,
+      qr_template: saved.qrTemplate || '',
+      is_active: saved.isActive,
+      is_default: saved.isDefault,
+      priority: saved.priority ?? 100,
+    },
+  });
+});
+
+router.patch('/upgrade-requests/:id/payment-method', requireAuth, async (req: Request, res: Response) => {
+  const user = (req as any).user;
+  const { payment_profile_id } = req.body;
+  const request = await prisma.upgradeRequest.findUnique({ where: { id: req.params.id } });
+  if (!request || request.userId !== user.id) return res.status(404).json({ error: 'Request not found' });
+  if (request.status !== 'pending') return res.status(400).json({ error: 'Only pending requests can be updated' });
+  const profile = await prisma.paymentProfile.findFirst({ where: { id: payment_profile_id, isActive: true } });
+  if (!profile) return res.status(404).json({ error: 'Payment profile not found' });
+  const updated = await prisma.upgradeRequest.update({
+    where: { id: request.id },
+    data: {
+      paymentProfileId: profile.id,
+      paymentMethod: profile.methodName,
+    },
+  });
+  return res.json({ request: updated });
 });
 
 export default router;

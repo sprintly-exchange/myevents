@@ -17,13 +17,15 @@ interface PaymentInfo {
   planName: string;
   planPrice: number;
   planCurrency: string;
-  payment: PaymentSettings;
+  payment: PaymentSettings | null;
+  paymentMethods: PaymentSettings[];
 }
 
 export default function UpgradePage() {
   const { user } = useAuth();
   const { t } = useTranslation();
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null);
+  const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState<string>('');
 
   const { data } = useQuery({
     queryKey: ['plans'],
@@ -36,7 +38,8 @@ export default function UpgradePage() {
     mutationFn: (planId: string) => api.post('/upgrade-requests', { plan_id: planId }),
     onSuccess: (res) => {
       const { request, swish } = res.data;
-      const payment: PaymentSettings = res.data.payment || {
+      const paymentMethods: PaymentSettings[] = res.data.payment_methods || [];
+      const payment: PaymentSettings = res.data.payment || paymentMethods[0] || {
         method_name: 'Swish',
         recipient_label: t('upgrade.paymentDestination'),
         recipient_value: swish?.number || '',
@@ -44,13 +47,16 @@ export default function UpgradePage() {
         holder_value: swish?.holder || '',
         qr_template: '',
       };
+      const selectedMethod = (payment as any)?.id || '';
       setPaymentInfo({
         reference: request.payment_reference,
         planName: request.plan_name,
         planPrice: request.plan_price,
         planCurrency: request.plan_currency || 'SEK',
         payment,
+        paymentMethods: paymentMethods.length ? paymentMethods : [payment],
       });
+      setSelectedPaymentMethodId(selectedMethod);
     },
     onError: (err: any) => toast.error(err.response?.data?.error || 'Request failed'),
   });
@@ -60,7 +66,11 @@ export default function UpgradePage() {
     toast.success(t('common.copied'));
   };
 
-  const paymentQrData = buildPaymentQrValue(paymentInfo?.payment, {
+  const activePaymentMethod = paymentInfo
+    ? paymentInfo.paymentMethods.find((method: any) => method.id === selectedPaymentMethodId) || paymentInfo.payment
+    : null;
+
+  const paymentQrData = buildPaymentQrValue(activePaymentMethod, {
     amount: paymentInfo?.planPrice || 0,
     currency: paymentInfo?.planCurrency || 'SEK',
     reference: paymentInfo?.reference || '',
@@ -91,7 +101,7 @@ export default function UpgradePage() {
                 <span className="text-3xl">📱</span>
               </div>
               <h1 className="text-2xl font-bold text-slate-900 mb-2">{t('upgrade.completePayment')}</h1>
-              <p className="text-slate-500 text-sm">{t('upgrade.completePaymentSubtitle', { method: paymentInfo.payment.method_name })}</p>
+              <p className="text-slate-500 text-sm">{t('upgrade.completePaymentSubtitle', { method: activePaymentMethod?.method_name || t('upgrade.paymentMethodFallback') })}</p>
             </div>
 
             {/* Reference code */}
@@ -121,21 +131,37 @@ export default function UpgradePage() {
                   <span className="text-slate-500">{t('upgrade.amount')}</span>
                   <span className="font-bold text-lg text-blue-600">{paymentInfo.planPrice} {paymentInfo.planCurrency}</span>
                 </div>
-                {paymentInfo.payment.recipient_value && (
+                {paymentInfo.paymentMethods.length > 1 && (
+                  <div className="border-t border-slate-100 pt-3">
+                    <span className="text-slate-500">{t('upgrade.paymentMethod')}</span>
+                    <select
+                      className="mt-1 w-full border border-slate-200 rounded-md px-2 py-1.5 text-sm"
+                      value={selectedPaymentMethodId}
+                      onChange={(e) => setSelectedPaymentMethodId(e.target.value)}
+                    >
+                      {paymentInfo.paymentMethods.map((method: any, index) => (
+                        <option key={method.id || index} value={method.id || ''}>
+                          {method.method_name} {method.country_code ? `(${method.country_code})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {activePaymentMethod?.recipient_value && (
                   <>
                     <div className="border-t border-slate-100 pt-3 flex justify-between">
-                      <span className="text-slate-500">{paymentInfo.payment.recipient_label}</span>
+                      <span className="text-slate-500">{activePaymentMethod.recipient_label}</span>
                       <div className="flex items-center gap-2">
-                        <span className="font-mono font-semibold text-slate-800">{paymentInfo.payment.recipient_value}</span>
-                        <button onClick={() => copyRef(paymentInfo.payment.recipient_value)} className="text-slate-400 hover:text-slate-600">
+                        <span className="font-mono font-semibold text-slate-800">{activePaymentMethod.recipient_value}</span>
+                        <button onClick={() => copyRef(activePaymentMethod.recipient_value)} className="text-slate-400 hover:text-slate-600">
                           <Copy className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     </div>
-                    {paymentInfo.payment.holder_value && (
+                    {activePaymentMethod.holder_value && (
                       <div className="flex justify-between">
-                        <span className="text-slate-500">{paymentInfo.payment.holder_label}</span>
-                        <span className="font-semibold text-slate-800">{paymentInfo.payment.holder_value}</span>
+                        <span className="text-slate-500">{activePaymentMethod.holder_label}</span>
+                        <span className="font-semibold text-slate-800">{activePaymentMethod.holder_value}</span>
                       </div>
                     )}
                   </>
@@ -146,12 +172,12 @@ export default function UpgradePage() {
             {/* QR code */}
             {paymentQrData && (
               <div className="flex flex-col items-center bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-5">
-                <p className="text-sm text-slate-500 mb-4">{t('upgrade.scanQr', { method: paymentInfo.payment.method_name })}</p>
+                <p className="text-sm text-slate-500 mb-4">{t('upgrade.scanQr', { method: activePaymentMethod?.method_name || t('upgrade.paymentMethodFallback') })}</p>
                 <div className="p-4 bg-white rounded-xl border border-slate-100">
                   <QRCodeSVG value={paymentQrData} size={180} />
                 </div>
                 <p className="text-xs text-slate-400 mt-3 text-center">
-                  {t('upgrade.qrSubtitle', { method: paymentInfo.payment.method_name })}
+                  {t('upgrade.qrSubtitle', { method: activePaymentMethod?.method_name || t('upgrade.paymentMethodFallback') })}
                 </p>
               </div>
             )}
@@ -161,7 +187,7 @@ export default function UpgradePage() {
               <p className="text-sm font-semibold text-amber-800 mb-3">{t('upgrade.howToPay')}</p>
               <ol className="space-y-2 text-sm text-amber-700">
                 <li className="flex gap-2"><span className="font-bold shrink-0">1.</span> {t('upgrade.step1')}</li>
-                <li className="flex gap-2"><span className="font-bold shrink-0">2.</span> {t('upgrade.step2', { method: paymentInfo.payment.method_name })}</li>
+                <li className="flex gap-2"><span className="font-bold shrink-0">2.</span> {t('upgrade.step2', { method: activePaymentMethod?.method_name || t('upgrade.paymentMethodFallback') })}</li>
                 <li className="flex gap-2"><span className="font-bold shrink-0">3.</span> {t('upgrade.step3', { price: paymentInfo.planPrice, currency: paymentInfo.planCurrency })}</li>
                 <li className="flex gap-2"><span className="font-bold shrink-0">4.</span> {t('upgrade.step4', { ref: paymentInfo.reference })}</li>
                 <li className="flex gap-2"><span className="font-bold shrink-0">5.</span> {t('upgrade.step5')}</li>

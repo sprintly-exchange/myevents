@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 export default function RegisterPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
+  const [form, setForm] = useState({ name: '', email: '', country: 'SE', password: '', confirm: '' });
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -22,7 +22,7 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
-      await api.post('/auth/register', { name: form.name, email: form.email, password: form.password });
+      await api.post('/auth/register', { name: form.name, email: form.email, country: form.country, password: form.password });
       toast.success(t('auth.accountCreated'));
       navigate('/login?registered=1');
     } catch (err: any) {
@@ -63,6 +63,17 @@ export default function RegisterPage() {
             placeholder={t('auth.emailPlaceholder')}
             value={form.email}
             onChange={e => setForm({ ...form, email: e.target.value })}
+            required
+            className="border-slate-200 focus:border-blue-400 h-11"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="country" className="text-sm font-medium text-slate-700">{t('common.country')}</Label>
+          <Input
+            id="country"
+            placeholder={t('auth.countryPlaceholder')}
+            value={form.country}
+            onChange={e => setForm({ ...form, country: e.target.value.toUpperCase().slice(0, 2) })}
             required
             className="border-slate-200 focus:border-blue-400 h-11"
           />

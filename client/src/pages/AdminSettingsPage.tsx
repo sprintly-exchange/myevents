@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Mail, CreditCard, Lock, Send, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -12,16 +12,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function AdminSettingsPage() {
   const { t } = useTranslation();
+  const qc = useQueryClient();
   const [smtpForm, setSmtpForm] = useState({
     smtp_host: '', smtp_port: '587', smtp_user: '', smtp_pass: '', smtp_from: '',
   });
   const [paymentForm, setPaymentForm] = useState({
+    id: '',
+    country_code: 'SE',
     payment_method_name: 'Swish',
     payment_recipient_label: 'Swish number',
     payment_recipient_value: '',
     payment_holder_label: 'Recipient',
     payment_holder_name: '',
     payment_qr_template: '',
+    is_default: true,
+    priority: '100',
+    is_active: true,
   });
   const [freeTierForm, setFreeTierForm] = useState({ free_tier_invite_limit: '1' });
   const [testEmail, setTestEmail] = useState('');
@@ -29,6 +35,10 @@ export default function AdminSettingsPage() {
   const { data } = useQuery({
     queryKey: ['admin-settings'],
     queryFn: () => api.get('/admin/settings').then(r => r.data),
+  });
+  const { data: paymentProfilesData } = useQuery({
+    queryKey: ['admin-payment-profiles'],
+    queryFn: () => api.get('/admin/payment-profiles').then(r => r.data),
   });
 
   useEffect(() => {
@@ -42,12 +52,17 @@ export default function AdminSettingsPage() {
         smtp_from: s.smtp_from || '',
       });
       setPaymentForm({
+        id: '',
+        country_code: 'SE',
         payment_method_name: s.payment_method_name || 'Swish',
         payment_recipient_label: s.payment_recipient_label || 'Swish number',
         payment_recipient_value: s.payment_recipient_value || s.swish_number || '',
         payment_holder_label: s.payment_holder_label || 'Recipient',
         payment_holder_name: s.payment_holder_name || s.swish_holder_name || '',
         payment_qr_template: s.payment_qr_template || '',
+        is_default: true,
+        priority: '100',
+        is_active: true,
       });
       setFreeTierForm({ free_tier_invite_limit: s.free_tier_invite_limit || '1' });
     }
@@ -92,13 +107,42 @@ export default function AdminSettingsPage() {
     saveSettings.mutate(settings);
   };
 
+  const savePaymentProfile = useMutation({
+    mutationFn: (payload: Record<string, any>) => api.post('/admin/payment-profiles', payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-payment-profiles'] });
+      toast.success(t('admin.settings.paymentProfileSaved'));
+      setPaymentForm({
+        id: '',
+        country_code: 'SE',
+        payment_method_name: 'Swish',
+        payment_recipient_label: 'Swish number',
+        payment_recipient_value: '',
+        payment_holder_label: 'Recipient',
+        payment_holder_name: '',
+        payment_qr_template: '',
+        is_default: true,
+        priority: '100',
+        is_active: true,
+      });
+    },
+    onError: () => toast.error(t('admin.settings.paymentProfileSaveFailed')),
+  });
+
   const savePayment = () => {
-    const settings = [
-      ...Object.entries(paymentForm).map(([key, value]) => ({ key, value })),
-      { key: 'swish_number', value: paymentForm.payment_recipient_value },
-      { key: 'swish_holder_name', value: paymentForm.payment_holder_name },
-    ];
-    saveSettings.mutate(settings);
+    savePaymentProfile.mutate({
+      id: paymentForm.id || undefined,
+      country_code: paymentForm.country_code,
+      method_name: paymentForm.payment_method_name,
+      recipient_label: paymentForm.payment_recipient_label,
+      recipient_value: paymentForm.payment_recipient_value,
+      holder_label: paymentForm.payment_holder_label,
+      holder_value: paymentForm.payment_holder_name,
+      qr_template: paymentForm.payment_qr_template,
+      is_default: paymentForm.is_default,
+      priority: Number(paymentForm.priority),
+      is_active: paymentForm.is_active,
+    });
   };
 
   const saveFreeTier = () => {
@@ -240,7 +284,43 @@ export default function AdminSettingsPage() {
                 </div>
               </div>
               <div className="p-6 space-y-5">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">{t('admin.settings.savedPaymentProfiles')}</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {(paymentProfilesData?.profiles || []).map((profile: any) => (
+                      <button
+                        key={profile.id}
+                        type="button"
+                        className="px-2.5 py-1 text-xs rounded-md border border-slate-200 hover:bg-slate-50"
+                        onClick={() => setPaymentForm({
+                          id: profile.id,
+                          country_code: profile.country_code || 'GLOBAL',
+                          payment_method_name: profile.method_name || '',
+                          payment_recipient_label: profile.recipient_label || '',
+                          payment_recipient_value: profile.recipient_value || '',
+                          payment_holder_label: profile.holder_label || '',
+                          payment_holder_name: profile.holder_value || '',
+                          payment_qr_template: profile.qr_template || '',
+                          is_default: !!profile.is_default,
+                          priority: String(profile.priority ?? 100),
+                          is_active: !!profile.is_active,
+                        })}
+                      >
+                        {profile.country_code} · {profile.method_name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">{t('common.country')}</Label>
+                    <Input
+                      placeholder="SE / GLOBAL"
+                      value={paymentForm.country_code}
+                      onChange={e => setPaymentForm({ ...paymentForm, country_code: e.target.value.toUpperCase() })}
+                      className={fieldClass}
+                    />
+                  </div>
                   <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-slate-700">{t('admin.settings.paymentMethodName')}</Label>
                     <Input
@@ -296,9 +376,30 @@ export default function AdminSettingsPage() {
                     />
                     <p className="text-xs text-slate-400">{t('admin.settings.paymentQrTemplateHelp')}</p>
                   </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">{t('admin.settings.paymentPriority')}</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={paymentForm.priority}
+                      onChange={e => setPaymentForm({ ...paymentForm, priority: e.target.value })}
+                      className={fieldClass}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">{t('admin.settings.defaultForCountry')}</Label>
+                    <select
+                      value={paymentForm.is_default ? 'yes' : 'no'}
+                      onChange={e => setPaymentForm({ ...paymentForm, is_default: e.target.value === 'yes' })}
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:border-blue-400"
+                    >
+                      <option value="yes">{t('common.yes')}</option>
+                      <option value="no">{t('common.no')}</option>
+                    </select>
+                  </div>
                 </div>
-                <Button onClick={savePayment} disabled={saveSettings.isPending} className="bg-blue-600 hover:bg-blue-700">
-                  {saveSettings.isPending ? t('admin.settings.saving') : t('admin.settings.savePaymentSettings')}
+                <Button onClick={savePayment} disabled={savePaymentProfile.isPending} className="bg-blue-600 hover:bg-blue-700">
+                  {savePaymentProfile.isPending ? t('admin.settings.saving') : t('admin.settings.savePaymentSettings')}
                 </Button>
               </div>
             </div>
