@@ -194,6 +194,15 @@ export default function AdminSettingsPage() {
     onError: () => toast.error(t('admin.settings.paymentProfileDeactivateFailed')),
   });
 
+  const activatePaymentProfile = useMutation({
+    mutationFn: (profileId: string) => api.patch(`/admin/payment-profiles/${profileId}/activate`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-payment-profiles'] });
+      toast.success(t('admin.settings.paymentProfileActivated'));
+    },
+    onError: () => toast.error(t('admin.settings.paymentProfileActivateFailed')),
+  });
+
   const reorderPaymentProfiles = useMutation({
     mutationFn: (payloads: PaymentProfilePayload[]) => Promise.all(payloads.map((payload) => api.post('/admin/payment-profiles', payload))),
     onSuccess: () => {
@@ -452,9 +461,9 @@ export default function AdminSettingsPage() {
                               </Button>
                               <Button
                                 variant="outline"
-                                className="h-8 w-8 p-0 border-slate-200 text-amber-700 hover:text-amber-700"
-                                onClick={() => deactivatePaymentProfile.mutate(profile.id)}
-                                disabled={!profile.is_active || deactivatePaymentProfile.isPending}
+                                className={`h-8 w-8 p-0 border-slate-200 ${profile.is_active ? 'text-amber-700 hover:text-amber-700' : 'text-emerald-700 hover:text-emerald-700'}`}
+                                onClick={() => profile.is_active ? deactivatePaymentProfile.mutate(profile.id) : activatePaymentProfile.mutate(profile.id)}
+                                disabled={deactivatePaymentProfile.isPending || activatePaymentProfile.isPending}
                               >
                                 <Power className="h-3.5 w-3.5" />
                               </Button>
@@ -562,6 +571,17 @@ export default function AdminSettingsPage() {
                     >
                       <option value="yes">{t('common.yes')}</option>
                       <option value="no">{t('common.no')}</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">{t('admin.settings.activeStatus')}</Label>
+                    <select
+                      value={paymentForm.is_active ? 'yes' : 'no'}
+                      onChange={e => setPaymentForm({ ...paymentForm, is_active: e.target.value === 'yes' })}
+                      className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:border-blue-400"
+                    >
+                      <option value="yes">{t('admin.settings.active')}</option>
+                      <option value="no">{t('admin.settings.inactive')}</option>
                     </select>
                   </div>
                 </div>

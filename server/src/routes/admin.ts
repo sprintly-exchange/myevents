@@ -364,6 +364,18 @@ router.delete('/payment-profiles/:id', requireAdmin, async (req: Request, res: R
   return res.json({ message: 'Payment profile deactivated' });
 });
 
+router.patch('/payment-profiles/:id/activate', requireAdmin, async (req: Request, res: Response) => {
+  const profile = await prisma.paymentProfile.findUnique({ where: { id: req.params.id } });
+  if (!profile) return res.status(404).json({ error: 'Payment profile not found' });
+
+  await prisma.paymentProfile.update({
+    where: { id: req.params.id },
+    data: { isActive: true },
+  });
+
+  return res.json({ message: 'Payment profile activated' });
+});
+
 router.patch('/upgrade-requests/:id/payment-method', requireAuth, async (req: Request, res: Response) => {
   const user = (req as any).user;
   const { payment_profile_id } = req.body;
