@@ -23,7 +23,7 @@ export interface PaymentSettings {
 export async function getPaymentSettings(): Promise<PaymentSettings> {
   const rows = await prisma.appSetting.findMany({
     where: { key: { in: [...PAYMENT_SETTING_KEYS] } },
-  });
+  }) as Array<{ key: string; value: string | null }>;
 
   const valueOf = (key: (typeof PAYMENT_SETTING_KEYS)[number]) =>
     rows.find(row => row.key === key)?.value?.trim() || '';
