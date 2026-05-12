@@ -14,7 +14,7 @@ const FALLBACK_TIMEZONES = [
   'Europe/Amsterdam', 'Europe/Athens', 'Europe/Berlin', 'Europe/Brussels',
   'Europe/Copenhagen', 'Europe/Dublin', 'Europe/Helsinki', 'Europe/Istanbul',
   'Europe/Lisbon', 'Europe/London', 'Europe/Madrid', 'Europe/Moscow',
-  'Europe/Oslo', 'Europe/Paris', 'Europe/Rome', 'Europe/Stockholm',
+  'Europe/Nicosia', 'Europe/Oslo', 'Europe/Paris', 'Europe/Rome', 'Europe/Stockholm',
   'Europe/Vienna', 'Europe/Warsaw', 'Europe/Zurich',
   'Pacific/Auckland', 'Pacific/Honolulu', 'Pacific/Fiji',
   'UTC',

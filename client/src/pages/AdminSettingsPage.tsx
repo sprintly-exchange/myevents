@@ -15,8 +15,13 @@ export default function AdminSettingsPage() {
   const [smtpForm, setSmtpForm] = useState({
     smtp_host: '', smtp_port: '587', smtp_user: '', smtp_pass: '', smtp_from: '',
   });
-  const [swishForm, setSwishForm] = useState({
-    swish_number: '', swish_holder_name: '',
+  const [paymentForm, setPaymentForm] = useState({
+    payment_method_name: 'Swish',
+    payment_recipient_label: 'Swish number',
+    payment_recipient_value: '',
+    payment_holder_label: 'Recipient',
+    payment_holder_name: '',
+    payment_qr_template: '',
   });
   const [freeTierForm, setFreeTierForm] = useState({ free_tier_invite_limit: '1' });
   const [testEmail, setTestEmail] = useState('');
@@ -36,9 +41,13 @@ export default function AdminSettingsPage() {
         smtp_pass: s.smtp_pass || '',
         smtp_from: s.smtp_from || '',
       });
-      setSwishForm({
-        swish_number: s.swish_number || '',
-        swish_holder_name: s.swish_holder_name || '',
+      setPaymentForm({
+        payment_method_name: s.payment_method_name || 'Swish',
+        payment_recipient_label: s.payment_recipient_label || 'Swish number',
+        payment_recipient_value: s.payment_recipient_value || s.swish_number || '',
+        payment_holder_label: s.payment_holder_label || 'Recipient',
+        payment_holder_name: s.payment_holder_name || s.swish_holder_name || '',
+        payment_qr_template: s.payment_qr_template || '',
       });
       setFreeTierForm({ free_tier_invite_limit: s.free_tier_invite_limit || '1' });
     }
@@ -83,8 +92,12 @@ export default function AdminSettingsPage() {
     saveSettings.mutate(settings);
   };
 
-  const saveSwish = () => {
-    const settings = Object.entries(swishForm).map(([key, value]) => ({ key, value }));
+  const savePayment = () => {
+    const settings = [
+      ...Object.entries(paymentForm).map(([key, value]) => ({ key, value })),
+      { key: 'swish_number', value: paymentForm.payment_recipient_value },
+      { key: 'swish_holder_name', value: paymentForm.payment_holder_name },
+    ];
     saveSettings.mutate(settings);
   };
 
@@ -107,8 +120,8 @@ export default function AdminSettingsPage() {
             <TabsTrigger value="smtp" className="flex items-center gap-1.5 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
               <Mail className="h-3.5 w-3.5" />SMTP Email
             </TabsTrigger>
-            <TabsTrigger value="swish" className="flex items-center gap-1.5 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
-              <CreditCard className="h-3.5 w-3.5" />Swish Payment
+            <TabsTrigger value="payment" className="flex items-center gap-1.5 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
+              <CreditCard className="h-3.5 w-3.5" />{t('admin.settings.paymentSettings')}
             </TabsTrigger>
             <TabsTrigger value="freetier" className="flex items-center gap-1.5 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">
               <Users className="h-3.5 w-3.5" />Free Tier
@@ -212,8 +225,8 @@ export default function AdminSettingsPage() {
             </div>
           </TabsContent>
 
-          {/* Swish Tab */}
-          <TabsContent value="swish">
+          {/* Payment Tab */}
+          <TabsContent value="payment">
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200/70 overflow-hidden">
               <div className="px-6 py-5 border-b border-slate-100">
                 <div className="flex items-center gap-3">
@@ -221,34 +234,71 @@ export default function AdminSettingsPage() {
                     <CreditCard className="h-4 w-4 text-emerald-600" />
                   </div>
                   <div>
-                    <h2 className="text-sm font-semibold text-slate-900">{t('admin.settings.swishSettings')}</h2>
-                    <p className="text-xs text-slate-500">Configure Swish details for user registration payment</p>
+                    <h2 className="text-sm font-semibold text-slate-900">{t('admin.settings.paymentSettings')}</h2>
+                    <p className="text-xs text-slate-500">{t('admin.settings.paymentSettingsHelp')}</p>
                   </div>
                 </div>
               </div>
               <div className="p-6 space-y-5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">{t('admin.settings.swishNumber')}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t('admin.settings.paymentMethodName')}</Label>
                     <Input
-                      placeholder="1234567890"
-                      value={swishForm.swish_number}
-                      onChange={e => setSwishForm({ ...swishForm, swish_number: e.target.value })}
+                      placeholder="Swish"
+                      value={paymentForm.payment_method_name}
+                      onChange={e => setPaymentForm({ ...paymentForm, payment_method_name: e.target.value })}
                       className={fieldClass}
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium text-slate-700">{t('admin.settings.swishHolder')}</Label>
+                    <Label className="text-sm font-medium text-slate-700">{t('admin.settings.paymentRecipientLabel')}</Label>
                     <Input
-                      placeholder="MyEvents AB"
-                      value={swishForm.swish_holder_name}
-                      onChange={e => setSwishForm({ ...swishForm, swish_holder_name: e.target.value })}
+                      placeholder="IBAN"
+                      value={paymentForm.payment_recipient_label}
+                      onChange={e => setPaymentForm({ ...paymentForm, payment_recipient_label: e.target.value })}
                       className={fieldClass}
                     />
                   </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">{t('admin.settings.paymentRecipientValue')}</Label>
+                    <Input
+                      placeholder="CY17002001280000001200527600"
+                      value={paymentForm.payment_recipient_value}
+                      onChange={e => setPaymentForm({ ...paymentForm, payment_recipient_value: e.target.value })}
+                      className={fieldClass}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">{t('admin.settings.paymentHolderLabel')}</Label>
+                    <Input
+                      placeholder="Recipient"
+                      value={paymentForm.payment_holder_label}
+                      onChange={e => setPaymentForm({ ...paymentForm, payment_holder_label: e.target.value })}
+                      className={fieldClass}
+                    />
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label className="text-sm font-medium text-slate-700">{t('admin.settings.paymentHolderName')}</Label>
+                    <Input
+                      placeholder="MyEvents Ltd"
+                      value={paymentForm.payment_holder_name}
+                      onChange={e => setPaymentForm({ ...paymentForm, payment_holder_name: e.target.value })}
+                      className={fieldClass}
+                    />
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label className="text-sm font-medium text-slate-700">{t('admin.settings.paymentQrTemplate')}</Label>
+                    <Input
+                      placeholder="swish://payment?version=1&payee={{recipient}}&amount={{amount}}&message={{reference}}&editable=false"
+                      value={paymentForm.payment_qr_template}
+                      onChange={e => setPaymentForm({ ...paymentForm, payment_qr_template: e.target.value })}
+                      className={fieldClass}
+                    />
+                    <p className="text-xs text-slate-400">{t('admin.settings.paymentQrTemplateHelp')}</p>
+                  </div>
                 </div>
-                <Button onClick={saveSwish} disabled={saveSettings.isPending} className="bg-blue-600 hover:bg-blue-700">
-                  {saveSettings.isPending ? t('admin.settings.saving') : 'Save Swish Settings'}
+                <Button onClick={savePayment} disabled={saveSettings.isPending} className="bg-blue-600 hover:bg-blue-700">
+                  {saveSettings.isPending ? t('admin.settings.saving') : t('admin.settings.savePaymentSettings')}
                 </Button>
               </div>
             </div>

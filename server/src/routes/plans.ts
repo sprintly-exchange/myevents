@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../db';
 import { requireAdmin, requireAuth } from '../middleware/auth';
+import { getPaymentSettings } from '../services/payment-settings';
 
 const router = Router();
 
@@ -74,16 +75,6 @@ router.post('/:id/set-default', requireAdmin, async (req: Request, res: Response
   return res.json({ message: 'Default plan updated' });
 });
 
-async function getSwishSettings() {
-  const rows = await prisma.appSetting.findMany({
-    where: { key: { in: ['swish_number', 'swish_holder_name'] } },
-  });
-  return {
-    number: rows.find(r => r.key === 'swish_number')?.value || '',
-    holder: rows.find(r => r.key === 'swish_holder_name')?.value || '',
-  };
-}
-
 router.get('/upgrade-requests/pending', requireAuth, async (req: Request, res: Response) => {
   const user = (req as any).user;
   const request = await prisma.upgradeRequest.findFirst({
@@ -91,11 +82,12 @@ router.get('/upgrade-requests/pending', requireAuth, async (req: Request, res: R
     include: { plan: true },
     orderBy: { requestedAt: 'desc' },
   });
-  if (!request) return res.json({ request: null, swish: null });
-  const swish = await getSwishSettings();
+  if (!request) return res.json({ request: null, payment: null, swish: null });
+  const payment = await getPaymentSettings();
   return res.json({
-    request: { ...request, plan_name: request.plan.name, plan_price: request.plan.priceSek },
-    swish,
+    request: { ...request, plan_name: request.plan.name, plan_price: request.plan.priceSek, plan_currency: request.plan.currency ?? 'SEK' },
+    payment,
+    swish: { number: payment.recipient_value, holder: payment.holder_value },
   });
 });
 
@@ -109,10 +101,11 @@ router.post('/upgrade-requests', requireAuth, async (req: Request, res: Response
   const request = await prisma.upgradeRequest.create({
     data: { userId: user.id, planId: plan_id, paymentReference },
   });
-  const swish = await getSwishSettings();
+  const payment = await getPaymentSettings();
   return res.status(201).json({
-    request: { ...request, plan_name: plan.name, plan_price: plan.priceSek },
-    swish,
+    request: { ...request, plan_name: plan.name, plan_price: plan.priceSek, plan_currency: plan.currency ?? 'SEK' },
+    payment,
+    swish: { number: payment.recipient_value, holder: payment.holder_value },
   });
 });
 

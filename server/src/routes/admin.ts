@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import prisma from '../db';
 import { requireAdmin, requireAuth } from '../middleware/auth';
 import { sendTestEmail } from '../services/email';
+import { getPaymentSettings } from '../services/payment-settings';
 
 const router = Router();
 
@@ -105,7 +106,7 @@ router.patch('/users/:id', requireAdmin, async (req: Request, res: Response) => 
 
 router.get('/upgrade-requests', requireAdmin, async (_req: Request, res: Response) => {
   const requests = await prisma.upgradeRequest.findMany({
-    include: { user: { select: { name: true, email: true } }, plan: { select: { name: true, priceSek: true } } },
+    include: { user: { select: { name: true, email: true } }, plan: { select: { name: true, priceSek: true, currency: true } } },
     orderBy: { requestedAt: 'desc' },
   });
   const mapped = requests.map(r => ({
@@ -114,6 +115,7 @@ router.get('/upgrade-requests', requireAdmin, async (_req: Request, res: Respons
     user_email: r.user.email,
     plan_name: r.plan.name,
     plan_price: r.plan.priceSek,
+    plan_currency: r.plan.currency ?? 'SEK',
     payment_reference: r.paymentReference,
   }));
   return res.json({ requests: mapped });
@@ -138,7 +140,7 @@ router.get('/upgrade-requests/mine', requireAuth, async (req: Request, res: Resp
   const user = (req as any).user;
   const requests = await prisma.upgradeRequest.findMany({
     where: { userId: user.id },
-    include: { plan: { select: { name: true, priceSek: true } } },
+    include: { plan: { select: { name: true, priceSek: true, currency: true } } },
     orderBy: { requestedAt: 'desc' },
   });
   const mapped = requests.map(r => ({
@@ -147,6 +149,7 @@ router.get('/upgrade-requests/mine', requireAuth, async (req: Request, res: Resp
     payment_reference: r.paymentReference,
     plan_name: r.plan.name,
     plan_price: r.plan.priceSek,
+    plan_currency: r.plan.currency ?? 'SEK',
     requested_at: r.requestedAt,
   }));
   return res.json({ requests: mapped });
@@ -177,10 +180,7 @@ router.post('/upgrade-requests', requireAuth, async (req: Request, res: Response
     data: { userId: user.id, planId: plan_id, paymentReference },
   });
 
-  const [swishNumber, swishHolder] = await Promise.all([
-    prisma.appSetting.findUnique({ where: { key: 'swish_number' } }),
-    prisma.appSetting.findUnique({ where: { key: 'swish_holder_name' } }),
-  ]);
+  const payment = await getPaymentSettings();
 
   return res.status(201).json({
     request: {
@@ -188,11 +188,10 @@ router.post('/upgrade-requests', requireAuth, async (req: Request, res: Response
       payment_reference: paymentReference,
       plan_name: plan.name,
       plan_price: plan.priceSek,
+      plan_currency: plan.currency ?? 'SEK',
     },
-    swish: {
-      number: swishNumber?.value || '',
-      holder: swishHolder?.value || '',
-    },
+    payment,
+    swish: { number: payment.recipient_value, holder: payment.holder_value },
   });
 });
 
