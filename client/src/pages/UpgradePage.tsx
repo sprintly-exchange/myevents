@@ -38,6 +38,7 @@ export default function UpgradePage() {
     mutationFn: (planId: string) => api.post('/upgrade-requests', { plan_id: planId }),
     onSuccess: (res) => {
       const { request, swish } = res.data;
+      const paymentReference = request?.paymentReference || request?.payment_reference || '';
       const paymentMethods: PaymentSettings[] = res.data.payment_methods || [];
       const payment: PaymentSettings = res.data.payment || paymentMethods[0] || {
         method_name: 'Swish',
@@ -49,7 +50,7 @@ export default function UpgradePage() {
       };
       const selectedMethod = (payment as any)?.id || '';
       setPaymentInfo({
-        reference: request.payment_reference,
+        reference: paymentReference,
         planName: request.plan_name,
         planPrice: request.plan_price,
         planCurrency: request.plan_currency || 'SEK',
@@ -108,10 +109,11 @@ export default function UpgradePage() {
             <div className="bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl p-6 mb-5 text-white text-center shadow-lg shadow-blue-500/20">
               <p className="text-sm text-blue-200 mb-2 font-medium uppercase tracking-wide">{t('upgrade.paymentReference')}</p>
               <div className="flex items-center justify-center gap-3 mb-3">
-                <span className="text-4xl font-mono font-bold tracking-widest">{paymentInfo.reference}</span>
+                <span className="text-4xl font-mono font-bold tracking-widest">{paymentInfo.reference || '—'}</span>
                 <button
-                  onClick={() => copyRef(paymentInfo.reference)}
-                  className="p-2 rounded-lg bg-white/20 hover:bg-white/30 transition-colors"
+                  onClick={() => paymentInfo.reference && copyRef(paymentInfo.reference)}
+                  disabled={!paymentInfo.reference}
+                  className="p-2 rounded-lg bg-white/20 hover:bg-white/30 transition-colors disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <Copy className="h-4 w-4" />
                 </button>
