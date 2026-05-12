@@ -18,6 +18,14 @@ interface PaymentData {
   currency?: string;
 }
 
+function getChecklistStepNumbers(hasHolder: boolean, hasReference: boolean) {
+  return {
+    amount: hasHolder ? '4.' : '3.',
+    reference: hasHolder ? '5.' : '4.',
+    checkStatus: hasHolder ? (hasReference ? '6.' : '5.') : (hasReference ? '5.' : '4.'),
+  };
+}
+
 export default function PendingPaymentPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -54,9 +62,7 @@ export default function PendingPaymentPage() {
     appName: 'MyEvents',
   });
   const hasHolder = !!activePaymentMethod?.holder_value;
-  const amountStepNumber = hasHolder ? '4.' : '3.';
-  const referenceStepNumber = hasHolder ? '5.' : '4.';
-  const checkStepNumber = hasHolder ? (reference ? '6.' : '5.') : (reference ? '5.' : '4.');
+  const stepNumbers = getChecklistStepNumbers(hasHolder, !!reference);
 
   const handleCheckStatus = async () => {
     setChecking(true);
@@ -177,9 +183,9 @@ export default function PendingPaymentPage() {
               })}
             </li>
           )}
-          <li className="flex gap-2"><span className="font-bold shrink-0">{amountStepNumber}</span> {t('pendingPayment.step3', { price, currency })}</li>
-          {reference && <li className="flex gap-2"><span className="font-bold shrink-0">{referenceStepNumber}</span> {t('pendingPayment.step4', { ref: reference })}</li>}
-          <li className="flex gap-2"><span className="font-bold shrink-0">{checkStepNumber}</span> {t('pendingPayment.step5')}</li>
+          <li className="flex gap-2"><span className="font-bold shrink-0">{stepNumbers.amount}</span> {t('pendingPayment.step3', { price, currency })}</li>
+          {reference && <li className="flex gap-2"><span className="font-bold shrink-0">{stepNumbers.reference}</span> {t('pendingPayment.step4', { ref: reference })}</li>}
+          <li className="flex gap-2"><span className="font-bold shrink-0">{stepNumbers.checkStatus}</span> {t('pendingPayment.step5')}</li>
         </ol>
         <p className="mt-3 text-xs text-amber-700">
           {t('pendingPayment.manualApprovalNote')}

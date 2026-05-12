@@ -24,6 +24,20 @@ interface PaymentProfile {
   priority: number;
 }
 
+interface PaymentProfilePayload {
+  id: string;
+  country_code: string;
+  method_name: string;
+  recipient_label: string;
+  recipient_value: string;
+  holder_label: string;
+  holder_value: string;
+  qr_template: string;
+  is_default: boolean;
+  is_active: boolean;
+  priority: number;
+}
+
 const COMMON_COUNTRIES = [
   { value: 'GLOBAL', labelKey: 'admin.settings.countryOptionGlobal' },
   { value: 'SE', labelKey: 'admin.settings.countryOptionSE' },
@@ -46,7 +60,7 @@ const getDefaultPaymentForm = () => ({
   is_active: true,
 });
 
-function toPaymentProfilePayload(profile: PaymentProfile, priority: number) {
+function toPaymentProfilePayload(profile: PaymentProfile, priority: number): PaymentProfilePayload {
   return {
     id: profile.id,
     country_code: profile.country_code,
@@ -60,6 +74,12 @@ function toPaymentProfilePayload(profile: PaymentProfile, priority: number) {
     is_active: profile.is_active,
     priority,
   };
+}
+
+function getSortedProfilesForCountry(profiles: PaymentProfile[], countryCode: string) {
+  return profiles
+    .filter((item) => item.country_code === countryCode)
+    .sort((a, b) => (a.priority ?? 100) - (b.priority ?? 100));
 }
 
 export default function AdminSettingsPage() {
@@ -174,7 +194,7 @@ export default function AdminSettingsPage() {
   });
 
   const reorderPaymentProfiles = useMutation({
-    mutationFn: (payloads: Record<string, any>[]) => Promise.all(payloads.map((payload) => api.post('/admin/payment-profiles', payload))),
+    mutationFn: (payloads: PaymentProfilePayload[]) => Promise.all(payloads.map((payload) => api.post('/admin/payment-profiles', payload))),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-payment-profiles'] });
       toast.success(t('admin.settings.paymentProfileOrderUpdated'));
@@ -221,9 +241,7 @@ export default function AdminSettingsPage() {
   };
 
   const movePaymentProfile = (profile: PaymentProfile, direction: 'up' | 'down') => {
-    const countryProfiles = paymentProfiles
-      .filter((item) => item.country_code === profile.country_code)
-      .sort((a, b) => (a.priority ?? 100) - (b.priority ?? 100));
+    const countryProfiles = getSortedProfilesForCountry(paymentProfiles, profile.country_code);
     const currentIndex = countryProfiles.findIndex((item) => item.id === profile.id);
     const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
     const target = countryProfiles[targetIndex];
@@ -384,9 +402,8 @@ export default function AdminSettingsPage() {
                       <p className="text-xs text-slate-500">{t('admin.settings.noPaymentProfiles')}</p>
                     )}
                     {paymentProfiles.map((profile) => {
-                      const sameCountryProfiles = paymentProfiles.filter((item) => item.country_code === profile.country_code);
-                      const sorted = sameCountryProfiles.sort((a, b) => (a.priority ?? 100) - (b.priority ?? 100));
-                      const index = sorted.findIndex((item) => item.id === profile.id);
+                      const sameCountryProfiles = getSortedProfilesForCountry(paymentProfiles, profile.country_code);
+                      const index = sameCountryProfiles.findIndex((item) => item.id === profile.id);
                       return (
                         <div key={profile.id} className="rounded-xl border border-slate-200 p-3 bg-slate-50/40">
                           <div className="flex flex-wrap items-center justify-between gap-2">
