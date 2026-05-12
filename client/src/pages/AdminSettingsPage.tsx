@@ -46,6 +46,22 @@ const getDefaultPaymentForm = () => ({
   is_active: true,
 });
 
+function toPaymentProfilePayload(profile: PaymentProfile, priority: number) {
+  return {
+    id: profile.id,
+    country_code: profile.country_code,
+    method_name: profile.method_name,
+    recipient_label: profile.recipient_label,
+    recipient_value: profile.recipient_value,
+    holder_label: profile.holder_label,
+    holder_value: profile.holder_value,
+    qr_template: profile.qr_template || '',
+    is_default: profile.is_default,
+    is_active: profile.is_active,
+    priority,
+  };
+}
+
 export default function AdminSettingsPage() {
   const { t } = useTranslation();
   const qc = useQueryClient();
@@ -213,23 +229,9 @@ export default function AdminSettingsPage() {
     const target = countryProfiles[targetIndex];
     if (!target || currentIndex < 0) return;
 
-    const updatePayload = (item: PaymentProfile, priority: number) => ({
-      id: item.id,
-      country_code: item.country_code,
-      method_name: item.method_name,
-      recipient_label: item.recipient_label,
-      recipient_value: item.recipient_value,
-      holder_label: item.holder_label,
-      holder_value: item.holder_value,
-      qr_template: item.qr_template || '',
-      is_default: item.is_default,
-      is_active: item.is_active,
-      priority,
-    });
-
     reorderPaymentProfiles.mutate([
-      updatePayload(profile, target.priority ?? 100),
-      updatePayload(target, profile.priority ?? 100),
+      toPaymentProfilePayload(profile, target.priority ?? 100),
+      toPaymentProfilePayload(target, profile.priority ?? 100),
     ]);
   };
 

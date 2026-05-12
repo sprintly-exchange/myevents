@@ -53,6 +53,10 @@ export default function PendingPaymentPage() {
     reference,
     appName: 'MyEvents',
   });
+  const hasHolder = !!activePaymentMethod?.holder_value;
+  const amountStepNumber = hasHolder ? '4.' : '3.';
+  const referenceStepNumber = hasHolder ? '5.' : '4.';
+  const checkStepNumber = hasHolder ? (reference ? '6.' : '5.') : (reference ? '5.' : '4.');
 
   const handleCheckStatus = async () => {
     setChecking(true);
@@ -173,9 +177,9 @@ export default function PendingPaymentPage() {
               })}
             </li>
           )}
-          <li className="flex gap-2"><span className="font-bold shrink-0">{activePaymentMethod?.holder_value ? '4.' : '3.'}</span> {t('pendingPayment.step3', { price, currency })}</li>
-          {reference && <li className="flex gap-2"><span className="font-bold shrink-0">{activePaymentMethod?.holder_value ? '5.' : '4.'}</span> {t('pendingPayment.step4', { ref: reference })}</li>}
-          <li className="flex gap-2"><span className="font-bold shrink-0">{activePaymentMethod?.holder_value ? (reference ? '6.' : '5.') : (reference ? '5.' : '4.')}</span> {t('pendingPayment.step5')}</li>
+          <li className="flex gap-2"><span className="font-bold shrink-0">{amountStepNumber}</span> {t('pendingPayment.step3', { price, currency })}</li>
+          {reference && <li className="flex gap-2"><span className="font-bold shrink-0">{referenceStepNumber}</span> {t('pendingPayment.step4', { ref: reference })}</li>}
+          <li className="flex gap-2"><span className="font-bold shrink-0">{checkStepNumber}</span> {t('pendingPayment.step5')}</li>
         </ol>
         <p className="mt-3 text-xs text-amber-700">
           {t('pendingPayment.manualApprovalNote')}
