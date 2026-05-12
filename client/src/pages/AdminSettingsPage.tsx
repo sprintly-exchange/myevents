@@ -195,19 +195,7 @@ export default function AdminSettingsPage() {
   });
 
   const activatePaymentProfile = useMutation({
-    mutationFn: (profile: PaymentProfile) => api.post('/admin/payment-profiles', {
-      id: profile.id,
-      country_code: profile.country_code,
-      method_name: profile.method_name,
-      recipient_label: profile.recipient_label,
-      recipient_value: profile.recipient_value,
-      holder_label: profile.holder_label,
-      holder_value: profile.holder_value,
-      qr_template: profile.qr_template || '',
-      is_active: true,
-      is_default: profile.is_default,
-      priority: profile.priority,
-    }),
+    mutationFn: (profileId: string) => api.patch(`/admin/payment-profiles/${profileId}/activate`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-payment-profiles'] });
       toast.success(t('admin.settings.paymentProfileActivated'));
@@ -474,7 +462,7 @@ export default function AdminSettingsPage() {
                               <Button
                                 variant="outline"
                                 className={`h-8 w-8 p-0 border-slate-200 ${profile.is_active ? 'text-amber-700 hover:text-amber-700' : 'text-emerald-700 hover:text-emerald-700'}`}
-                                onClick={() => profile.is_active ? deactivatePaymentProfile.mutate(profile.id) : activatePaymentProfile.mutate(profile)}
+                                onClick={() => profile.is_active ? deactivatePaymentProfile.mutate(profile.id) : activatePaymentProfile.mutate(profile.id)}
                                 disabled={deactivatePaymentProfile.isPending || activatePaymentProfile.isPending}
                               >
                                 <Power className="h-3.5 w-3.5" />
