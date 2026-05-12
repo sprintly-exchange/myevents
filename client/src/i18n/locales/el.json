@@ -41,7 +41,8 @@
     "paid": "Πληρωμένο",
     "free": "Δωρεάν",
     "unlimited": "Απεριόριστο",
-    "copied": "Αντιγράφηκε!"
+    "copied": "Αντιγράφηκε!",
+    "country": "Χώρα"
   },
   "nav": {
     "dashboard": "Πίνακας Ελέγχου",
@@ -82,7 +83,8 @@
     "feature2": "Παρακολούθηση RSVP σε πραγματικό χρόνο",
     "feature3": "Απλή διαχείριση εκδηλώσεων",
     "feature4": "Επαγγελματικά πρότυπα συμπεριλαμβάνονται",
-    "quote": "Ο ευκολότερος τρόπος να οργανώσεις εκδηλώσεις και να κρατάς τους καλεσμένους ενήμερους."
+    "quote": "Ο ευκολότερος τρόπος να οργανώσεις εκδηλώσεις και να κρατάς τους καλεσμένους ενήμερους.",
+    "countryPlaceholder": "SE"
   },
   "dashboard": {
     "goodMorning": "Καλημέρα",
@@ -307,7 +309,8 @@
     "currentPlanButton": "Τρέχον Πλάνο",
     "paymentDestination": "Προορισμός πληρωμής",
     "paymentMethodFallback": "τη μέθοδο πληρωμής σας",
-    "payNow": "Πληρώστε Τώρα"
+    "payNow": "Πληρώστε Τώρα",
+    "paymentMethod": "Μέθοδος πληρωμής"
   },
   "pendingPayment": {
     "title": "Ολοκληρώστε την Πληρωμή σας",
@@ -349,7 +352,9 @@
       "approve": "Έγκριση",
       "reject": "Απόρριψη",
       "requestResolved": "Το αίτημα επιλύθηκε",
-      "resolveFailed": "Αποτυχία επίλυσης αιτήματος"
+      "resolveFailed": "Αποτυχία επίλυσης αιτήματος",
+      "paymentMethod": "Μέθοδος πληρωμής",
+      "paymentReference": "Αναφορά πληρωμής"
     },
     "plans": {
       "title": "Πλάνα",
@@ -365,7 +370,13 @@
       "upToEvents": "Έως {{count}} εκδηλώσεις",
       "planUpdated": "Το πλάνο ενημερώθηκε",
       "planCreated": "Το πλάνο δημιουργήθηκε",
-      "planDeleted": "Το πλάνο διαγράφηκε"
+      "planDeleted": "Το πλάνο διαγράφηκε",
+      "countryPricing": "Τιμολόγηση ανά χώρα",
+      "saveCountryPrice": "Αποθήκευση τιμής χώρας",
+      "countryPriceSaved": "Η τιμή χώρας αποθηκεύτηκε",
+      "countryPriceSaveFailed": "Αποτυχία αποθήκευσης τιμής χώρας",
+      "countryPriceDeleted": "Η τιμή χώρας αφαιρέθηκε",
+      "countryPriceDeleteFailed": "Αποτυχία αφαίρεσης τιμής χώρας"
     },
     "templates": {
       "title": "Πρότυπα Email",
@@ -403,7 +414,12 @@
       "paymentHolderName": "Όνομα Κατόχου",
       "paymentQrTemplate": "Πρότυπο QR",
       "paymentQrTemplateHelp": "Προαιρετικό. Χρησιμοποιήστε τα placeholders {{recipient}}, {{amount}}, {{currency}}, {{reference}}, {{holder}} και {{app_name}}.",
-      "savePaymentSettings": "Αποθήκευση Ρυθμίσεων Πληρωμής"
+      "savePaymentSettings": "Αποθήκευση Ρυθμίσεων Πληρωμής",
+      "savedPaymentProfiles": "Αποθηκευμένα προφίλ πληρωμής",
+      "paymentProfileSaved": "Το προφίλ πληρωμής αποθηκεύτηκε",
+      "paymentProfileSaveFailed": "Αποτυχία αποθήκευσης προφίλ πληρωμής",
+      "paymentPriority": "Προτεραιότητα",
+      "defaultForCountry": "Προεπιλογή για χώρα"
     }
   },
   "agenda": {

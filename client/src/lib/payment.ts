@@ -1,10 +1,14 @@
 export interface PaymentSettings {
+  id?: string;
+  country_code?: string;
   method_name: string;
   recipient_label: string;
   recipient_value: string;
   holder_label: string;
   holder_value: string;
   qr_template?: string;
+  is_default?: boolean;
+  priority?: number;
 }
 
 function fillTemplate(template: string, values: Record<string, string>) {

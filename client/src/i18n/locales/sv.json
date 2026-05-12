@@ -41,7 +41,8 @@
     "paid": "Betald",
     "free": "Gratis",
     "unlimited": "Obegränsat",
-    "copied": "Kopierat!"
+    "copied": "Kopierat!",
+    "country": "Land"
   },
   "nav": {
     "dashboard": "Översikt",
@@ -82,7 +83,8 @@
     "feature2": "RSVP-spårning i realtid",
     "feature3": "Enkel evenemangshantering",
     "feature4": "Professionella mallar ingår",
-    "quote": "Det enklaste sättet att planera evenemang och hålla gästerna informerade."
+    "quote": "Det enklaste sättet att planera evenemang och hålla gästerna informerade.",
+    "countryPlaceholder": "SE"
   },
   "dashboard": {
     "goodMorning": "God morgon",
@@ -307,7 +309,8 @@
     "currentPlanButton": "Nuvarande plan",
     "paymentDestination": "Betalningsmottagare",
     "paymentMethodFallback": "din betalmetod",
-    "payNow": "Betala nu"
+    "payNow": "Betala nu",
+    "paymentMethod": "Betalningsmetod"
   },
   "pendingPayment": {
     "title": "Slutför din betalning",
@@ -349,7 +352,9 @@
       "approve": "Godkänn",
       "reject": "Avvisa",
       "requestResolved": "Förfrågan hanterad",
-      "resolveFailed": "Det gick inte att hantera förfrågan"
+      "resolveFailed": "Det gick inte att hantera förfrågan",
+      "paymentMethod": "Betalningsmetod",
+      "paymentReference": "Betalningsreferens"
     },
     "plans": {
       "title": "Planer",
@@ -365,7 +370,13 @@
       "upToEvents": "Upp till {{count}} evenemang",
       "planUpdated": "Plan uppdaterad",
       "planCreated": "Plan skapad",
-      "planDeleted": "Plan borttagen"
+      "planDeleted": "Plan borttagen",
+      "countryPricing": "Landsspecifika priser",
+      "saveCountryPrice": "Spara landspris",
+      "countryPriceSaved": "Landspris sparat",
+      "countryPriceSaveFailed": "Kunde inte spara landspris",
+      "countryPriceDeleted": "Landspris borttaget",
+      "countryPriceDeleteFailed": "Kunde inte ta bort landspris"
     },
     "templates": {
       "title": "E-postmallar",
@@ -403,7 +414,12 @@
       "paymentHolderName": "Innehavarens namn",
       "paymentQrTemplate": "QR-mall",
       "paymentQrTemplateHelp": "Valfritt. Använd platshållarna {{recipient}}, {{amount}}, {{currency}}, {{reference}}, {{holder}} och {{app_name}}.",
-      "savePaymentSettings": "Spara betalningsinställningar"
+      "savePaymentSettings": "Spara betalningsinställningar",
+      "savedPaymentProfiles": "Sparade betalningsprofiler",
+      "paymentProfileSaved": "Betalningsprofil sparad",
+      "paymentProfileSaveFailed": "Kunde inte spara betalningsprofil",
+      "paymentPriority": "Prioritet",
+      "defaultForCountry": "Standard för land"
     }
   },
   "guestBook": {

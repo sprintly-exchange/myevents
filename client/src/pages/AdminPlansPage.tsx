@@ -22,11 +22,21 @@ const emptyForm = {
   description: '',
 };
 
+interface CountryPrice {
+  id: string;
+  plan_id: string;
+  country_code: string;
+  price_sek: number;
+  currency: string;
+  is_active: boolean;
+}
+
 export default function AdminPlansPage() {
   const qc = useQueryClient();
   const { t } = useTranslation();
   const [panelPlan, setPanelPlan] = useState<Plan | null | 'new'>(null);
   const [form, setForm] = useState(emptyForm);
+  const [countryPriceForm, setCountryPriceForm] = useState({ country_code: '', price_sek: '', currency: 'SEK' });
 
   const { data, isLoading } = useQuery({
     queryKey: ['plans'],
@@ -34,6 +44,13 @@ export default function AdminPlansPage() {
   });
 
   const plans: Plan[] = data?.plans || [];
+  const selectedPlanId = typeof panelPlan === 'object' && panelPlan ? panelPlan.id : null;
+  const { data: countryPricesData } = useQuery({
+    queryKey: ['plan-country-prices', selectedPlanId],
+    queryFn: () => api.get(`/plans/${selectedPlanId}/country-prices`).then(r => r.data),
+    enabled: !!selectedPlanId,
+  });
+  const countryPrices: CountryPrice[] = countryPricesData?.prices || [];
 
   const openNew = () => {
     setForm(emptyForm);
@@ -85,6 +102,31 @@ export default function AdminPlansPage() {
     mutationFn: (id: string) => api.post(`/plans/${id}/set-default`),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['plans'] }); toast.success('Default plan updated'); },
     onError: () => toast.error('Failed to set default'),
+  });
+
+  const saveCountryPriceMutation = useMutation({
+    mutationFn: () =>
+      api.put(`/plans/${selectedPlanId}/country-prices/${countryPriceForm.country_code.toUpperCase()}`, {
+        price_sek: Number(countryPriceForm.price_sek),
+        currency: countryPriceForm.currency,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['plan-country-prices', selectedPlanId] });
+      qc.invalidateQueries({ queryKey: ['plans'] });
+      toast.success(t('admin.plans.countryPriceSaved'));
+      setCountryPriceForm({ country_code: '', price_sek: '', currency: 'SEK' });
+    },
+    onError: () => toast.error(t('admin.plans.countryPriceSaveFailed')),
+  });
+
+  const deleteCountryPriceMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/plans/country-prices/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['plan-country-prices', selectedPlanId] });
+      qc.invalidateQueries({ queryKey: ['plans'] });
+      toast.success(t('admin.plans.countryPriceDeleted'));
+    },
+    onError: () => toast.error(t('admin.plans.countryPriceDeleteFailed')),
   });
 
   const handleSave = () => {
@@ -316,6 +358,58 @@ export default function AdminPlansPage() {
                   </div>
                 </div>
 
+                {!isNew && (
+                  <div className="space-y-2 border-t border-slate-100 pt-3">
+                    <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">{t('admin.plans.countryPricing')}</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      <Input
+                        placeholder="SE"
+                        value={countryPriceForm.country_code}
+                        onChange={e => setCountryPriceForm({ ...countryPriceForm, country_code: e.target.value.toUpperCase().slice(0, 2) })}
+                        className="border-slate-200 focus:border-blue-400 h-9 text-xs"
+                      />
+                      <Input
+                        type="number"
+                        placeholder="99"
+                        value={countryPriceForm.price_sek}
+                        onChange={e => setCountryPriceForm({ ...countryPriceForm, price_sek: e.target.value })}
+                        className="border-slate-200 focus:border-blue-400 h-9 text-xs"
+                      />
+                      <Input
+                        placeholder="SEK"
+                        value={countryPriceForm.currency}
+                        onChange={e => setCountryPriceForm({ ...countryPriceForm, currency: e.target.value.toUpperCase().slice(0, 5) })}
+                        className="border-slate-200 focus:border-blue-400 h-9 text-xs"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full border-slate-200 text-xs"
+                      disabled={!countryPriceForm.country_code || !countryPriceForm.price_sek || saveCountryPriceMutation.isPending}
+                      onClick={() => saveCountryPriceMutation.mutate()}
+                    >
+                      {t('admin.plans.saveCountryPrice')}
+                    </Button>
+                    {countryPrices.length > 0 && (
+                      <div className="space-y-1">
+                        {countryPrices.map((price) => (
+                          <div key={price.id} className="flex items-center justify-between text-xs bg-slate-50 rounded-md px-2 py-1.5">
+                            <span>{price.country_code}: {price.price_sek} {price.currency}</span>
+                            <button
+                              type="button"
+                              className="text-red-500 hover:text-red-600"
+                              onClick={() => deleteCountryPriceMutation.mutate(price.id)}
+                            >
+                              {t('common.delete')}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex gap-2 pt-1">
                   <Button
                     className="flex-1 bg-blue-600 hover:bg-blue-700"
@@ -336,4 +430,3 @@ export default function AdminPlansPage() {
     </AppLayout>
   );
 }
-

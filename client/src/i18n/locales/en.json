@@ -41,7 +41,8 @@
     "paid": "Paid",
     "free": "Free",
     "unlimited": "Unlimited",
-    "copied": "Copied!"
+    "copied": "Copied!",
+    "country": "Country"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -82,7 +83,8 @@
     "feature2": "RSVP tracking in real time",
     "feature3": "Simple event management",
     "feature4": "Professional templates included",
-    "quote": "The easiest way to plan events and keep guests informed."
+    "quote": "The easiest way to plan events and keep guests informed.",
+    "countryPlaceholder": "SE"
   },
   "dashboard": {
     "goodMorning": "Good morning",
@@ -307,7 +309,8 @@
     "currentPlanButton": "Current Plan",
     "paymentDestination": "Payment destination",
     "paymentMethodFallback": "your payment method",
-    "payNow": "Pay Now"
+    "payNow": "Pay Now",
+    "paymentMethod": "Payment method"
   },
   "pendingPayment": {
     "title": "Complete Your Payment",
@@ -349,7 +352,9 @@
       "approve": "Approve",
       "reject": "Reject",
       "requestResolved": "Request resolved",
-      "resolveFailed": "Failed to resolve request"
+      "resolveFailed": "Failed to resolve request",
+      "paymentMethod": "Payment method",
+      "paymentReference": "Payment reference"
     },
     "plans": {
       "title": "Plans",
@@ -365,7 +370,13 @@
       "upToEvents": "Up to {{count}} events",
       "planUpdated": "Plan updated",
       "planCreated": "Plan created",
-      "planDeleted": "Plan deleted"
+      "planDeleted": "Plan deleted",
+      "countryPricing": "Country pricing",
+      "saveCountryPrice": "Save country price",
+      "countryPriceSaved": "Country price saved",
+      "countryPriceSaveFailed": "Failed to save country price",
+      "countryPriceDeleted": "Country price removed",
+      "countryPriceDeleteFailed": "Failed to remove country price"
     },
     "templates": {
       "title": "Email Templates",
@@ -403,7 +414,12 @@
       "paymentHolderName": "Holder Name",
       "paymentQrTemplate": "QR Template",
       "paymentQrTemplateHelp": "Optional. Use {{recipient}}, {{amount}}, {{currency}}, {{reference}}, {{holder}}, and {{app_name}} placeholders.",
-      "savePaymentSettings": "Save Payment Settings"
+      "savePaymentSettings": "Save Payment Settings",
+      "savedPaymentProfiles": "Saved payment profiles",
+      "paymentProfileSaved": "Payment profile saved",
+      "paymentProfileSaveFailed": "Failed to save payment profile",
+      "paymentPriority": "Priority",
+      "defaultForCountry": "Default for country"
     }
   },
   "agenda": {

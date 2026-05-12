@@ -192,6 +192,7 @@ async function main() {
         email: 'admin',
         passwordHash,
         name: 'Admin',
+        country: 'SE',
         role: 'admin',
         planId: basicPlan.id,
         paymentStatus: 'paid',
@@ -220,6 +221,38 @@ async function main() {
   ];
   for (const s of defaultSettings) {
     await prisma.appSetting.upsert({ where: { key: s.key }, update: {}, create: s });
+  }
+
+  const paymentProfileCount = await prisma.paymentProfile.count();
+  if (paymentProfileCount === 0) {
+    await prisma.paymentProfile.create({
+      data: {
+        countryCode: 'SE',
+        methodName: 'Swish',
+        recipientLabel: 'Swish number',
+        recipientValue: '',
+        holderLabel: 'Recipient',
+        holderValue: '',
+        qrTemplate: '',
+        isActive: true,
+        isDefault: true,
+        priority: 10,
+      },
+    });
+    await prisma.paymentProfile.create({
+      data: {
+        countryCode: 'GLOBAL',
+        methodName: 'PayPal',
+        recipientLabel: 'PayPal email',
+        recipientValue: '',
+        holderLabel: 'Recipient',
+        holderValue: 'MyEvents',
+        qrTemplate: '',
+        isActive: true,
+        isDefault: true,
+        priority: 20,
+      },
+    });
   }
 
   // Templates — upsert so new themes are added on re-seed without wiping data

@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 
 interface PaymentData {
   payment?: PaymentSettings;
+  payment_methods?: PaymentSettings[];
   price?: number;
   planName?: string;
   currency?: string;
@@ -23,6 +24,7 @@ export default function PendingPaymentPage() {
   const { t } = useTranslation();
   const stateData = (location.state as PaymentData) || {};
   const [checking, setChecking] = useState(false);
+  const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState('');
 
   const { data: pendingData } = useQuery({
     queryKey: ['upgrade-request-pending'],
@@ -30,7 +32,8 @@ export default function PendingPaymentPage() {
     retry: false,
   });
 
-  const payment: PaymentSettings | null = stateData.payment || pendingData?.payment || (pendingData?.swish ? {
+  const paymentMethods: PaymentSettings[] = stateData.payment_methods || pendingData?.payment_methods || [];
+  const payment: PaymentSettings | null = stateData.payment || pendingData?.payment || paymentMethods[0] || (pendingData?.swish ? {
     method_name: 'Swish',
     recipient_label: t('upgrade.paymentDestination'),
     recipient_value: pendingData.swish.number || '',
@@ -42,8 +45,9 @@ export default function PendingPaymentPage() {
   const currency = stateData.currency || pendingData?.request?.plan_currency || 'SEK';
   const planName = stateData.planName || pendingData?.request?.plan_name || 'Basic';
   const reference = pendingData?.request?.paymentReference || pendingData?.request?.payment_reference || '';
+  const activePaymentMethod = paymentMethods.find((method) => method.id === selectedPaymentMethodId) || payment;
 
-  const paymentQrData = buildPaymentQrValue(payment, {
+  const paymentQrData = buildPaymentQrValue(activePaymentMethod, {
     amount: price,
     currency,
     reference,
@@ -100,17 +104,35 @@ export default function PendingPaymentPage() {
               {reference || <span className="text-slate-400 italic">loading…</span>}
             </span>
           </div>
-            {payment?.recipient_value && (
+            {activePaymentMethod?.recipient_value && (
               <>
+                {paymentMethods.length > 1 && (
+                  <div className="border-t border-blue-200 pt-2.5 mt-2.5">
+                    <div className="flex justify-between text-sm items-center gap-2">
+                      <span className="text-blue-700">{t('upgrade.paymentMethod')}</span>
+                      <select
+                        className="border border-blue-200 bg-white rounded-md px-2 py-1 text-xs"
+                        value={selectedPaymentMethodId}
+                        onChange={(e) => setSelectedPaymentMethodId(e.target.value)}
+                      >
+                        {paymentMethods.map((method, index) => (
+                          <option key={method.id || index} value={method.id || ''}>
+                            {method.method_name} {method.country_code ? `(${method.country_code})` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
                 <div className="border-t border-blue-200 pt-2.5 mt-2.5">
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-blue-700">{payment.recipient_label}</span>
-                    <span className="font-mono font-semibold text-blue-900">{payment.recipient_value}</span>
+                    <span className="text-blue-700">{activePaymentMethod?.recipient_label}</span>
+                    <span className="font-mono font-semibold text-blue-900">{activePaymentMethod?.recipient_value}</span>
                   </div>
-                  {payment.holder_value && (
+                  {activePaymentMethod?.holder_value && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-blue-700">{payment.holder_label}</span>
-                      <span className="font-semibold text-blue-900">{payment.holder_value}</span>
+                      <span className="text-blue-700">{activePaymentMethod.holder_label}</span>
+                      <span className="font-semibold text-blue-900">{activePaymentMethod.holder_value}</span>
                     </div>
                   )}
                 </div>
@@ -122,7 +144,7 @@ export default function PendingPaymentPage() {
       {/* QR code */}
       {paymentQrData && (
         <div className="flex flex-col items-center mb-5">
-          <p className="text-sm text-slate-500 mb-3">{t('pendingPayment.scanQr', { method: payment?.method_name || t('upgrade.paymentMethodFallback') })}</p>
+          <p className="text-sm text-slate-500 mb-3">{t('pendingPayment.scanQr', { method: activePaymentMethod?.method_name || t('upgrade.paymentMethodFallback') })}</p>
           <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
             <QRCodeSVG value={paymentQrData} size={160} />
           </div>
@@ -134,7 +156,7 @@ export default function PendingPaymentPage() {
         <p className="text-sm font-semibold text-amber-800 mb-2">{t('pendingPayment.instructions')}</p>
         <ol className="list-decimal list-inside space-y-1.5 text-sm text-amber-700">
           <li>{t('pendingPayment.step1')}</li>
-          <li>{t('pendingPayment.step2', { method: payment?.method_name || t('upgrade.paymentMethodFallback') })}</li>
+          <li>{t('pendingPayment.step2', { method: activePaymentMethod?.method_name || t('upgrade.paymentMethodFallback') })}</li>
           <li>{t('pendingPayment.step3', { price, currency })}</li>
           {reference && <li>{t('pendingPayment.step4', { ref: reference })}</li>}
           <li>{t('pendingPayment.step5')}</li>

@@ -41,7 +41,8 @@
     "paid": "ගෙවූ",
     "free": "නොමිලේ",
     "unlimited": "අසීමිත",
-    "copied": "පිටපත් කෙරිණි!"
+    "copied": "පිටපත් කෙරිණි!",
+    "country": "රට"
   },
   "nav": {
     "dashboard": "උපකරණ පුවරුව",
@@ -82,7 +83,8 @@
     "feature2": "තත්‍ය කාලීන RSVP නිරීක්ෂණය",
     "feature3": "සරල සිදුවීම් කළමනාකරණය",
     "feature4": "වෘත්තීය සැකිලි ඇතුළත්",
-    "quote": "සිදුවීම් සැලසුම් කිරීමට සහ අමුත්තන් දැනුවත් කිරීමට පහසුම ක්‍රමය."
+    "quote": "සිදුවීම් සැලසුම් කිරීමට සහ අමුත්තන් දැනුවත් කිරීමට පහසුම ක්‍රමය.",
+    "countryPlaceholder": "SE"
   },
   "dashboard": {
     "goodMorning": "සුබ උදෑසනක්",
@@ -307,7 +309,8 @@
     "currentPlanButton": "වර්තමාන සැලැස්ම",
     "paymentDestination": "ගෙවීම් ගමනාන්තය",
     "paymentMethodFallback": "ඔබේ ගෙවීම් ක්‍රමය",
-    "payNow": "දැන් ගෙවන්න"
+    "payNow": "දැන් ගෙවන්න",
+    "paymentMethod": "ගෙවීම් ක්‍රමය"
   },
   "pendingPayment": {
     "title": "ඔබේ ගෙවීම සම්පූර්ණ කරන්න",
@@ -349,7 +352,9 @@
       "approve": "අනුමත කරන්න",
       "reject": "ප්‍රතික්ෂේප කරන්න",
       "requestResolved": "ඉල්ලීම විසඳන ලදී",
-      "resolveFailed": "ඉල්ලීම විසඳීම අසාර්ථකයි"
+      "resolveFailed": "ඉල්ලීම විසඳීම අසාර්ථකයි",
+      "paymentMethod": "ගෙවීම් ක්‍රමය",
+      "paymentReference": "ගෙවීම් යොමුව"
     },
     "plans": {
       "title": "සැලසුම්",
@@ -365,7 +370,13 @@
       "upToEvents": "සිදුවීම් {{count}}ක් දක්වා",
       "planUpdated": "සැලැස්ම යාවත්කාලීන කෙරිණි",
       "planCreated": "සැලැස්ම සාදන ලදී",
-      "planDeleted": "සැලැස්ම මකන ලදී"
+      "planDeleted": "සැලැස්ම මකන ලදී",
+      "countryPricing": "රට අනුව මිල",
+      "saveCountryPrice": "රටේ මිල සුරකින්න",
+      "countryPriceSaved": "රටේ මිල සුරකින ලදී",
+      "countryPriceSaveFailed": "රටේ මිල සුරැකීමට අසමත් විය",
+      "countryPriceDeleted": "රටේ මිල ඉවත් කරන ලදී",
+      "countryPriceDeleteFailed": "රටේ මිල ඉවත් කිරීමට අසමත් විය"
     },
     "templates": {
       "title": "විද්‍යුත් සැකිලි",
@@ -403,7 +414,12 @@
       "paymentHolderName": "හිමිකරුගේ නම",
       "paymentQrTemplate": "QR ආකෘතිය",
       "paymentQrTemplateHelp": "විකල්පයකි. {{recipient}}, {{amount}}, {{currency}}, {{reference}}, {{holder}}, සහ {{app_name}} ස්ථානගතකාරක භාවිතා කරන්න.",
-      "savePaymentSettings": "ගෙවීම් සැකසීම් සුරකින්න"
+      "savePaymentSettings": "ගෙවීම් සැකසීම් සුරකින්න",
+      "savedPaymentProfiles": "සුරකින ලද ගෙවීම් පැතිකඩ",
+      "paymentProfileSaved": "ගෙවීම් පැතිකඩ සුරකින ලදී",
+      "paymentProfileSaveFailed": "ගෙවීම් පැතිකඩ සුරැකීමට අසමත් විය",
+      "paymentPriority": "ප්‍රමුඛතාව",
+      "defaultForCountry": "රට සඳහා පෙරනිමිය"
     }
   },
   "guestBook": {

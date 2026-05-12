@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../db';
 import { requireAuth } from '../middleware/auth';
+import { isIsoCountryCode } from '../services/payment-settings';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_change_me';
@@ -11,6 +12,7 @@ const formatUser = (user: any) => ({
   id: user.id,
   email: user.email,
   name: user.name,
+  country: user.country ?? null,
   role: user.role,
   payment_status: user.paymentStatus,
   plan_id: user.planId,
@@ -23,7 +25,7 @@ const formatUser = (user: any) => ({
 });
 
 router.post('/register', async (req: Request, res: Response) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, country } = req.body;
   if (!name || !email || !password)
     return res.status(400).json({ error: 'Name, email, and password are required' });
   if (password.length < 8)
@@ -35,8 +37,21 @@ router.post('/register', async (req: Request, res: Response) => {
   const defaultPlan = await prisma.plan.findFirst({ where: { isDefault: true, isActive: true } });
   const passwordHash = bcrypt.hashSync(password, 10);
 
+  const normalizedCountry = typeof country === 'string' ? country.trim().toUpperCase() : 'SE';
+  if (!isIsoCountryCode(normalizedCountry))
+    return res.status(400).json({ error: 'country must be a 2-letter ISO code' });
+
   const user = await prisma.user.create({
-    data: { email, passwordHash, name, role: 'user', planId: defaultPlan?.id ?? null, paymentStatus: 'pending', isActive: true },
+    data: {
+      email,
+      passwordHash,
+      name,
+      country: normalizedCountry || 'SE',
+      role: 'user',
+      planId: defaultPlan?.id ?? null,
+      paymentStatus: 'pending',
+      isActive: true,
+    },
     include: { plan: true },
   });
   return res.status(201).json({ user: formatUser(user) });

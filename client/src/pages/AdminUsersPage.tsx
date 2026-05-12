@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { User, Plan } from '@/types';
+import { COUNTRY_CODES } from '@/lib/countries';
 
 export default function AdminUsersPage() {
   const { t } = useTranslation();
@@ -83,9 +84,15 @@ export default function AdminUsersPage() {
                         {t('admin.users.wantsToUpgrade')} <strong className="text-slate-700">{req.plan_name}</strong>
                         {req.plan_price ? <span className="ml-1 text-slate-400">· {req.plan_price} {req.plan_currency || 'SEK'}</span> : null}
                       </p>
+                      {(req.country_code || req.payment_method) && (
+                        <p className="text-xs text-slate-500 mt-1">
+                          {req.country_code ? `${t('common.country')}: ${req.country_code}` : ''}
+                          {req.payment_method ? ` · ${t('admin.users.paymentMethod')}: ${req.payment_method}` : ''}
+                        </p>
+                      )}
                       {req.payment_reference && (
                         <div className="mt-2 flex items-center gap-2">
-                          <span className="text-xs text-amber-700 font-medium">{t('admin.users.swishRef')}</span>
+                          <span className="text-xs text-amber-700 font-medium">{t('admin.users.paymentReference')}</span>
                           <span className="font-mono text-sm font-bold text-amber-900 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-md tracking-widest">
                             {req.payment_reference}
                           </span>
@@ -133,6 +140,7 @@ export default function AdminUsersPage() {
                 <TableRow className="bg-slate-50/50 border-slate-100">
                   <TableHead className="text-slate-600 font-semibold">{t('admin.users.nameEmail')}</TableHead>
                   <TableHead className="text-slate-600 font-semibold">{t('common.role')}</TableHead>
+                  <TableHead className="text-slate-600 font-semibold">{t('common.country')}</TableHead>
                   <TableHead className="text-slate-600 font-semibold">{t('common.plan')}</TableHead>
                   <TableHead className="text-slate-600 font-semibold">{t('admin.users.payment')}</TableHead>
                   <TableHead className="text-slate-600 font-semibold">Status</TableHead>
@@ -152,6 +160,21 @@ export default function AdminUsersPage() {
                       <Badge variant={user.role === 'admin' ? 'default' : 'secondary'} className="text-xs">
                         {user.role}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Select
+                        value={user.country || 'SE'}
+                        onValueChange={(val) => updateMutation.mutate({ id: user.id, data: { country: val } })}
+                      >
+                        <SelectTrigger className="h-8 text-xs w-24 border-slate-200">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {COUNTRY_CODES.map(countryCode => (
+                            <SelectItem key={countryCode} value={countryCode}>{countryCode}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                     <TableCell>
                       <Select
