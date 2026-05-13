@@ -451,6 +451,8 @@
       "countryOptionNO": "Norway (NO)",
       "countryOptionDK": "Denmark (DK)",
       "countryOptionFI": "Finland (FI)",
+      "countryOptionLK": "Sri Lanka (LK)",
+      "countryOptionCY": "Cyprus (CY)",
       "countryHelp": "Choose which country's users should see this payment method.",
       "paymentRecipientLabelPlaceholder": "Phone number",
       "paymentRecipientValuePlaceholder": "+46701234567",

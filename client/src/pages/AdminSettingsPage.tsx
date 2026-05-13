@@ -44,6 +44,8 @@ const COMMON_COUNTRIES = [
   { value: 'NO', labelKey: 'admin.settings.countryOptionNO' },
   { value: 'DK', labelKey: 'admin.settings.countryOptionDK' },
   { value: 'FI', labelKey: 'admin.settings.countryOptionFI' },
+  { value: 'LK', labelKey: 'admin.settings.countryOptionLK' },
+  { value: 'CY', labelKey: 'admin.settings.countryOptionCY' },
 ];
 const DEFAULT_PAYMENT_PRIORITY = 100;
 
@@ -90,7 +92,7 @@ export default function AdminSettingsPage() {
     smtp_host: '', smtp_port: '587', smtp_user: '', smtp_pass: '', smtp_from: '',
   });
   const [paymentForm, setPaymentForm] = useState(getDefaultPaymentForm());
-  const [countryPreset, setCountryPreset] = useState<'GLOBAL' | 'SE' | 'NO' | 'DK' | 'FI' | 'OTHER'>('SE');
+  const [countryPreset, setCountryPreset] = useState<'GLOBAL' | 'SE' | 'NO' | 'DK' | 'FI' | 'LK' | 'CY' | 'OTHER'>('SE');
   const [freeTierForm, setFreeTierForm] = useState({ free_tier_invite_limit: '1' });
   const [testEmail, setTestEmail] = useState('');
 
@@ -129,7 +131,7 @@ export default function AdminSettingsPage() {
   useEffect(() => {
     const normalized = (paymentForm.country_code || '').toUpperCase();
     if (COMMON_COUNTRIES.some((country) => country.value === normalized)) {
-      setCountryPreset(normalized as 'GLOBAL' | 'SE' | 'NO' | 'DK' | 'FI');
+      setCountryPreset(normalized as 'GLOBAL' | 'SE' | 'NO' | 'DK' | 'FI' | 'LK' | 'CY');
       return;
     }
     setCountryPreset('OTHER');
@@ -491,7 +493,7 @@ export default function AdminSettingsPage() {
                     <select
                       value={countryPreset}
                       onChange={(e) => {
-                        const selected = e.target.value as 'GLOBAL' | 'SE' | 'NO' | 'DK' | 'FI' | 'OTHER';
+                        const selected = e.target.value as 'GLOBAL' | 'SE' | 'NO' | 'DK' | 'FI' | 'LK' | 'CY' | 'OTHER';
                         setCountryPreset(selected);
                         if (selected !== 'OTHER') setPaymentForm({ ...paymentForm, country_code: selected });
                       }}
