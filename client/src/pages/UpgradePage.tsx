@@ -190,8 +190,8 @@ export default function UpgradePage() {
               <ol className="space-y-2 text-sm text-amber-700">
                 <li className="flex gap-2"><span className="font-bold shrink-0">1.</span> {t('upgrade.step1')}</li>
                 <li className="flex gap-2"><span className="font-bold shrink-0">2.</span> {t('upgrade.step2', { method: activePaymentMethod?.method_name || t('upgrade.paymentMethodFallback') })}</li>
-                <li className="flex gap-2"><span className="font-bold shrink-0">3.</span> {t('upgrade.step3', { price: paymentInfo.planPrice, currency: paymentInfo.planCurrency })}</li>
-                <li className="flex gap-2"><span className="font-bold shrink-0">4.</span> {t('upgrade.step4', { ref: paymentInfo.reference })}</li>
+                <li className="flex gap-2"><span className="font-bold shrink-0">3.</span> <span dangerouslySetInnerHTML={{ __html: t('upgrade.step3', { price: paymentInfo.planPrice, currency: paymentInfo.planCurrency }) }} /></li>
+                <li className="flex gap-2"><span className="font-bold shrink-0">4.</span> <span dangerouslySetInnerHTML={{ __html: t('upgrade.step4', { ref: paymentInfo.reference }) }} /></li>
                 <li className="flex gap-2"><span className="font-bold shrink-0">5.</span> {t('upgrade.step5')}</li>
               </ol>
               <p className="mt-3 text-xs text-amber-700">{t('upgrade.manualApprovalNote')}</p>
