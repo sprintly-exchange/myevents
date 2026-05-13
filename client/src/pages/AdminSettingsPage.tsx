@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Mail, CreditCard, Lock, Send, Users, Pencil, Power, ArrowUp, ArrowDown } from 'lucide-react';
+import { Mail, CreditCard, Lock, Send, Users, Pencil, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
 import AppLayout from '@/components/AppLayout';
@@ -186,23 +186,14 @@ export default function AdminSettingsPage() {
     onError: () => toast.error(t('admin.settings.paymentProfileSaveFailed')),
   });
 
-  const deactivatePaymentProfile = useMutation({
+  const deletePaymentProfile = useMutation({
     mutationFn: (id: string) => api.delete(`/admin/payment-profiles/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-payment-profiles'] });
-      toast.success(t('admin.settings.paymentProfileDeactivated'));
+      toast.success(t('admin.settings.paymentProfileDeleted'));
       if (paymentForm.id) setPaymentForm(getDefaultPaymentForm());
     },
-    onError: () => toast.error(t('admin.settings.paymentProfileDeactivateFailed')),
-  });
-
-  const activatePaymentProfile = useMutation({
-    mutationFn: (profileId: string) => api.patch(`/admin/payment-profiles/${profileId}/activate`),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin-payment-profiles'] });
-      toast.success(t('admin.settings.paymentProfileActivated'));
-    },
-    onError: () => toast.error(t('admin.settings.paymentProfileActivateFailed')),
+    onError: () => toast.error(t('admin.settings.paymentProfileDeleteFailed')),
   });
 
   const reorderPaymentProfiles = useMutation({
@@ -463,11 +454,14 @@ export default function AdminSettingsPage() {
                               </Button>
                               <Button
                                 variant="outline"
-                                className={`h-8 w-8 p-0 border-slate-200 ${profile.is_active ? 'text-amber-700 hover:text-amber-700' : 'text-emerald-700 hover:text-emerald-700'}`}
-                                onClick={() => profile.is_active ? deactivatePaymentProfile.mutate(profile.id) : activatePaymentProfile.mutate(profile.id)}
-                                disabled={deactivatePaymentProfile.isPending || activatePaymentProfile.isPending}
+                                className="h-8 w-8 p-0 border-slate-200 text-rose-700 hover:text-rose-700"
+                                onClick={() => {
+                                  if (!window.confirm(t('admin.settings.deletePaymentProfileConfirm'))) return;
+                                  deletePaymentProfile.mutate(profile.id);
+                                }}
+                                disabled={deletePaymentProfile.isPending}
                               >
-                                <Power className="h-3.5 w-3.5" />
+                                <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             </div>
                           </div>
