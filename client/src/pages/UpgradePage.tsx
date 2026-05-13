@@ -3,7 +3,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Check, Zap, Star, Copy, RefreshCw } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
 import api from '@/lib/axios';
 import { buildPaymentQrValue, type PaymentSettings } from '@/lib/payment';
 import { useAuth } from '@/hooks/useAuth';
@@ -190,8 +190,8 @@ export default function UpgradePage() {
               <ol className="space-y-2 text-sm text-amber-700">
                 <li className="flex gap-2"><span className="font-bold shrink-0">1.</span> {t('upgrade.step1')}</li>
                 <li className="flex gap-2"><span className="font-bold shrink-0">2.</span> {t('upgrade.step2', { method: activePaymentMethod?.method_name || t('upgrade.paymentMethodFallback') })}</li>
-                <li className="flex gap-2"><span className="font-bold shrink-0">3.</span> <span dangerouslySetInnerHTML={{ __html: t('upgrade.step3', { price: paymentInfo.planPrice, currency: paymentInfo.planCurrency }) }} /></li>
-                <li className="flex gap-2"><span className="font-bold shrink-0">4.</span> <span dangerouslySetInnerHTML={{ __html: t('upgrade.step4', { ref: paymentInfo.reference }) }} /></li>
+                <li className="flex gap-2"><span className="font-bold shrink-0">3.</span> <Trans i18nKey="upgrade.step3" values={{ price: paymentInfo.planPrice, currency: paymentInfo.planCurrency }} components={{ strong: <strong /> }} /></li>
+                <li className="flex gap-2"><span className="font-bold shrink-0">4.</span> <Trans i18nKey="upgrade.step4" values={{ ref: paymentInfo.reference }} components={{ strong: <strong /> }} /></li>
                 <li className="flex gap-2"><span className="font-bold shrink-0">5.</span> {t('upgrade.step5')}</li>
               </ol>
               <p className="mt-3 text-xs text-amber-700">{t('upgrade.manualApprovalNote')}</p>
