@@ -90,8 +90,8 @@ export async function sendInvitationEmail(
     Try <a href="${appUrl}" style="color:#6b7280;text-decoration:underline;">MyEvents</a> — free to get started.
   </p>
 </div>`;
-  if (html.includes('</body>')) {
-    html = html.replace('</body>', `${promoFooter}\n</body>`);
+  if (/<\/body>/i.test(html)) {
+    html = html.replace(/<\/body>/i, `${promoFooter}\n</body>`);
   } else {
     html += promoFooter;
   }
