@@ -42,7 +42,11 @@
     "free": "Free",
     "unlimited": "Unlimited",
     "copied": "Copied!",
-    "country": "Country"
+    "country": "Country",
+    "open": "Open",
+    "share": "Share",
+    "date": "Date",
+    "preview": "Preview"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -153,6 +157,11 @@
     "invitationsSent": "Sent {{count}} invitation(s)",
     "copyLink": "Copy link",
     "linkCopied": "RSVP link copied!",
+    "shareLinkCopied": "Share link copied!",
+    "eventsUsed": "/ {{limit}} events used",
+    "invitedLabel": "invited",
+    "acceptedLabel": "· {{count}} accepted",
+    "eventNotFound": "Event not found",
     "guestList": "Guest List",
     "noGuestsYet": "No guests invited yet",
     "freeTierLimit": "{{current}}/{{limit}} free invites used",
@@ -275,6 +284,7 @@
     "successSubtitle": "Thank you for your response",
     "alreadyResponded": "You've already responded to this invitation",
     "invalidLink": "Invalid invitation link",
+    "invalidLinkDesc": "This invitation link may be invalid or expired.",
     "hosted": "Hosted by",
     "location": "Location"
   },
@@ -359,7 +369,8 @@
       "requestResolved": "Request resolved",
       "resolveFailed": "Failed to resolve request",
       "paymentMethod": "Payment method",
-      "paymentReference": "Payment reference"
+      "paymentReference": "Payment reference",
+      "noPlan": "No plan"
     },
     "plans": {
       "title": "Plans",
@@ -388,6 +399,7 @@
       "subtitle": "Manage invitation email templates",
       "addTemplate": "Add Template",
       "preview": "Preview",
+      "deleteConfirm": "Delete template?",
       "templateName": "Template Name",
       "htmlContent": "HTML Content",
       "variables": "Available variables",

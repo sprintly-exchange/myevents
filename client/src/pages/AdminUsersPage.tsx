@@ -143,8 +143,8 @@ export default function AdminUsersPage() {
                   <TableHead className="text-slate-600 font-semibold">{t('common.country')}</TableHead>
                   <TableHead className="text-slate-600 font-semibold">{t('common.plan')}</TableHead>
                   <TableHead className="text-slate-600 font-semibold">{t('admin.users.payment')}</TableHead>
-                  <TableHead className="text-slate-600 font-semibold">Status</TableHead>
-                  <TableHead className="text-slate-600 font-semibold">Actions</TableHead>
+                  <TableHead className="text-slate-600 font-semibold">{t('common.status')}</TableHead>
+                  <TableHead className="text-slate-600 font-semibold">{t('common.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -182,7 +182,7 @@ export default function AdminUsersPage() {
                         onValueChange={(val) => updateMutation.mutate({ id: user.id, data: { plan_id: val } })}
                       >
                         <SelectTrigger className="h-8 text-xs w-32 border-slate-200">
-                          <SelectValue placeholder="No plan" />
+                          <SelectValue placeholder={t('admin.users.noPlan')} />
                         </SelectTrigger>
                         <SelectContent>
                           {plans.map((p: Plan) => (

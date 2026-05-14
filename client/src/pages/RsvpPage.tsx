@@ -2,12 +2,14 @@ import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
 import { Card, CardContent } from '@/components/ui/card';
 
 export default function RsvpPage() {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['rsvp', token],
@@ -31,8 +33,8 @@ export default function RsvpPage() {
       <Card className="max-w-md w-full mx-4">
         <CardContent className="py-12 text-center">
           <X className="h-12 w-12 text-red-400 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-800 mb-2">Invalid invitation link</h2>
-          <p className="text-gray-500">This invitation link may be invalid or expired.</p>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">{t('rsvp.invalidLink')}</h2>
+          <p className="text-gray-500">{t('rsvp.invalidLinkDesc')}</p>
         </CardContent>
       </Card>
     </div>

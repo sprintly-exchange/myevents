@@ -53,12 +53,12 @@ router.get('/events/:shareToken', async (req: Request, res: Response) => {
         title: a.title,
         description: a.description || null,
       })) : [],
-      guidance_items: event.guidanceItems.map(g => ({
+      guidance_items: enable_agenda ? event.guidanceItems.map(g => ({
         id: g.id,
         sort_order: g.sortOrder,
         title: g.title,
         body: g.body,
-      })),
+      })) : [],
     },
   });
 });
@@ -83,7 +83,7 @@ router.post('/events/:shareToken/rsvp', async (req: Request, res: Response) => {
     where: { eventId: event.id, recipientEmail: trimmedEmail },
   });
 
-  const statusMap: Record<string, string> = { yes: 'accepted', maybe: 'maybe', no: 'declined' };
+  const statusMap: Record<string, string> = { yes: 'accepted', maybe: 'maybe', no: 'rejected' };
   const newStatus = statusMap[attending];
 
   if (existing) {

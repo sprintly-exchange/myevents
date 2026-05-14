@@ -70,6 +70,8 @@ export default function EventDetailPage() {
     onError: (err: any) => {
       if (err.response?.status === 402 && err.response?.data?.upgrade_required) {
         qc.invalidateQueries({ queryKey: ['event', id] });
+        navigate('/upgrade');
+        return;
       }
       toast.error(err.response?.data?.error || 'Failed to send invitations');
     },
@@ -181,7 +183,7 @@ export default function EventDetailPage() {
   );
   if (!event) return (
     <AppLayout>
-      <div className="p-8 text-center text-slate-500">Event not found</div>
+      <div className="p-8 text-center text-slate-500">{t('events.eventNotFound')}</div>
     </AppLayout>
   );
 
@@ -225,7 +227,7 @@ export default function EventDetailPage() {
               {event.share_token && (
                 <a href={`${window.location.origin}/e/${event.share_token}`} target="_blank" rel="noopener noreferrer">
                   <Button variant="outline" size="sm" className="bg-white/10 border-white/30 text-white hover:bg-white/20">
-                    <Eye className="h-3.5 w-3.5 mr-1.5" />Preview
+                    <Eye className="h-3.5 w-3.5 mr-1.5" />{t('common.preview')}
                   </Button>
                 </a>
               )}
@@ -236,10 +238,10 @@ export default function EventDetailPage() {
                   className="bg-white/10 border-white/30 text-white hover:bg-white/20"
                   onClick={() => {
                     navigator.clipboard.writeText(`${window.location.origin}/e/${event.share_token}`);
-                    toast.success('Share link copied!');
+                    toast.success(t('events.shareLinkCopied'));
                   }}
                 >
-                  <Share2 className="h-3.5 w-3.5 mr-1.5" />Share
+                  <Share2 className="h-3.5 w-3.5 mr-1.5" />{t('common.share')}
                 </Button>
               )}
               <Link to={`/events/${id}/edit`}>
@@ -265,7 +267,7 @@ export default function EventDetailPage() {
               <Calendar className="h-4 w-4 text-blue-600" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs text-slate-400 font-medium">Date</p>
+              <p className="text-xs text-slate-400 font-medium">{t('common.date')}</p>
               <p className="text-sm font-semibold text-slate-800 truncate">{dateDisplay}</p>
               <p className="text-xs text-slate-500 mt-0.5">
                 {timeDisplay}{endTimeDisplay ? ` – ${endTimeDisplay}` : ''}

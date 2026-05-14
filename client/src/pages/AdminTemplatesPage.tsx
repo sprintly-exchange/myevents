@@ -47,22 +47,22 @@ export default function AdminTemplatesPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {templates.map((t: Template) => (
-              <div key={t.id} className="bg-white rounded-2xl shadow-sm border border-slate-200/70 overflow-hidden hover:shadow-md transition-shadow group">
+            {templates.map((tmpl: Template) => (
+              <div key={tmpl.id} className="bg-white rounded-2xl shadow-sm border border-slate-200/70 overflow-hidden hover:shadow-md transition-shadow group">
                 {/* Mini preview */}
                 <div className="h-40 overflow-hidden bg-slate-50 relative border-b border-slate-100">
                   <div
                     className="absolute inset-0 transform scale-[0.25] origin-top-left pointer-events-none"
                     style={{ width: '400%', height: '400%' }}
-                    dangerouslySetInnerHTML={{ __html: t.html_content }}
+                    dangerouslySetInnerHTML={{ __html: tmpl.html_content }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-50/80 to-transparent" />
                 </div>
 
                 <div className="p-5">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-slate-900">{t.name}</h3>
-                    {t.is_system ? (
+                    <h3 className="font-semibold text-slate-900">{tmpl.name}</h3>
+                    {tmpl.is_system ? (
                       <Badge variant="secondary" className="text-xs">System</Badge>
                     ) : (
                       <Badge variant="outline" className="text-xs">Custom</Badge>
@@ -74,16 +74,16 @@ export default function AdminTemplatesPage() {
                       size="sm"
                       variant="outline"
                       className="flex-1 border-slate-200 hover:bg-slate-50 text-xs"
-                      onClick={() => setPreview(t)}
+                      onClick={() => setPreview(tmpl)}
                     >
-                      <Eye className="h-3.5 w-3.5 mr-1.5" />{/* t variable shadowed — Preview */}Preview
+                      <Eye className="h-3.5 w-3.5 mr-1.5" />{t('admin.templates.preview')}
                     </Button>
-                    {!t.is_system && (
+                    {!tmpl.is_system && (
                       <Button
                         size="sm"
                         variant="ghost"
                         className="text-red-400 hover:text-red-600 hover:bg-red-50"
-                        onClick={() => { if (confirm('Delete template?')) deleteMutation.mutate(t.id); }}
+                        onClick={() => { if (confirm(t('admin.templates.deleteConfirm'))) deleteMutation.mutate(tmpl.id); }}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
@@ -99,7 +99,7 @@ export default function AdminTemplatesPage() {
       <Dialog open={!!preview} onOpenChange={() => setPreview(null)}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle>Preview: {preview?.name}</DialogTitle>
+            <DialogTitle>{t('admin.templates.preview')}: {preview?.name}</DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-auto border rounded-xl">
             <iframe

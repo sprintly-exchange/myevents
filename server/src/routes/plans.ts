@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../db';
-import { requireAdmin, requireAuth } from '../middleware/auth';
+import { requireAdmin } from '../middleware/auth';
 import { getEffectivePlanPrices } from '../services/plan-pricing';
-import { isIsoCountryCode, normalizeCountryCode, sortProfilesForCountry } from '../services/payment-settings';
+import { isIsoCountryCode, normalizeCountryCode } from '../services/payment-settings';
 
 const router = Router();
 
@@ -141,135 +141,5 @@ router.delete('/country-prices/:priceId', requireAdmin, async (req: Request, res
   return res.json({ message: 'Country price removed' });
 });
 
-router.get('/upgrade-requests/pending', requireAuth, async (req: Request, res: Response) => {
-  const user = (req as any).user;
-  const request = await prisma.upgradeRequest.findFirst({
-    where: { userId: user.id, status: 'pending' },
-    include: { plan: true },
-    orderBy: { requestedAt: 'desc' },
-  });
-  if (!request) return res.json({ request: null, payment: null, swish: null, payment_methods: [] });
-  const userRow = await prisma.user.findUnique({ where: { id: user.id }, select: { country: true } });
-  const countryCode = normalizeCountryCode(request.countryCode || userRow?.country || 'SE');
-  const profiles = await prisma.paymentProfile.findMany({
-    where: {
-      isActive: true,
-      OR: [{ countryCode }, { countryCode: 'GLOBAL' }],
-    },
-  });
-  const sortedProfiles = sortProfilesForCountry(profiles, countryCode);
-  const selectedProfile = request.paymentProfileId
-    ? sortedProfiles.find(p => p.id === request.paymentProfileId) || null
-    : sortedProfiles[0] || null;
-  const paymentMethods = sortedProfiles.map(p => ({
-    id: p.id,
-    country_code: p.countryCode,
-    method_name: p.methodName,
-    recipient_label: p.recipientLabel,
-    recipient_value: p.recipientValue,
-    holder_label: p.holderLabel,
-    holder_value: p.holderValue,
-    qr_template: p.qrTemplate || '',
-    is_default: p.isDefault,
-    priority: p.priority ?? 100,
-  }));
-  const payment = selectedProfile ? {
-    id: selectedProfile.id,
-    country_code: selectedProfile.countryCode,
-    method_name: selectedProfile.methodName,
-    recipient_label: selectedProfile.recipientLabel,
-    recipient_value: selectedProfile.recipientValue,
-    holder_label: selectedProfile.holderLabel,
-    holder_value: selectedProfile.holderValue,
-    qr_template: selectedProfile.qrTemplate || '',
-    is_default: selectedProfile.isDefault,
-    priority: selectedProfile.priority ?? 100,
-  } : null;
-  const countryPrice = await prisma.planCountryPrice.findUnique({
-    where: { plan_country_unique: { planId: request.plan.id, countryCode } },
-  });
-  return res.json({
-    request: {
-      ...request,
-      plan_name: request.plan.name,
-      plan_price: countryPrice?.isActive ? countryPrice.price : request.plan.priceSek,
-      plan_currency: countryPrice?.isActive ? countryPrice.currency : request.plan.currency ?? 'SEK',
-      country_code: request.countryCode ?? countryCode,
-      payment_method: request.paymentMethod ?? payment?.method_name ?? null,
-    },
-    payment,
-    payment_methods: paymentMethods,
-    swish: payment ? { number: payment.recipient_value, holder: payment.holder_value } : null,
-  });
-});
-
-router.post('/upgrade-requests', requireAuth, async (req: Request, res: Response) => {
-  const user = (req as any).user;
-  const { plan_id, payment_profile_id } = req.body;
-  if (!plan_id) return res.status(400).json({ error: 'plan_id required' });
-  const plan = await prisma.plan.findFirst({ where: { id: plan_id, isActive: true } });
-  if (!plan) return res.status(404).json({ error: 'Plan not found' });
-  const userRow = await prisma.user.findUnique({ where: { id: user.id }, select: { country: true } });
-  const countryCode = normalizeCountryCode(userRow?.country || 'SE');
-  const paymentProfiles = await prisma.paymentProfile.findMany({
-    where: {
-      isActive: true,
-      OR: [{ countryCode }, { countryCode: 'GLOBAL' }],
-    },
-  });
-  const sortedProfiles = sortProfilesForCountry(paymentProfiles, countryCode);
-  const selectedProfile = sortedProfiles.find(p => p.id === payment_profile_id) || sortedProfiles[0] || null;
-  const paymentReference = Math.random().toString(36).substring(2, 8).toUpperCase();
-  const countryPrice = await prisma.planCountryPrice.findUnique({
-    where: { plan_country_unique: { planId: plan_id, countryCode } },
-  });
-  const request = await prisma.upgradeRequest.create({
-    data: {
-      userId: user.id,
-      planId: plan_id,
-      paymentReference,
-      countryCode,
-      paymentProfileId: selectedProfile?.id || null,
-      paymentMethod: selectedProfile?.methodName || null,
-    },
-  });
-  const paymentMethods = sortedProfiles.map(p => ({
-    id: p.id,
-    country_code: p.countryCode,
-    method_name: p.methodName,
-    recipient_label: p.recipientLabel,
-    recipient_value: p.recipientValue,
-    holder_label: p.holderLabel,
-    holder_value: p.holderValue,
-    qr_template: p.qrTemplate || '',
-    is_default: p.isDefault,
-    priority: p.priority ?? 100,
-  }));
-  const payment = selectedProfile ? {
-    id: selectedProfile.id,
-    country_code: selectedProfile.countryCode,
-    method_name: selectedProfile.methodName,
-    recipient_label: selectedProfile.recipientLabel,
-    recipient_value: selectedProfile.recipientValue,
-    holder_label: selectedProfile.holderLabel,
-    holder_value: selectedProfile.holderValue,
-    qr_template: selectedProfile.qrTemplate || '',
-    is_default: selectedProfile.isDefault,
-    priority: selectedProfile.priority ?? 100,
-  } : null;
-  return res.status(201).json({
-    request: {
-      ...request,
-      plan_name: plan.name,
-      plan_price: countryPrice?.isActive ? countryPrice.price : plan.priceSek,
-      plan_currency: countryPrice?.isActive ? countryPrice.currency : plan.currency ?? 'SEK',
-      country_code: countryCode,
-      payment_method: request.paymentMethod ?? payment?.method_name ?? null,
-    },
-    payment,
-    payment_methods: paymentMethods,
-    swish: payment ? { number: payment.recipient_value, holder: payment.holder_value } : null,
-  });
-});
 
 export default router;

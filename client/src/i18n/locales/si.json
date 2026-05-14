@@ -42,7 +42,11 @@
     "free": "නොමිලේ",
     "unlimited": "අසීමිත",
     "copied": "පිටපත් කෙරිණි!",
-    "country": "රට"
+    "country": "රට",
+    "open": "විවෘත කරන්න",
+    "share": "බෙදාගන්න",
+    "date": "දිනය",
+    "preview": "පෙරදසුන"
   },
   "nav": {
     "dashboard": "උපකරණ පුවරුව",
@@ -153,6 +157,11 @@
     "invitationsSent": "ආරාධනා {{count}}ක් යවන ලදී",
     "copyLink": "සබැඳිය පිටපත් කරන්න",
     "linkCopied": "RSVP සබැඳිය පිටපත් කෙරිණි!",
+    "shareLinkCopied": "බෙදාගැනීමේ සබැඳිය පිටපත් කරන ලදී!",
+    "eventsUsed": "/ {{limit}} සිදුවීම් භාවිතා කළා",
+    "invitedLabel": "ආරාධිත",
+    "acceptedLabel": "· {{count}} පිළිගත්",
+    "eventNotFound": "සිදුවීම සොයාගත නොහැකි විය",
     "guestList": "අමුත්තන් ලැයිස්තුව",
     "noGuestsYet": "තවම අමුත්තන් ආරාධනා නොකළේය",
     "freeTierLimit": "නොමිලේ ආරාධනා {{current}}/{{limit}} භාවිත කෙරිණි",
@@ -275,6 +284,7 @@
     "successSubtitle": "ඔබේ ප්‍රතිචාරයට ස්තූතියි",
     "alreadyResponded": "ඔබ දැනටමත් මෙම ආරාධනාවට ප්‍රතිචාර දී ඇත",
     "invalidLink": "අවලංගු ආරාධනා සබැඳිය",
+    "invalidLinkDesc": "මෙම ආරාධනා සබැඳිය වලංගු නොවන හෝ කල් ඉකුත් වී ඇත.",
     "hosted": "සංවිධායකයා",
     "location": "ස්ථානය"
   },
@@ -359,7 +369,8 @@
       "requestResolved": "ඉල්ලීම විසඳන ලදී",
       "resolveFailed": "ඉල්ලීම විසඳීම අසාර්ථකයි",
       "paymentMethod": "ගෙවීම් ක්‍රමය",
-      "paymentReference": "ගෙවීම් යොමුව"
+      "paymentReference": "ගෙවීම් යොමුව",
+      "noPlan": "සැලැස්මක් නැත"
     },
     "plans": {
       "title": "සැලසුම්",
@@ -388,6 +399,7 @@
       "subtitle": "ආරාධනා විද්‍යුත් සැකිලි කළමනාකරණය කරන්න",
       "addTemplate": "සැකිල්ලක් එකතු කරන්න",
       "preview": "පෙරදර්ශනය",
+      "deleteConfirm": "සැකිල්ල මකන්නද?",
       "templateName": "සැකිල්ලේ නම",
       "htmlContent": "HTML අන්තර්ගතය",
       "variables": "ලබාගත හැකි විචල්‍ය",

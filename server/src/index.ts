@@ -52,7 +52,16 @@ upgradeRouter.post('/', requireAuth, async (req, res) => {
   const { selected, methods } = await getPaymentSettingsForCountry(countryCode);
   const selectedPayment = methods.find(method => method.id === payment_profile_id) || selected;
   const effectivePrice = await getEffectivePlanPrice(plan.id, countryCode);
-  const paymentReference = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+  await prisma.upgradeRequest.updateMany({
+    where: { userId: user.id, status: 'pending' },
+    data: { status: 'cancelled' },
+  });
+
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let paymentReference = 'MYE-';
+  for (let i = 0; i < 6; i++) paymentReference += chars[Math.floor(Math.random() * chars.length)];
+
   const request = await prisma.upgradeRequest.create({
     data: {
       userId: user.id,

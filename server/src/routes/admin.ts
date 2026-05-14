@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import prisma from '../db';
 import { requireAdmin, requireAuth } from '../middleware/auth';
 import { sendTestEmail } from '../services/email';
-import { isIsoCountryCode, normalizeCountryCode, sortProfilesForCountry } from '../services/payment-settings';
+import { isIsoCountryCode, normalizeCountryCode } from '../services/payment-settings';
 
 const router = Router();
 
@@ -91,6 +91,8 @@ router.patch('/users/:id', requireAdmin, async (req: Request, res: Response) => 
   const { role, is_active, payment_status, plan_id, country } = req.body;
   const user = await prisma.user.findUnique({ where: { id: req.params.id } });
   if (!user) return res.status(404).json({ error: 'User not found' });
+  if (payment_status !== undefined && !['pending', 'paid'].includes(payment_status))
+    return res.status(400).json({ error: 'payment_status must be "pending" or "paid"' });
   if (country !== undefined && country !== null && String(country).trim() !== '' && !isIsoCountryCode(String(country)))
     return res.status(400).json({ error: 'country must be a 2-letter ISO code' });
 
@@ -147,108 +149,6 @@ router.patch('/upgrade-requests/:id', requireAdmin, async (req: Request, res: Re
   return res.json({ message: 'Request updated' });
 });
 
-router.get('/upgrade-requests/mine', requireAuth, async (req: Request, res: Response) => {
-  const user = (req as any).user;
-  const requests = await prisma.upgradeRequest.findMany({
-    where: { userId: user.id },
-    include: { plan: { select: { name: true, priceSek: true, currency: true } } },
-    orderBy: { requestedAt: 'desc' },
-  });
-  const mapped = requests.map(r => ({
-    id: r.id,
-    status: r.status,
-    payment_reference: r.paymentReference,
-    plan_name: r.plan.name,
-    plan_price: r.plan.priceSek,
-    plan_currency: r.plan.currency ?? 'SEK',
-    requested_at: r.requestedAt,
-  }));
-  return res.json({ requests: mapped });
-});
-
-function generatePaymentReference(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let ref = 'MYE-';
-  for (let i = 0; i < 6; i++) ref += chars[Math.floor(Math.random() * chars.length)];
-  return ref;
-}
-
-router.post('/upgrade-requests', requireAuth, async (req: Request, res: Response) => {
-  const user = (req as any).user;
-  const { plan_id, payment_profile_id } = req.body;
-  if (!plan_id) return res.status(400).json({ error: 'plan_id required' });
-  const plan = await prisma.plan.findFirst({ where: { id: plan_id, isActive: true } });
-  if (!plan) return res.status(404).json({ error: 'Plan not found' });
-  const fullUser = await prisma.user.findUnique({ where: { id: user.id } });
-  const countryCode = normalizeCountryCode(fullUser?.country || 'SE');
-
-  const paymentProfiles = await prisma.paymentProfile.findMany({
-    where: {
-      isActive: true,
-      OR: [{ countryCode }, { countryCode: 'GLOBAL' }],
-    },
-  });
-  const sortedProfiles = sortProfilesForCountry(paymentProfiles, countryCode);
-  const selectedProfile = sortedProfiles.find(p => p.id === payment_profile_id) || sortedProfiles[0] || null;
-
-  // Cancel any existing pending request for this user
-  await prisma.upgradeRequest.updateMany({
-    where: { userId: user.id, status: 'pending' },
-    data: { status: 'cancelled' },
-  });
-
-  const paymentReference = generatePaymentReference();
-  const request = await prisma.upgradeRequest.create({
-    data: {
-      userId: user.id,
-      planId: plan_id,
-      paymentReference,
-      countryCode,
-      paymentProfileId: selectedProfile?.id || null,
-      paymentMethod: selectedProfile?.methodName || null,
-    },
-  });
-
-  const paymentMethods = sortedProfiles.map(p => ({
-    id: p.id,
-    country_code: p.countryCode,
-    method_name: p.methodName,
-    recipient_label: p.recipientLabel,
-    recipient_value: p.recipientValue,
-    holder_label: p.holderLabel,
-    holder_value: p.holderValue,
-    qr_template: p.qrTemplate || '',
-    is_default: p.isDefault,
-    priority: p.priority ?? 100,
-  }));
-  const selectedPayment = selectedProfile ? {
-    id: selectedProfile.id,
-    country_code: selectedProfile.countryCode,
-    method_name: selectedProfile.methodName,
-    recipient_label: selectedProfile.recipientLabel,
-    recipient_value: selectedProfile.recipientValue,
-    holder_label: selectedProfile.holderLabel,
-    holder_value: selectedProfile.holderValue,
-    qr_template: selectedProfile.qrTemplate || '',
-    is_default: selectedProfile.isDefault,
-    priority: selectedProfile.priority ?? 100,
-  } : null;
-
-  return res.status(201).json({
-    request: {
-      id: request.id,
-      payment_reference: paymentReference,
-      plan_name: plan.name,
-      plan_price: plan.priceSek,
-      plan_currency: plan.currency ?? 'SEK',
-      country_code: request.countryCode,
-      payment_method: request.paymentMethod,
-    },
-    payment: selectedPayment,
-    payment_methods: paymentMethods,
-    swish: selectedPayment ? { number: selectedPayment.recipient_value, holder: selectedPayment.holder_value } : null,
-  });
-});
 
 router.get('/payment-profiles', requireAdmin, async (req: Request, res: Response) => {
   const country = typeof req.query.country === 'string' ? normalizeCountryCode(req.query.country) : undefined;

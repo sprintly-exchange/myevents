@@ -20,7 +20,7 @@ export default function LoginPage() {
     if (searchParams.get('registered') === '1') {
       toast.success(t('auth.accountCreated'));
     }
-  }, []);
+  }, [searchParams, t]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

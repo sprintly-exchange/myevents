@@ -56,7 +56,7 @@ export default function EventsPage() {
           <div className="flex items-center justify-between bg-slate-100 rounded-xl px-4 py-2.5 mb-6">
             <p className="text-sm text-slate-600">
               <span className="font-semibold text-slate-800">{events.length}</span>
-              <span className="text-slate-400"> / {eventLimit} events used</span>
+              <span className="text-slate-400"> {t('events.eventsUsed', { limit: eventLimit })}</span>
             </p>
             {events.length >= eventLimit && (
               <Link to="/upgrade">
@@ -138,9 +138,9 @@ export default function EventsPage() {
                       <div className="flex items-center gap-2 text-sm text-slate-500">
                         <Users className="h-3.5 w-3.5 text-violet-400 shrink-0" />
                         <span>
-                          <span className="font-medium text-slate-700">{event.invitation_count || 0}</span> invited
+                          <span className="font-medium text-slate-700">{event.invitation_count || 0}</span> {t('events.invitedLabel')}
                           {(event.accepted_count ?? 0) > 0 && (
-                            <span className="text-emerald-600 ml-1.5">· {event.accepted_count} accepted</span>
+                            <span className="text-emerald-600 ml-1.5">{t('events.acceptedLabel', { count: event.accepted_count })}</span>
                           )}
                         </span>
                       </div>
@@ -150,7 +150,7 @@ export default function EventsPage() {
                     <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
                       <Link to={`/events/${event.id}`} className="flex-1">
                         <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700">
-                          Open <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                          {t('common.open')} <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
                         </Button>
                       </Link>
                       <Link to={`/events/${event.id}/edit`}>

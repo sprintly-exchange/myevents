@@ -42,7 +42,11 @@
     "free": "Gratis",
     "unlimited": "Obegränsat",
     "copied": "Kopierat!",
-    "country": "Land"
+    "country": "Land",
+    "open": "Öppna",
+    "share": "Dela",
+    "date": "Datum",
+    "preview": "Förhandsgranska"
   },
   "nav": {
     "dashboard": "Översikt",
@@ -153,6 +157,11 @@
     "invitationsSent": "Skickade {{count}} inbjudan/inbjudningar",
     "copyLink": "Kopiera länk",
     "linkCopied": "RSVP-länk kopierad!",
+    "shareLinkCopied": "Delningslänk kopierad!",
+    "eventsUsed": "/ {{limit}} evenemang använda",
+    "invitedLabel": "inbjudna",
+    "acceptedLabel": "· {{count}} accepterade",
+    "eventNotFound": "Evenemanget hittades inte",
     "guestList": "Gästlista",
     "noGuestsYet": "Inga gäster inbjudna ännu",
     "freeTierLimit": "{{current}}/{{limit}} gratis inbjudningar använda",
@@ -275,6 +284,7 @@
     "successSubtitle": "Tack för ditt svar",
     "alreadyResponded": "Du har redan svarat på den här inbjudan",
     "invalidLink": "Ogiltig inbjudningslänk",
+    "invalidLinkDesc": "Den här inbjudningslänken kan vara ogiltig eller ha gått ut.",
     "hosted": "Arrangerat av",
     "location": "Plats"
   },
@@ -359,7 +369,8 @@
       "requestResolved": "Förfrågan hanterad",
       "resolveFailed": "Det gick inte att hantera förfrågan",
       "paymentMethod": "Betalningsmetod",
-      "paymentReference": "Betalningsreferens"
+      "paymentReference": "Betalningsreferens",
+      "noPlan": "Inget abonnemang"
     },
     "plans": {
       "title": "Planer",
@@ -388,6 +399,7 @@
       "subtitle": "Hantera inbjudnings-e-postmallar",
       "addTemplate": "Lägg till mall",
       "preview": "Förhandsgranska",
+      "deleteConfirm": "Ta bort mall?",
       "templateName": "Mallnamn",
       "htmlContent": "HTML-innehåll",
       "variables": "Tillgängliga variabler",
