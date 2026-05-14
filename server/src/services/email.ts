@@ -83,6 +83,19 @@ export async function sendInvitationEmail(
   html = html.replace(/{{sender_name}}/g, senderName);
   html = html.replace(/{{recipient_name}}/g, invitation.recipientName || '');
 
+  const promoFooter = `
+<div style="font-family:sans-serif;text-align:center;padding:20px;border-top:1px solid #e5e7eb;margin-top:16px;">
+  <p style="color:#9ca3af;font-size:12px;margin:0 0 4px;">Want to host your own events?</p>
+  <p style="color:#9ca3af;font-size:12px;margin:0;">
+    Try <a href="${appUrl}" style="color:#6b7280;text-decoration:underline;">MyEvents</a> — free to get started.
+  </p>
+</div>`;
+  if (/<\/body>/i.test(html)) {
+    html = html.replace(/<\/body>/i, `${promoFooter}\n</body>`);
+  } else {
+    html += promoFooter;
+  }
+
   const transport = createTransport(config);
   await transport.sendMail({ from: `"MyEvents" <${config.from}>`, to, subject: `You're invited to ${event.title}`, html });
 }
