@@ -9,7 +9,7 @@ import {
   Settings, Users, CreditCard, FileText, Shield, Menu, X, Globe,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { LANG_STORAGE_KEY } from '@/i18n';
+import { LANG_STORAGE_KEY, SUPPORTED_LANGUAGES, LANGUAGE_FLAGS, type SupportedLanguage } from '@/i18n';
 
 interface NavItem { to: string; label: string; icon: React.ReactNode; }
 
@@ -26,8 +26,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   const toggleLang = () => {
-    const cycle: Record<string, string> = { sv: 'en', en: 'si', si: 'el', el: 'sv' };
-    const next = cycle[i18n.language] ?? 'sv';
+    const idx = SUPPORTED_LANGUAGES.indexOf(i18n.language as SupportedLanguage);
+    const next = SUPPORTED_LANGUAGES[(idx + 1) % SUPPORTED_LANGUAGES.length];
     i18n.changeLanguage(next);
     localStorage.setItem(LANG_STORAGE_KEY, next);
   };
@@ -141,10 +141,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         >
           <Globe className="h-4 w-4" />
           <span className="flex-1 text-left">
-            {i18n.language === 'sv' ? 'Svenska' : i18n.language === 'si' ? 'සිංහල' : i18n.language === 'el' ? 'Ελληνικά' : 'English'}
+            {t(`events.lang${i18n.language.charAt(0).toUpperCase() + i18n.language.slice(1)}`)}
           </span>
           <span className="text-xs bg-slate-700 rounded px-1.5 py-0.5 font-mono">
-            {i18n.language === 'sv' ? '🇸🇪' : i18n.language === 'si' ? '🇱🇰' : i18n.language === 'el' ? '🇨🇾' : '🇬🇧'}
+            {LANGUAGE_FLAGS[i18n.language as SupportedLanguage] ?? '🌐'}
           </span>
         </button>
         <Button

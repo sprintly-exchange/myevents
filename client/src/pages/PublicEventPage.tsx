@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { type SupportedLanguage } from '@/i18n';
 import { cn } from '@/lib/utils';
 import QRCode from 'qrcode';
 import { formatEventDateTime, formatEventDateRange } from '@/lib/tz';
@@ -31,7 +32,7 @@ interface PublicEvent {
   enable_qr_checkin?: boolean;
   enable_agenda?: boolean;
   event_type?: 'public' | 'invite_only';
-  event_language?: 'en' | 'sv' | 'si' | 'el';
+  event_language?: SupportedLanguage;
   theme_settings?: { primary_color?: string; accent_color?: string; tagline?: string } | null;
   agenda_items?: AgendaItem[];
   guidance_items?: GuidanceItem[];

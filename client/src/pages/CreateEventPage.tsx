@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { SUPPORTED_LANGUAGES, type SupportedLanguage } from '@/i18n';
 import api from '@/lib/axios';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -143,7 +144,7 @@ export default function CreateEventPage() {
     location: '',
     template_id: '',
     event_type: 'invite_only' as 'public' | 'invite_only',
-    event_language: (i18n.language?.slice(0, 2) as 'en' | 'sv' | 'si' | 'el') || 'sv',
+    event_language: ((SUPPORTED_LANGUAGES as string[]).includes(i18n.language?.slice(0, 2) ?? '') ? i18n.language.slice(0, 2) : 'sv') as SupportedLanguage,
     enable_qr_checkin: false,
     enable_agenda: false,
     enable_reminder_accepted: false,
@@ -317,7 +318,7 @@ export default function CreateEventPage() {
               </p>
               <p className="text-xs text-slate-500">{t('events.eventLanguageDesc')}</p>
               <div className="flex gap-2 pt-1">
-                {(['sv', 'en', 'si', 'el'] as const).map((lang) => (
+                {SUPPORTED_LANGUAGES.map((lang) => (
                   <button
                     key={lang}
                     type="button"
