@@ -126,7 +126,7 @@ router.post('/', checkEventLimit, async (req: Request, res: Response) => {
   const reminderDays = Math.max(0, parseInt(reminder_days_before ?? '0', 10) || 0);
   const tz = timezone || 'Europe/Stockholm';
   const resolvedEventType = event_type === 'public' ? 'public' : 'invite_only';
-  const resolvedEventLanguage = ['en', 'sv', 'si'].includes(event_language) ? event_language : 'sv';
+  const resolvedEventLanguage = ['en', 'sv', 'si', 'el'].includes(event_language) ? event_language : 'sv';
 
   const event = await prisma.event.create({
     data: {
@@ -240,7 +240,7 @@ router.put('/:id', async (req: Request, res: Response) => {
     ? (event_type === 'public' ? 'public' : 'invite_only')
     : (existingRow?.event_type ?? 'invite_only');
   const resolvedEventLanguage = event_language !== undefined
-    ? (['en', 'sv', 'si'].includes(event_language) ? event_language : 'sv')
+    ? (['en', 'sv', 'si', 'el'].includes(event_language) ? event_language : 'sv')
     : (existingRow?.event_language ?? 'sv');
 
   const event = await prisma.event.update({
