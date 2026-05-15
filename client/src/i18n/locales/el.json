@@ -42,7 +42,11 @@
     "free": "Δωρεάν",
     "unlimited": "Απεριόριστο",
     "copied": "Αντιγράφηκε!",
-    "country": "Χώρα"
+    "country": "Χώρα",
+    "open": "Άνοιγμα",
+    "share": "Κοινοποίηση",
+    "date": "Ημερομηνία",
+    "preview": "Προεπισκόπηση"
   },
   "nav": {
     "dashboard": "Πίνακας Ελέγχου",
@@ -222,7 +226,18 @@
     "sendReminderBoth": "Υπενθύμιση όλων",
     "remindersAutoNote": "Αυτόματες υπενθυμίσεις θα αποσταλούν {{count}} μέρα(ες) πριν την εκδήλωση. Μπορείτε επίσης να τις στείλετε τώρα.",
     "remindersManualNote": "Χρησιμοποιήστε τα παρακάτω κουμπιά για να στείλετε υπενθυμίσεις στους καλεσμένους σας τώρα.",
-    "guestNameRequired": "Το όνομα καλεσμένου είναι υποχρεωτικό"
+    "guestNameRequired": "Το όνομα καλεσμένου είναι υποχρεωτικό",
+    "shareLinkCopied": "Ο σύνδεσμος κοινοποίησης αντιγράφηκε!",
+    "eventsUsed": "/ {{limit}} εκδηλώσεις",
+    "invitedLabel": "προσκεκλημένοι",
+    "acceptedLabel": "· {{count}} αποδέχτηκαν",
+    "eventNotFound": "Η εκδήλωση δεν βρέθηκε",
+    "eventType": "Πρόσβαση στην εκδήλωση",
+    "eventTypeDesc": "Ελέγξτε ποιος μπορεί να δηλώσει συμμετοχή σε αυτή την εκδήλωση",
+    "eventTypeInviteOnly": "Μόνο με πρόσκληση",
+    "eventTypePublic": "Δημόσια",
+    "eventTypeInviteOnlyDesc": "Μόνο καλεσμένοι με προσωπικό σύνδεσμο πρόσκλησης μπορούν να δηλώσουν συμμετοχή",
+    "eventTypePublicDesc": "Οποιοσδήποτε με τον σύνδεσμο εκδήλωσης μπορεί να δηλώσει συμμετοχή"
   },
   "invitations": {
     "title": "Οι Προσκλήσεις μου",
@@ -281,8 +296,27 @@
     "successSubtitle": "Ευχαριστούμε για την απάντησή σας",
     "alreadyResponded": "Έχετε ήδη απαντήσει σε αυτή την πρόσκληση",
     "invalidLink": "Μη έγκυρος σύνδεσμος πρόσκλησης",
+    "invalidLinkDesc": "Αυτός ο σύνδεσμος πρόσκλησης μπορεί να μην είναι έγκυρος ή να έχει λήξει.",
     "hosted": "Διοργανώνεται από",
-    "location": "Τοποθεσία"
+    "location": "Τοποθεσία",
+    "formTitle": "RSVP",
+    "name": "Όνομα",
+    "email": "Email",
+    "attendingQuestion": "Θα παραστείτε;",
+    "optionYes": "Ναι, θα είμαι εκεί! 🎉",
+    "optionMaybe": "Ίσως",
+    "optionNo": "Όχι, δεν μπορώ να έρθω",
+    "submitButton": "Επιβεβαίωση RSVP",
+    "confirmedTitle": "Ευχαριστούμε!",
+    "confirmedYes": "Ανυπομονούμε να σας δούμε.",
+    "confirmedMaybe": "Ελπίζουμε να μπορέσετε να έρθετε.",
+    "confirmedNo": "Θα μας λείψετε.",
+    "inviteOnlyTitle": "Μόνο με πρόσκληση",
+    "inviteOnlyDesc": "Αυτή είναι μια ιδιωτική εκδήλωση. Χρησιμοποιήστε τον προσωπικό σας σύνδεσμο πρόσκλησης για RSVP.",
+    "capacityFull": "Η εκδήλωση είναι πλήρης. Δεν γίνονται πλέον δεκτές δηλώσεις συμμετοχής.",
+    "networkError": "Σφάλμα δικτύου. Παρακαλώ δοκιμάστε ξανά.",
+    "qrCheckinHint": "Δείξτε αυτόν τον κωδικό QR στην είσοδο για check-in",
+    "dateTime": "Ημερομηνία & Ώρα"
   },
   "upgrade": {
     "title": "Επιλέξτε Πλάνο",
@@ -316,7 +350,8 @@
     "paymentDestination": "Προορισμός πληρωμής",
     "paymentMethodFallback": "τη μέθοδο πληρωμής σας",
     "payNow": "Πληρώστε Τώρα",
-    "paymentMethod": "Μέθοδος πληρωμής"
+    "paymentMethod": "Μέθοδος πληρωμής",
+    "manualApprovalNote": "Μόλις αποσταλεί η πληρωμή, ένας διαχειριστής θα επαληθεύσει και θα ενεργοποιήσει τον λογαριασμό σας — συνήθως εντός 24 ωρών."
   },
   "pendingPayment": {
     "title": "Ολοκληρώστε την Πληρωμή σας",
@@ -331,7 +366,11 @@
     "step3": "Στείλτε {{price}} {{currency}}",
     "step4": "Συμπεριλάβετε την αναφορά σας: {{ref}}",
     "scanQr": "Σάρωση για αυτόματη εκκίνηση {{method}}",
-    "step5": "Κάντε κλικ στον «Έλεγχο Κατάστασης Πληρωμής» παρακάτω"
+    "step5": "Κάντε κλικ στον «Έλεγχο Κατάστασης Πληρωμής» παρακάτω",
+    "checkStatusDone": "Ολοκλήρωσα την πληρωμή — έλεγχος κατάστασης",
+    "step2Detailed": "Ανοίξτε {{method}} και στείλτε στο {{label}}: {{recipient}}",
+    "stepHolder": "Χρησιμοποιήστε {{label}}: {{holder}}",
+    "manualApprovalNote": "Η έγκριση είναι χειροκίνητη. Θα αποκτήσετε πρόσβαση μόλις ένας διαχειριστής επιβεβαιώσει την πληρωμή σας."
   },
   "admin": {
     "dashboard": {
@@ -360,7 +399,8 @@
       "requestResolved": "Το αίτημα επιλύθηκε",
       "resolveFailed": "Αποτυχία επίλυσης αιτήματος",
       "paymentMethod": "Μέθοδος πληρωμής",
-      "paymentReference": "Αναφορά πληρωμής"
+      "paymentReference": "Αναφορά πληρωμής",
+      "noPlan": "Χωρίς πλάνο"
     },
     "plans": {
       "title": "Πλάνα",
@@ -393,7 +433,8 @@
       "htmlContent": "Περιεχόμενο HTML",
       "variables": "Διαθέσιμες μεταβλητές",
       "templateSaved": "Το πρότυπο αποθηκεύτηκε",
-      "templateDeleted": "Το πρότυπο διαγράφηκε"
+      "templateDeleted": "Το πρότυπο διαγράφηκε",
+      "deleteConfirm": "Διαγραφή προτύπου;"
     },
     "settings": {
       "title": "Ρυθμίσεις",
@@ -425,7 +466,47 @@
       "paymentProfileSaved": "Το προφίλ πληρωμής αποθηκεύτηκε",
       "paymentProfileSaveFailed": "Αποτυχία αποθήκευσης προφίλ πληρωμής",
       "paymentPriority": "Προτεραιότητα",
-      "defaultForCountry": "Προεπιλογή για χώρα"
+      "defaultForCountry": "Προεπιλογή για χώρα",
+      "paymentMethodNameHelp": "Όνομα που θα βλέπουν οι χρήστες, π.χ. Swish, Τραπεζική Μεταφορά, SEPA.",
+      "paymentRecipientLabelHelp": "Πώς να ονομαστεί αυτή η τιμή για τους χρήστες — π.χ. «Αριθμός τηλεφώνου», «IBAN», «Αριθμός λογαριασμού».",
+      "paymentRecipientValueHelp": "Ο πραγματικός αριθμός τηλεφώνου, IBAN ή λογαριασμός στον οποίο οι χρήστες πρέπει να στείλουν χρήματα.",
+      "paymentHolderLabelHelp": "Προαιρετικό — ετικέτα για το όνομα του κατόχου λογαριασμού, π.χ. «Παραλήπτης», «Επωνυμία επιχείρησης».",
+      "paymentHolderNameHelp": "Προαιρετικό — π.χ. «MyEvents AE».",
+      "paymentQrAdvanced": "Για προχωρημένους: Κωδικός QR",
+      "paymentProfileDeleted": "Το προφίλ πληρωμής διαγράφηκε",
+      "paymentProfileDeleteFailed": "Αποτυχία διαγραφής προφίλ πληρωμής",
+      "deletePaymentProfileConfirm": "Διαγραφή αυτού του προφίλ πληρωμής;",
+      "paymentProfileDeactivated": "Το προφίλ πληρωμής απενεργοποιήθηκε",
+      "paymentProfileDeactivateFailed": "Αποτυχία απενεργοποίησης προφίλ πληρωμής",
+      "paymentProfileActivated": "Το προφίλ πληρωμής ενεργοποιήθηκε",
+      "paymentProfileActivateFailed": "Αποτυχία ενεργοποίησης προφίλ πληρωμής",
+      "activeStatus": "Κατάσταση ενεργοποίησης",
+      "paymentProfileOrderUpdated": "Η σειρά προφίλ πληρωμής ενημερώθηκε",
+      "paymentProfileOrderUpdateFailed": "Αποτυχία ενημέρωσης σειράς προφίλ πληρωμής",
+      "cancelEdit": "Ακύρωση επεξεργασίας",
+      "noPaymentProfiles": "Δεν υπάρχουν ακόμα προφίλ πληρωμής.",
+      "active": "Ενεργό",
+      "inactive": "Ανενεργό",
+      "editPaymentProfile": "Επεξεργασία προφίλ πληρωμής",
+      "addPaymentProfile": "Προσθήκη προφίλ πληρωμής",
+      "editMode": "Λειτουργία επεξεργασίας",
+      "createMode": "Λειτουργία προσθήκης",
+      "otherCountryCode": "Άλλο (πληκτρολογήστε κωδικό χώρας)",
+      "countryCodePlaceholder": "GR",
+      "countryOptionGlobal": "Όλες οι χώρες (ΠΑΓΚΟΣΜΙΟ)",
+      "countryOptionSE": "Σουηδία (SE)",
+      "countryOptionNO": "Νορβηγία (NO)",
+      "countryOptionDK": "Δανία (DK)",
+      "countryOptionFI": "Φινλανδία (FI)",
+      "countryOptionLK": "Σρι Λάνκα (LK)",
+      "countryOptionCY": "Κύπρος (CY)",
+      "countryHelp": "Επιλέξτε σε ποιους χρήστες της χώρας θα εμφανίζεται αυτή η μέθοδος πληρωμής.",
+      "paymentRecipientLabelPlaceholder": "Αριθμός τηλεφώνου",
+      "paymentRecipientValuePlaceholder": "+30 210 1234567",
+      "paymentHolderNamePlaceholder": "MyEvents AE",
+      "paymentPriorityHelp": "Εάν υπάρχουν πολλές μέθοδοι για την ίδια χώρα, τα βέλη ελέγχουν ποια εμφανίζεται πρώτη.",
+      "previewTitle": "Προεπισκόπηση — τι θα βλέπουν οι χρήστες",
+      "previewSubtitle": "Προεπισκόπηση στοιχείων πληρωμής χρήστη"
     }
   },
   "agenda": {
