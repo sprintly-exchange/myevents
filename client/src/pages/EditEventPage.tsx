@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { ArrowLeft, Check, Palette, Ban, ChevronDown, ChevronUp, Eye, ExternalLink, Calendar, Clock, MapPin, BellRing } from 'lucide-react';
+import { ArrowLeft, Check, Palette, Ban, ChevronDown, ChevronUp, Eye, ExternalLink, Calendar, Clock, MapPin, BellRing, Globe, Lock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
 import AppLayout from '@/components/AppLayout';
@@ -127,7 +127,7 @@ export default function EditEventPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const qc = useQueryClient();
-  const [form, setForm] = useState({ title: '', description: '', event_date: '', end_date: '', location: '', template_id: '', timezone: getBrowserTimezone(), enable_reminder_accepted: false, enable_reminder_pending: false, reminder_days_before: 0 });
+  const [form, setForm] = useState({ title: '', description: '', event_date: '', end_date: '', location: '', template_id: '', timezone: getBrowserTimezone(), event_type: 'invite_only' as 'public' | 'invite_only', enable_reminder_accepted: false, enable_reminder_pending: false, reminder_days_before: 0 });
   const [themeSettings, setThemeSettings] = useState<ThemeSettings>({});
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [shareToken, setShareToken] = useState<string | null>(null);
@@ -139,7 +139,7 @@ export default function EditEventPage() {
   useEffect(() => {
     if (data?.event) {
       const e = data.event;
-      setForm({ title: e.title, description: e.description || '', event_date: e.event_date ? e.event_date.slice(0, 16) : '', end_date: e.end_date ? e.end_date.slice(0, 16) : '', location: e.location || '', template_id: e.template_id || '', timezone: e.timezone || getBrowserTimezone(), enable_reminder_accepted: e.enable_reminder_accepted ?? false, enable_reminder_pending: e.enable_reminder_pending ?? false, reminder_days_before: e.reminder_days_before ?? 0 });
+      setForm({ title: e.title, description: e.description || '', event_date: e.event_date ? e.event_date.slice(0, 16) : '', end_date: e.end_date ? e.end_date.slice(0, 16) : '', location: e.location || '', template_id: e.template_id || '', timezone: e.timezone || getBrowserTimezone(), event_type: (e.event_type as 'public' | 'invite_only') || 'invite_only', enable_reminder_accepted: e.enable_reminder_accepted ?? false, enable_reminder_pending: e.enable_reminder_pending ?? false, reminder_days_before: e.reminder_days_before ?? 0 });
       setThemeSettings(e.theme_settings || {});
       setShareToken(e.share_token || null);
     }
@@ -349,6 +349,33 @@ export default function EditEventPage() {
               )}
             </div>
           )}
+
+          {/* Event type section */}
+          <div className="space-y-3 pt-1">
+            <div className="flex items-center gap-2">
+              <Globe className="h-4 w-4 text-blue-500" />
+              <label className="text-sm font-medium text-slate-700">{t('events.eventType')}</label>
+              <span className="text-xs text-slate-400 ml-1">— {t('events.eventTypeDesc')}</span>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setForm(f => ({ ...f, event_type: 'invite_only' }))}
+                className={cn('flex-1 flex items-center gap-2 justify-center rounded-lg border px-3 py-2 text-xs font-medium transition-colors', form.event_type === 'invite_only' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-600 hover:border-slate-300')}
+              >
+                <Lock className="h-3.5 w-3.5" />
+                {t('events.eventTypeInviteOnly')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setForm(f => ({ ...f, event_type: 'public' }))}
+                className={cn('flex-1 flex items-center gap-2 justify-center rounded-lg border px-3 py-2 text-xs font-medium transition-colors', form.event_type === 'public' ? 'border-green-500 bg-green-50 text-green-700' : 'border-slate-200 text-slate-600 hover:border-slate-300')}
+              >
+                <Globe className="h-3.5 w-3.5" />
+                {t('events.eventTypePublic')}
+              </button>
+            </div>
+          </div>
 
           {/* Reminders section */}
           <div className="space-y-3 pt-1">

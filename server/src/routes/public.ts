@@ -21,8 +21,8 @@ router.get('/events/:shareToken', async (req: Request, res: Response) => {
   if (!event) return res.status(404).json({ error: 'Event not found' });
 
   // Read raw columns via raw SQL (columns added via ALTER TABLE)
-  const rawRows = await prisma.$queryRawUnsafe<{ theme_settings: string | null; end_date: string | null; enable_qr_checkin: number | null; enable_agenda: number | null; timezone: string | null }[]>(
-    `SELECT theme_settings, end_date, enable_qr_checkin, enable_agenda, timezone FROM events WHERE id = ?`, event.id
+  const rawRows = await prisma.$queryRawUnsafe<{ theme_settings: string | null; end_date: string | null; enable_qr_checkin: number | null; enable_agenda: number | null; timezone: string | null; event_type: string | null }[]>(
+    `SELECT theme_settings, end_date, enable_qr_checkin, enable_agenda, timezone, event_type FROM events WHERE id = ?`, event.id
   );
   let theme_settings = null;
   try {
@@ -33,6 +33,7 @@ router.get('/events/:shareToken', async (req: Request, res: Response) => {
   const enable_qr_checkin = readStoredFeatureFlag(rawRows[0]?.enable_qr_checkin, true);
   const enable_agenda = readStoredFeatureFlag(rawRows[0]?.enable_agenda, true);
   const timezone = rawRows[0]?.timezone || 'Europe/Stockholm';
+  const event_type = rawRows[0]?.event_type ?? 'invite_only';
 
   return res.json({
     event: {
@@ -46,6 +47,7 @@ router.get('/events/:shareToken', async (req: Request, res: Response) => {
       theme_settings,
       enable_qr_checkin,
       enable_agenda,
+      event_type,
       agenda_items: enable_agenda ? event.agendaItems.map(a => ({
         id: a.id,
         sort_order: a.sortOrder,
@@ -75,6 +77,15 @@ router.post('/events/:shareToken/rsvp', async (req: Request, res: Response) => {
     include: { creator: { select: { id: true, paymentStatus: true, role: true } } },
   });
   if (!event) return res.status(404).json({ error: 'Event not found' });
+
+  // Block public RSVP for invite-only events
+  const eventTypeRows = await prisma.$queryRawUnsafe<{ event_type: string | null }[]>(
+    `SELECT event_type FROM events WHERE id = ?`, event.id
+  );
+  const eventType = eventTypeRows[0]?.event_type ?? 'invite_only';
+  if (eventType === 'invite_only') {
+    return res.status(403).json({ error: 'This event is invite-only. Please use your personal invitation link.' });
+  }
 
   const trimmedEmail = email.trim().toLowerCase();
 

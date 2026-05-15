@@ -70,6 +70,7 @@ export interface Event {
   reminder_days_before?: number;
   reminder_sent_at?: string | null;
   theme_settings?: import('./index').ThemeSettings | null;
+  event_type?: 'public' | 'invite_only';
   status: string;
   created_at: string;
   invitation_count?: number;

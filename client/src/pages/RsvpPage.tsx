@@ -18,7 +18,9 @@ export default function RsvpPage() {
 
   useEffect(() => {
     if (data?.invitation?.event_share_token) {
-      navigate(`/e/${data.invitation.event_share_token}?invite=${token}`, { replace: true });
+      const params = new URLSearchParams({ invite: token! });
+      if (data.invitation.recipient_name) params.set('inviteName', data.invitation.recipient_name);
+      navigate(`/e/${data.invitation.event_share_token}?${params.toString()}`, { replace: true });
     }
   }, [data, token, navigate]);
 

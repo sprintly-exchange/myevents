@@ -218,6 +218,15 @@ export default function EventDetailPage() {
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white mb-3">
                 {isUpcoming ? t('common.upcoming') : t('common.past')}
               </span>
+              {event.event_type === 'public' ? (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/30 text-green-100 mb-3 ml-1.5">
+                  <Globe className="h-3 w-3" />{t('events.eventTypePublic')}
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/15 text-white/80 mb-3 ml-1.5">
+                  <Lock className="h-3 w-3" />{t('events.eventTypeInviteOnly')}
+                </span>
+              )}
               <h1 className="text-2xl font-bold text-white mb-1 truncate">{event.title}</h1>
               {event.description && (
                 <p className="text-white/75 text-sm leading-relaxed line-clamp-2">{event.description}</p>

@@ -29,6 +29,7 @@ interface PublicEvent {
   template_name: string | null;
   enable_qr_checkin?: boolean;
   enable_agenda?: boolean;
+  event_type?: 'public' | 'invite_only';
   theme_settings?: { primary_color?: string; accent_color?: string; tagline?: string } | null;
   agenda_items?: AgendaItem[];
   guidance_items?: GuidanceItem[];
@@ -201,12 +202,14 @@ function ElegantPage({
   event,
   shareToken,
   inviteToken,
+  inviteName,
 }: {
   event: PublicEvent;
   shareToken: string;
   inviteToken?: string;
+  inviteName?: string;
 }) {
-  const [form, setForm] = useState<RsvpForm>({ name: '', email: '', attending: 'yes' });
+  const [form, setForm] = useState<RsvpForm>({ name: inviteName || '', email: '', attending: 'yes' });
   const [confirmed, setConfirmed] = useState(false);
   const [confirmedAttending, setConfirmedAttending] = useState<AttendingValue>('yes');
   const [error, setError] = useState('');
@@ -313,7 +316,13 @@ function ElegantPage({
           className="w-full max-w-md rounded-2xl p-8"
           style={{ background: 'rgba(15,52,96,0.85)', border: `1px solid rgba(201,168,76,0.3)` }}
         >
-          {confirmed ? (
+          {event.event_type === 'invite_only' && !inviteToken ? (
+            <div className="text-center py-10">
+              <div className="text-4xl mb-4">🔒</div>
+              <h3 className="text-lg font-serif italic mb-3" style={{ color: gold }}>Invite Only</h3>
+              <p className="text-sm" style={{ color: cream, opacity: 0.7 }}>This is a private event. Please use your personal invitation link to RSVP.</p>
+            </div>
+          ) : confirmed ? (
             <div className="text-center py-8">
               <div className="text-5xl mb-4">✨</div>
               <h2 className="text-2xl font-serif italic mb-3" style={{ color: cream }}>
@@ -348,12 +357,12 @@ function ElegantPage({
                 </div>
               )}
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                <div className="flex flex-col gap-1">
+                <div className={`flex flex-col gap-1${inviteToken ? ' hidden' : ''}`}>
                   <label className="text-xs tracking-wider uppercase" style={{ color: gold }}>
                     Name
                   </label>
                   <input
-                    required
+                    required={!inviteToken}
                     value={form.name}
                     onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                     className="rounded-lg px-4 py-2.5 text-sm outline-none transition"
@@ -366,7 +375,7 @@ function ElegantPage({
                     onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(201,168,76,0.4)')}
                   />
                 </div>
-                <div className="flex flex-col gap-1">
+                <div className={`flex flex-col gap-1${inviteToken ? ' hidden' : ''}`}>
                   <label className="text-xs tracking-wider uppercase" style={{ color: gold }}>
                     Email
                   </label>
@@ -375,7 +384,7 @@ function ElegantPage({
                     type="email"
                     value={form.email}
                     onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                    className={`rounded-lg px-4 py-2.5 text-sm outline-none transition${inviteToken ? ' hidden' : ''}`}
+                    className="rounded-lg px-4 py-2.5 text-sm outline-none transition"
                     style={{
                       background: 'rgba(245,230,200,0.1)',
                       color: cream,
@@ -456,12 +465,14 @@ function StudentfestPage({
   event,
   shareToken,
   inviteToken,
+  inviteName,
 }: {
   event: PublicEvent;
   shareToken: string;
   inviteToken?: string;
+  inviteName?: string;
 }) {
-  const [form, setForm] = useState<RsvpForm>({ name: '', email: '', attending: 'yes' });
+  const [form, setForm] = useState<RsvpForm>({ name: inviteName || '', email: '', attending: 'yes' });
   const [confirmed, setConfirmed] = useState(false);
   const [confirmedAttending, setConfirmedAttending] = useState<AttendingValue>('yes');
   const [error, setError] = useState('');
@@ -579,7 +590,13 @@ function StudentfestPage({
       {/* RSVP */}
       <div className="flex-1 flex justify-center px-4 pb-16 relative">
         <div className="w-full max-w-md rounded-2xl p-8 bg-white/10 backdrop-blur-sm border border-white/20">
-          {confirmed ? (
+          {event.event_type === 'invite_only' && !inviteToken ? (
+            <div className="text-center py-10">
+              <div className="text-4xl mb-4">🔒</div>
+              <h3 className="text-lg font-black text-white mb-3">Endast för inbjudna</h3>
+              <p className="text-white/70 text-sm">Detta är ett privat evenemang. Använd din personliga inbjudningslänk för att anmäla dig.</p>
+            </div>
+          ) : confirmed ? (
             <div className="text-center py-8">
               <div className="text-5xl mb-4">🎓</div>
               <h2 className="text-2xl font-black text-white mb-3">
@@ -607,12 +624,12 @@ function StudentfestPage({
                 </div>
               )}
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                <div className="flex flex-col gap-1">
+                <div className={`flex flex-col gap-1${inviteToken ? ' hidden' : ''}`}>
                   <label className="text-xs font-bold uppercase tracking-widest" style={{ color: yellow }}>
                     Namn
                   </label>
                   <input
-                    required
+                    required={!inviteToken}
                     value={form.name}
                     onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                     className="rounded-xl px-4 py-2.5 text-sm bg-white/15 text-white placeholder-white/40 outline-none border border-white/20 focus:border-[#FECC02] transition"
@@ -696,12 +713,14 @@ function PartyPage({
   event,
   shareToken,
   inviteToken,
+  inviteName,
 }: {
   event: PublicEvent;
   shareToken: string;
   inviteToken?: string;
+  inviteName?: string;
 }) {
-  const [form, setForm] = useState<RsvpForm>({ name: '', email: '', attending: 'yes' });
+  const [form, setForm] = useState<RsvpForm>({ name: inviteName || '', email: '', attending: 'yes' });
   const [confirmed, setConfirmed] = useState(false);
   const [confirmedAttending, setConfirmedAttending] = useState<AttendingValue>('yes');
   const [error, setError] = useState('');
@@ -814,7 +833,13 @@ function PartyPage({
       {/* RSVP */}
       <div className="flex-1 flex justify-center px-4 pb-16 relative">
         <div className="w-full max-w-md rounded-3xl p-8 bg-white shadow-2xl">
-          {confirmed ? (
+          {event.event_type === 'invite_only' && !inviteToken ? (
+            <div className="text-center py-10">
+              <div className="text-4xl mb-4">🔒</div>
+              <h3 className="text-xl font-black text-gray-900 mb-3">Invite Only</h3>
+              <p className="text-gray-500 text-sm">This is a private event. Please use your personal invitation link to RSVP.</p>
+            </div>
+          ) : confirmed ? (
             <div className="text-center py-8">
               <div className="text-6xl mb-4">🎊🎉</div>
               <h2 className="text-2xl font-black text-gray-900 mb-3">
@@ -840,12 +865,12 @@ function PartyPage({
                 </div>
               )}
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                <div className="flex flex-col gap-1">
+                <div className={`flex flex-col gap-1${inviteToken ? ' hidden' : ''}`}>
                   <label className="text-xs font-bold uppercase tracking-widest text-purple-500">
                     Your Name
                   </label>
                   <input
-                    required
+                    required={!inviteToken}
                     value={form.name}
                     onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                     className="rounded-xl px-4 py-2.5 text-sm bg-gray-50 text-gray-900 outline-none border-2 border-purple-200 focus:border-purple-400 transition"
@@ -924,12 +949,14 @@ function CorporatePage({
   event,
   shareToken,
   inviteToken,
+  inviteName,
 }: {
   event: PublicEvent;
   shareToken: string;
   inviteToken?: string;
+  inviteName?: string;
 }) {
-  const [form, setForm] = useState<RsvpForm>({ name: '', email: '', attending: 'yes' });
+  const [form, setForm] = useState<RsvpForm>({ name: inviteName || '', email: '', attending: 'yes' });
   const [confirmed, setConfirmed] = useState(false);
   const [confirmedAttending, setConfirmedAttending] = useState<AttendingValue>('yes');
   const [error, setError] = useState('');
@@ -1026,7 +1053,13 @@ function CorporatePage({
           )}
 
           {/* RSVP */}
-          {confirmed ? (
+          {event.event_type === 'invite_only' && !inviteToken ? (
+            <div className="text-center py-10 border border-slate-200 rounded-xl bg-slate-50">
+              <div className="text-4xl mb-4">🔒</div>
+              <h3 className="text-base font-bold text-slate-900 mb-2">Invite Only</h3>
+              <p className="text-slate-500 text-sm">This is a private event. Please use your personal invitation link to RSVP.</p>
+            </div>
+          ) : confirmed ? (
             <div className="text-center py-8">
               <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4 text-2xl">
                 ✓
@@ -1054,12 +1087,12 @@ function CorporatePage({
                 </div>
               )}
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                <div className="flex flex-col gap-1">
+                <div className={`flex flex-col gap-1${inviteToken ? ' hidden' : ''}`}>
                   <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                     Full Name
                   </label>
                   <input
-                    required
+                    required={!inviteToken}
                     value={form.name}
                     onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                     className="rounded-xl px-4 py-2.5 text-sm text-slate-900 outline-none border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition bg-white"
@@ -1139,6 +1172,7 @@ export default function PublicEventPage() {
   const { shareToken } = useParams<{ shareToken: string }>();
   const [searchParams] = useSearchParams();
   const inviteToken = searchParams.get('invite') || undefined;
+  const inviteName = searchParams.get('inviteName') || undefined;
   const [event, setEvent] = useState<PublicEvent | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -1181,13 +1215,13 @@ export default function PublicEventPage() {
   const theme = resolveTheme(event.template_name);
 
   if (theme === 'Studentfest') {
-    return <StudentfestPage event={event} shareToken={shareToken} inviteToken={inviteToken} />;
+    return <StudentfestPage event={event} shareToken={shareToken} inviteToken={inviteToken} inviteName={inviteName} />;
   }
   if (theme === 'Party') {
-    return <PartyPage event={event} shareToken={shareToken} inviteToken={inviteToken} />;
+    return <PartyPage event={event} shareToken={shareToken} inviteToken={inviteToken} inviteName={inviteName} />;
   }
   if (theme === 'Corporate') {
-    return <CorporatePage event={event} shareToken={shareToken} inviteToken={inviteToken} />;
+    return <CorporatePage event={event} shareToken={shareToken} inviteToken={inviteToken} inviteName={inviteName} />;
   }
-  return <ElegantPage event={event} shareToken={shareToken} inviteToken={inviteToken} />;
+  return <ElegantPage event={event} shareToken={shareToken} inviteToken={inviteToken} inviteName={inviteName} />;
 }

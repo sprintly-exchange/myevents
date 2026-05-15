@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Check, Palette, Ban, Calendar, Clock, MapPin, FileText, Sparkles, QrCode, ClipboardList, BellRing } from 'lucide-react';
+import { ArrowLeft, Check, Palette, Ban, Calendar, Clock, MapPin, FileText, Sparkles, QrCode, ClipboardList, BellRing, Globe, Lock } from 'lucide-react';
 import { Template } from '@/types';
 import { cn } from '@/lib/utils';
 import { TimePickerInput } from '@/components/ui/time-picker';
@@ -142,6 +142,7 @@ export default function CreateEventPage() {
     end_date: '',
     location: '',
     template_id: '',
+    event_type: 'invite_only' as 'public' | 'invite_only',
     enable_qr_checkin: false,
     enable_agenda: false,
     enable_reminder_accepted: false,
@@ -279,6 +280,33 @@ export default function CreateEventPage() {
 
           <SectionCard icon={<Sparkles className="h-4 w-4" />} title={t('events.optionalFeatures')}>
             <p className="text-xs text-slate-500 -mt-1">{t('events.optionalFeaturesDesc')}</p>
+
+            {/* Event Type toggle */}
+            <div className="rounded-lg border border-slate-200 p-3 space-y-2">
+              <p className="text-sm font-medium text-slate-800 flex items-center gap-1.5">
+                <Globe className="h-4 w-4 text-slate-500" />
+                {t('events.eventType')}
+              </p>
+              <p className="text-xs text-slate-500">{t('events.eventTypeDesc')}</p>
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, event_type: 'invite_only' })}
+                  className={cn('flex-1 flex items-center gap-2 justify-center rounded-lg border px-3 py-2 text-xs font-medium transition-colors', form.event_type === 'invite_only' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-600 hover:border-slate-300')}
+                >
+                  <Lock className="h-3.5 w-3.5" />
+                  {t('events.eventTypeInviteOnly')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, event_type: 'public' })}
+                  className={cn('flex-1 flex items-center gap-2 justify-center rounded-lg border px-3 py-2 text-xs font-medium transition-colors', form.event_type === 'public' ? 'border-green-500 bg-green-50 text-green-700' : 'border-slate-200 text-slate-600 hover:border-slate-300')}
+                >
+                  <Globe className="h-3.5 w-3.5" />
+                  {t('events.eventTypePublic')}
+                </button>
+              </div>
+            </div>
             <label className="flex items-start gap-3 rounded-lg border border-slate-200 p-3 cursor-pointer hover:border-slate-300 transition-colors">
               <input
                 type="checkbox"
