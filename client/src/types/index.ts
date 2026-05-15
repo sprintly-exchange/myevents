@@ -71,7 +71,7 @@ export interface Event {
   reminder_sent_at?: string | null;
   theme_settings?: import('./index').ThemeSettings | null;
   event_type?: 'public' | 'invite_only';
-  event_language?: 'en' | 'sv' | 'si';
+  event_language?: 'en' | 'sv' | 'si' | 'el';
   status: string;
   created_at: string;
   invitation_count?: number;

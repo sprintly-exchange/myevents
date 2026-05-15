@@ -143,7 +143,7 @@ export default function CreateEventPage() {
     location: '',
     template_id: '',
     event_type: 'invite_only' as 'public' | 'invite_only',
-    event_language: (i18n.language?.slice(0, 2) as 'en' | 'sv' | 'si') || 'sv',
+    event_language: (i18n.language?.slice(0, 2) as 'en' | 'sv' | 'si' | 'el') || 'sv',
     enable_qr_checkin: false,
     enable_agenda: false,
     enable_reminder_accepted: false,
@@ -317,7 +317,7 @@ export default function CreateEventPage() {
               </p>
               <p className="text-xs text-slate-500">{t('events.eventLanguageDesc')}</p>
               <div className="flex gap-2 pt-1">
-                {(['sv', 'en', 'si'] as const).map((lang) => (
+                {(['sv', 'en', 'si', 'el'] as const).map((lang) => (
                   <button
                     key={lang}
                     type="button"

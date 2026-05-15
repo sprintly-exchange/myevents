@@ -31,7 +31,7 @@ interface PublicEvent {
   enable_qr_checkin?: boolean;
   enable_agenda?: boolean;
   event_type?: 'public' | 'invite_only';
-  event_language?: 'en' | 'sv' | 'si';
+  event_language?: 'en' | 'sv' | 'si' | 'el';
   theme_settings?: { primary_color?: string; accent_color?: string; tagline?: string } | null;
   agenda_items?: AgendaItem[];
   guidance_items?: GuidanceItem[];

@@ -127,7 +127,7 @@ export default function EditEventPage() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const qc = useQueryClient();
-  const [form, setForm] = useState({ title: '', description: '', event_date: '', end_date: '', location: '', template_id: '', timezone: getBrowserTimezone(), event_type: 'invite_only' as 'public' | 'invite_only', event_language: (i18n.language?.slice(0, 2) as 'en' | 'sv' | 'si') || 'sv', enable_reminder_accepted: false, enable_reminder_pending: false, reminder_days_before: 0 });
+  const [form, setForm] = useState({ title: '', description: '', event_date: '', end_date: '', location: '', template_id: '', timezone: getBrowserTimezone(), event_type: 'invite_only' as 'public' | 'invite_only', event_language: (i18n.language?.slice(0, 2) as 'en' | 'sv' | 'si' | 'el') || 'sv', enable_reminder_accepted: false, enable_reminder_pending: false, reminder_days_before: 0 });
   const [themeSettings, setThemeSettings] = useState<ThemeSettings>({});
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [shareToken, setShareToken] = useState<string | null>(null);
@@ -139,7 +139,7 @@ export default function EditEventPage() {
   useEffect(() => {
     if (data?.event) {
       const e = data.event;
-      setForm({ title: e.title, description: e.description || '', event_date: e.event_date ? e.event_date.slice(0, 16) : '', end_date: e.end_date ? e.end_date.slice(0, 16) : '', location: e.location || '', template_id: e.template_id || '', timezone: e.timezone || getBrowserTimezone(), event_type: (e.event_type as 'public' | 'invite_only') || 'invite_only', event_language: (e.event_language as 'en' | 'sv' | 'si') || 'sv', enable_reminder_accepted: e.enable_reminder_accepted ?? false, enable_reminder_pending: e.enable_reminder_pending ?? false, reminder_days_before: e.reminder_days_before ?? 0 });
+      setForm({ title: e.title, description: e.description || '', event_date: e.event_date ? e.event_date.slice(0, 16) : '', end_date: e.end_date ? e.end_date.slice(0, 16) : '', location: e.location || '', template_id: e.template_id || '', timezone: e.timezone || getBrowserTimezone(), event_type: (e.event_type as 'public' | 'invite_only') || 'invite_only', event_language: (e.event_language as 'en' | 'sv' | 'si' | 'el') || 'sv', enable_reminder_accepted: e.enable_reminder_accepted ?? false, enable_reminder_pending: e.enable_reminder_pending ?? false, reminder_days_before: e.reminder_days_before ?? 0 });
       setThemeSettings(e.theme_settings || {});
       setShareToken(e.share_token || null);
     }
@@ -385,7 +385,7 @@ export default function EditEventPage() {
             </p>
             <p className="text-xs text-slate-500">{t('events.eventLanguageDesc')}</p>
             <div className="flex gap-2 pt-1">
-              {(['sv', 'en', 'si'] as const).map((lang) => (
+              {(['sv', 'en', 'si', 'el'] as const).map((lang) => (
                 <button
                   key={lang}
                   type="button"
