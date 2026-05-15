@@ -227,6 +227,11 @@ export default function EventDetailPage() {
                   <Lock className="h-3 w-3" />{t('events.eventTypeInviteOnly')}
                 </span>
               )}
+              {event.event_language && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/10 text-white/70 mb-3 ml-1.5">
+                  🌐 {t(`events.lang${event.event_language.charAt(0).toUpperCase() + event.event_language.slice(1)}`)}
+                </span>
+              )}
               <h1 className="text-2xl font-bold text-white mb-1 truncate">{event.title}</h1>
               {event.description && (
                 <p className="text-white/75 text-sm leading-relaxed line-clamp-2">{event.description}</p>

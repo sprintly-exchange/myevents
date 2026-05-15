@@ -82,8 +82,8 @@ router.get('/', async (req: Request, res: Response) => {
   // Batch-fetch raw columns for all events
   const ids = events.map(e => e.id);
   const rawRows = ids.length
-    ? await prisma.$queryRawUnsafe<{ id: string; timezone: string; event_type: string | null; enable_reminder_accepted: number | null; enable_reminder_pending: number | null; reminder_days_before: number | null; reminder_sent_at: string | null }[]>(
-        `SELECT id, timezone, event_type, enable_reminder_accepted, enable_reminder_pending, reminder_days_before, reminder_sent_at FROM events WHERE id IN (${ids.map(() => '?').join(',')})`,
+    ? await prisma.$queryRawUnsafe<{ id: string; timezone: string; event_type: string | null; event_language: string | null; enable_reminder_accepted: number | null; enable_reminder_pending: number | null; reminder_days_before: number | null; reminder_sent_at: string | null }[]>(
+        `SELECT id, timezone, event_type, event_language, enable_reminder_accepted, enable_reminder_pending, reminder_days_before, reminder_sent_at FROM events WHERE id IN (${ids.map(() => '?').join(',')})`,
         ...ids
       )
     : [];
@@ -103,6 +103,7 @@ router.get('/', async (req: Request, res: Response) => {
       invitation_count: total,
       timezone: rawById[e.id]?.timezone ?? 'Europe/Stockholm',
       event_type: rawById[e.id]?.event_type ?? 'invite_only',
+      event_language: rawById[e.id]?.event_language ?? 'sv',
       enable_reminder_accepted: readStoredFeatureFlag(rawById[e.id]?.enable_reminder_accepted, false),
       enable_reminder_pending: readStoredFeatureFlag(rawById[e.id]?.enable_reminder_pending, false),
       reminder_days_before: rawById[e.id]?.reminder_days_before ?? 0,
@@ -115,7 +116,7 @@ router.get('/', async (req: Request, res: Response) => {
 
 router.post('/', checkEventLimit, async (req: Request, res: Response) => {
   const userId = (req as any).user.id;
-  const { title, description, event_date, end_date, location, template_id, theme_settings, enable_qr_checkin, enable_agenda, timezone, enable_reminder_accepted, enable_reminder_pending, reminder_days_before, event_type } = req.body;
+  const { title, description, event_date, end_date, location, template_id, theme_settings, enable_qr_checkin, enable_agenda, timezone, enable_reminder_accepted, enable_reminder_pending, reminder_days_before, event_type, event_language } = req.body;
   if (!title || !event_date)
     return res.status(400).json({ error: 'Title and event_date are required' });
   const qrEnabled = parseFeatureFlag(enable_qr_checkin, true);
@@ -125,6 +126,7 @@ router.post('/', checkEventLimit, async (req: Request, res: Response) => {
   const reminderDays = Math.max(0, parseInt(reminder_days_before ?? '0', 10) || 0);
   const tz = timezone || 'Europe/Stockholm';
   const resolvedEventType = event_type === 'public' ? 'public' : 'invite_only';
+  const resolvedEventLanguage = ['en', 'sv', 'si'].includes(event_language) ? event_language : 'sv';
 
   const event = await prisma.event.create({
     data: {
@@ -137,7 +139,7 @@ router.post('/', checkEventLimit, async (req: Request, res: Response) => {
 
   // Write raw columns via raw SQL (added via ALTER TABLE)
   await prisma.$executeRawUnsafe(
-    `UPDATE events SET theme_settings = ?, end_date = ?, enable_qr_checkin = ?, enable_agenda = ?, timezone = ?, enable_reminder_accepted = ?, enable_reminder_pending = ?, reminder_days_before = ?, event_type = ? WHERE id = ?`,
+    `UPDATE events SET theme_settings = ?, end_date = ?, enable_qr_checkin = ?, enable_agenda = ?, timezone = ?, enable_reminder_accepted = ?, enable_reminder_pending = ?, reminder_days_before = ?, event_type = ?, event_language = ? WHERE id = ?`,
     theme_settings ? JSON.stringify(theme_settings) : null,
     end_date || null,
     qrEnabled ? 1 : 0,
@@ -147,6 +149,7 @@ router.post('/', checkEventLimit, async (req: Request, res: Response) => {
     reminderPending ? 1 : 0,
     reminderDays,
     resolvedEventType,
+    resolvedEventLanguage,
     event.id
   );
 
@@ -163,6 +166,7 @@ router.post('/', checkEventLimit, async (req: Request, res: Response) => {
       reminder_days_before: reminderDays,
       reminder_sent_at: null,
       event_type: resolvedEventType,
+      event_language: resolvedEventLanguage,
     },
   });
 });
@@ -179,8 +183,8 @@ router.get('/:id', async (req: Request, res: Response) => {
   if (!event) return res.status(404).json({ error: 'Event not found' });
 
   // Read raw columns via raw SQL since they were added via ALTER TABLE
-  const rawRows = await prisma.$queryRawUnsafe<{ theme_settings: string | null; end_date: string | null; enable_qr_checkin: number | null; enable_agenda: number | null; timezone: string | null; enable_reminder_accepted: number | null; enable_reminder_pending: number | null; reminder_days_before: number | null; reminder_sent_at: string | null; event_type: string | null }[]>(
-    `SELECT theme_settings, end_date, enable_qr_checkin, enable_agenda, timezone, enable_reminder_accepted, enable_reminder_pending, reminder_days_before, reminder_sent_at, event_type FROM events WHERE id = ?`, event.id
+  const rawRows = await prisma.$queryRawUnsafe<{ theme_settings: string | null; end_date: string | null; enable_qr_checkin: number | null; enable_agenda: number | null; timezone: string | null; enable_reminder_accepted: number | null; enable_reminder_pending: number | null; reminder_days_before: number | null; reminder_sent_at: string | null; event_type: string | null; event_language: string | null }[]>(
+    `SELECT theme_settings, end_date, enable_qr_checkin, enable_agenda, timezone, enable_reminder_accepted, enable_reminder_pending, reminder_days_before, reminder_sent_at, event_type, event_language FROM events WHERE id = ?`, event.id
   );
   const themeSettingsRaw = rawRows[0]?.theme_settings || null;
   const end_date = rawRows[0]?.end_date || null;
@@ -192,11 +196,12 @@ router.get('/:id', async (req: Request, res: Response) => {
   const reminder_days_before = rawRows[0]?.reminder_days_before ?? 0;
   const reminder_sent_at = rawRows[0]?.reminder_sent_at ?? null;
   const event_type = rawRows[0]?.event_type ?? 'invite_only';
+  const event_language = rawRows[0]?.event_language ?? 'sv';
   let theme_settings = null;
   try { if (themeSettingsRaw) theme_settings = JSON.parse(themeSettingsRaw); } catch { /* ignore */ }
 
   return res.json({
-    event: { ...formatEvent(event), theme_settings, end_date, enable_qr_checkin, enable_agenda, timezone, enable_reminder_accepted, enable_reminder_pending, reminder_days_before, reminder_sent_at, event_type },
+    event: { ...formatEvent(event), theme_settings, end_date, enable_qr_checkin, enable_agenda, timezone, enable_reminder_accepted, enable_reminder_pending, reminder_days_before, reminder_sent_at, event_type, event_language },
     invitations: event.invitations.map(inv => formatInvitation(inv)),
   });
 });
@@ -206,9 +211,9 @@ router.put('/:id', async (req: Request, res: Response) => {
   const existing = await prisma.event.findFirst({ where: { id: req.params.id, creatorId: userId, status: { not: 'deleted' } } });
   if (!existing) return res.status(404).json({ error: 'Event not found' });
 
-  const { title, description, event_date, end_date, location, template_id, theme_settings, status, enable_qr_checkin, enable_agenda, timezone, enable_reminder_accepted, enable_reminder_pending, reminder_days_before, event_type } = req.body;
-  const rawExisting = await prisma.$queryRawUnsafe<{ theme_settings: string | null; end_date: string | null; enable_qr_checkin: number | null; enable_agenda: number | null; timezone: string | null; enable_reminder_accepted: number | null; enable_reminder_pending: number | null; reminder_days_before: number | null; reminder_sent_at: string | null; event_type: string | null }[]>(
-    `SELECT theme_settings, end_date, enable_qr_checkin, enable_agenda, timezone, enable_reminder_accepted, enable_reminder_pending, reminder_days_before, reminder_sent_at, event_type FROM events WHERE id = ?`,
+  const { title, description, event_date, end_date, location, template_id, theme_settings, status, enable_qr_checkin, enable_agenda, timezone, enable_reminder_accepted, enable_reminder_pending, reminder_days_before, event_type, event_language } = req.body;
+  const rawExisting = await prisma.$queryRawUnsafe<{ theme_settings: string | null; end_date: string | null; enable_qr_checkin: number | null; enable_agenda: number | null; timezone: string | null; enable_reminder_accepted: number | null; enable_reminder_pending: number | null; reminder_days_before: number | null; reminder_sent_at: string | null; event_type: string | null; event_language: string | null }[]>(
+    `SELECT theme_settings, end_date, enable_qr_checkin, enable_agenda, timezone, enable_reminder_accepted, enable_reminder_pending, reminder_days_before, reminder_sent_at, event_type, event_language FROM events WHERE id = ?`,
     req.params.id
   );
   const existingRow = rawExisting[0] || null;
@@ -234,6 +239,9 @@ router.put('/:id', async (req: Request, res: Response) => {
   const resolvedEventType = event_type !== undefined
     ? (event_type === 'public' ? 'public' : 'invite_only')
     : (existingRow?.event_type ?? 'invite_only');
+  const resolvedEventLanguage = event_language !== undefined
+    ? (['en', 'sv', 'si'].includes(event_language) ? event_language : 'sv')
+    : (existingRow?.event_language ?? 'sv');
 
   const event = await prisma.event.update({
     where: { id: req.params.id },
@@ -246,7 +254,7 @@ router.put('/:id', async (req: Request, res: Response) => {
 
   // Update raw columns via raw SQL
   await prisma.$executeRawUnsafe(
-    `UPDATE events SET theme_settings = ?, end_date = ?, enable_qr_checkin = ?, enable_agenda = ?, timezone = ?, enable_reminder_accepted = ?, enable_reminder_pending = ?, reminder_days_before = ?, reminder_sent_at = ?, event_type = ? WHERE id = ?`,
+    `UPDATE events SET theme_settings = ?, end_date = ?, enable_qr_checkin = ?, enable_agenda = ?, timezone = ?, enable_reminder_accepted = ?, enable_reminder_pending = ?, reminder_days_before = ?, reminder_sent_at = ?, event_type = ?, event_language = ? WHERE id = ?`,
     resolvedThemeSql,
     resolvedEndDateSql,
     resolvedQrEnabled ? 1 : 0,
@@ -257,6 +265,7 @@ router.put('/:id', async (req: Request, res: Response) => {
     resolvedReminderDays,
     resolvedReminderSentAt,
     resolvedEventType,
+    resolvedEventLanguage,
     req.params.id
   );
 
@@ -279,6 +288,7 @@ router.put('/:id', async (req: Request, res: Response) => {
       reminder_days_before: resolvedReminderDays,
       reminder_sent_at: resolvedReminderSentAt,
       event_type: resolvedEventType,
+      event_language: resolvedEventLanguage,
     },
   });
 });

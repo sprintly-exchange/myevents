@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import QRCode from 'qrcode';
 import { formatEventDateTime, formatEventDateRange } from '@/lib/tz';
@@ -30,6 +31,7 @@ interface PublicEvent {
   enable_qr_checkin?: boolean;
   enable_agenda?: boolean;
   event_type?: 'public' | 'invite_only';
+  event_language?: 'en' | 'sv' | 'si';
   theme_settings?: { primary_color?: string; accent_color?: string; tagline?: string } | null;
   agenda_items?: AgendaItem[];
   guidance_items?: GuidanceItem[];
@@ -209,6 +211,8 @@ function ElegantPage({
   inviteToken?: string;
   inviteName?: string;
 }) {
+  const { t } = useTranslation();
+  const lng = event.event_language || 'sv';
   const [form, setForm] = useState<RsvpForm>({ name: inviteName || '', email: '', attending: 'yes' });
   const [confirmed, setConfirmed] = useState(false);
   const [confirmedAttending, setConfirmedAttending] = useState<AttendingValue>('yes');
@@ -229,16 +233,16 @@ function ElegantPage({
       setConfirmedAttending(form.attending);
       setConfirmed(true);
     } catch (err: any) {
-      setError(err.message === '__capacity__' ? 'This event is full. No more RSVPs are being accepted.' : err.message || 'Network error. Please try again.');
+      setError(err.message === '__capacity__' ? t('rsvp.capacityFull', { lng }) : err.message || t('rsvp.networkError', { lng }));
     } finally {
       setSubmitting(false);
     }
   }
 
   const attendingOptions: { value: AttendingValue; label: string }[] = [
-    { value: 'yes', label: 'Yes, I will attend' },
-    { value: 'maybe', label: 'Perhaps' },
-    { value: 'no', label: 'Regretfully, no' },
+    { value: 'yes', label: t('rsvp.optionYes', { lng }) },
+    { value: 'maybe', label: t('rsvp.optionMaybe', { lng }) },
+    { value: 'no', label: t('rsvp.optionNo', { lng }) },
   ];
 
   return (
@@ -276,8 +280,8 @@ function ElegantPage({
       {/* Details */}
       <div className="flex flex-col md:flex-row gap-4 justify-center px-6 md:px-12 max-w-3xl mx-auto w-full mb-12">
         {[
-          { label: 'Date & Time', value: formatDateRange(event.event_date, event.end_date, event.timezone || 'Europe/Stockholm'), icon: '📅' },
-          { label: 'Location', value: event.location, icon: '📍' },
+          { label: t('rsvp.dateTime', { lng, defaultValue: 'Date & Time' }), value: formatDateRange(event.event_date, event.end_date, event.timezone || 'Europe/Stockholm'), icon: '📅' },
+          { label: t('rsvp.location', { lng, defaultValue: 'Location' }), value: event.location, icon: '📍' },
         ].map((item) => (
           <div
             key={item.label}
@@ -319,22 +323,21 @@ function ElegantPage({
           {event.event_type === 'invite_only' && !inviteToken ? (
             <div className="text-center py-10">
               <div className="text-4xl mb-4">🔒</div>
-              <h3 className="text-lg font-serif italic mb-3" style={{ color: gold }}>Invite Only</h3>
-              <p className="text-sm" style={{ color: cream, opacity: 0.7 }}>This is a private event. Please use your personal invitation link to RSVP.</p>
+              <h3 className="text-lg font-serif italic mb-3" style={{ color: gold }}>{t('rsvp.inviteOnlyTitle', { lng })}</h3>
+              <p className="text-sm" style={{ color: cream, opacity: 0.7 }}>{t('rsvp.inviteOnlyDesc', { lng })}</p>
             </div>
           ) : confirmed ? (
             <div className="text-center py-8">
               <div className="text-5xl mb-4">✨</div>
               <h2 className="text-2xl font-serif italic mb-3" style={{ color: cream }}>
-                Thank you
+                {t('rsvp.confirmedTitle', { lng })}
               </h2>
               <p className="text-sm opacity-75" style={{ color: cream }}>
-                Your RSVP has been received.{' '}
                 {confirmedAttending === 'yes'
-                  ? 'We look forward to your presence.'
+                  ? t('rsvp.confirmedYes', { lng })
                   : confirmedAttending === 'maybe'
-                  ? 'We hope to see you there.'
-                  : 'You will be missed.'}
+                  ? t('rsvp.confirmedMaybe', { lng })
+                  : t('rsvp.confirmedNo', { lng })}
               </p>
               {confirmedAttending === 'yes' && inviteToken && event.enable_qr_checkin !== false && (
                 <QrCodeBlock token={inviteToken} darkBg />
@@ -346,7 +349,7 @@ function ElegantPage({
                 className="text-xl font-serif italic text-center mb-6"
                 style={{ color: gold }}
               >
-                RSVP
+                {t('rsvp.formTitle', { lng })}
               </h2>
               {error && (
                 <div
@@ -359,7 +362,7 @@ function ElegantPage({
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <div className={`flex flex-col gap-1${inviteToken ? ' hidden' : ''}`}>
                   <label className="text-xs tracking-wider uppercase" style={{ color: gold }}>
-                    Name
+                    {t('rsvp.name', { lng })}
                   </label>
                   <input
                     required={!inviteToken}
@@ -377,7 +380,7 @@ function ElegantPage({
                 </div>
                 <div className={`flex flex-col gap-1${inviteToken ? ' hidden' : ''}`}>
                   <label className="text-xs tracking-wider uppercase" style={{ color: gold }}>
-                    Email
+                    {t('rsvp.email', { lng })}
                   </label>
                   <input
                     required={!inviteToken}
@@ -396,7 +399,7 @@ function ElegantPage({
                 </div>
                 <div className="flex flex-col gap-2">
                   <label className="text-xs tracking-wider uppercase" style={{ color: gold }}>
-                    Attending
+                    {t('rsvp.attendingQuestion', { lng })}
                   </label>
                   <div className="flex flex-col gap-2">
                     {attendingOptions.map((opt) => (
@@ -448,7 +451,7 @@ function ElegantPage({
                   style={{ background: gold, color: bgPrimary }}
                 >
                   {submitting && <Spinner className="w-4 h-4" />}
-                  Confirm RSVP
+                  {t('rsvp.submitButton', { lng })}
                 </button>
               </form>
             </>
@@ -472,6 +475,8 @@ function StudentfestPage({
   inviteToken?: string;
   inviteName?: string;
 }) {
+  const { t } = useTranslation();
+  const lng = event.event_language || 'sv';
   const [form, setForm] = useState<RsvpForm>({ name: inviteName || '', email: '', attending: 'yes' });
   const [confirmed, setConfirmed] = useState(false);
   const [confirmedAttending, setConfirmedAttending] = useState<AttendingValue>('yes');
@@ -491,7 +496,7 @@ function StudentfestPage({
       setConfirmedAttending(form.attending);
       setConfirmed(true);
     } catch (err: any) {
-      setError(err.message === '__capacity__' ? 'Det finns inga platser kvar för detta evenemang.' : err.message || 'Nätverksfel. Försök igen.');
+      setError(err.message === '__capacity__' ? t('rsvp.capacityFull', { lng }) : err.message || t('rsvp.networkError', { lng }));
     } finally {
       setSubmitting(false);
     }
@@ -513,9 +518,9 @@ function StudentfestPage({
   ];
 
   const attendingOptions: { value: AttendingValue; label: string }[] = [
-    { value: 'yes', label: 'Ja, jag kommer 🎉' },
-    { value: 'maybe', label: 'Kanske' },
-    { value: 'no', label: 'Nej, tyvärr' },
+    { value: 'yes', label: t('rsvp.optionYes', { lng }) },
+    { value: 'maybe', label: t('rsvp.optionMaybe', { lng }) },
+    { value: 'no', label: t('rsvp.optionNo', { lng }) },
   ];
 
   return (
@@ -563,8 +568,8 @@ function StudentfestPage({
       {/* Details */}
       <div className="flex flex-col md:flex-row gap-4 justify-center px-6 md:px-12 max-w-3xl mx-auto w-full mb-12 relative">
         {[
-          { label: 'Datum', value: formatDateRange(event.event_date, event.end_date, event.timezone || 'Europe/Stockholm'), icon: '📅' },
-          { label: 'Plats', value: event.location, icon: '📍' },
+          { label: t('rsvp.dateTime', { lng, defaultValue: 'Datum' }), value: formatDateRange(event.event_date, event.end_date, event.timezone || 'Europe/Stockholm'), icon: '📅' },
+          { label: t('rsvp.location', { lng, defaultValue: 'Plats' }), value: event.location, icon: '📍' },
         ].map((item) => (
           <div
             key={item.label}
@@ -593,21 +598,21 @@ function StudentfestPage({
           {event.event_type === 'invite_only' && !inviteToken ? (
             <div className="text-center py-10">
               <div className="text-4xl mb-4">🔒</div>
-              <h3 className="text-lg font-black text-white mb-3">Endast för inbjudna</h3>
-              <p className="text-white/70 text-sm">Detta är ett privat evenemang. Använd din personliga inbjudningslänk för att anmäla dig.</p>
+              <h3 className="text-lg font-black text-white mb-3">{t('rsvp.inviteOnlyTitle', { lng })}</h3>
+              <p className="text-white/70 text-sm">{t('rsvp.inviteOnlyDesc', { lng })}</p>
             </div>
           ) : confirmed ? (
             <div className="text-center py-8">
               <div className="text-5xl mb-4">🎓</div>
               <h2 className="text-2xl font-black text-white mb-3">
-                Tack för din anmälan!
+                {t('rsvp.confirmedTitle', { lng })}
               </h2>
               <p className="text-white/80 text-sm">
                 {confirmedAttending === 'yes'
-                  ? 'Vi ses där! 🎉'
+                  ? t('rsvp.confirmedYes', { lng })
                   : confirmedAttending === 'maybe'
-                  ? 'Vi hoppas att du kan komma!'
-                  : 'Tråkigt att du inte kan — vi saknar dig!'}
+                  ? t('rsvp.confirmedMaybe', { lng })
+                  : t('rsvp.confirmedNo', { lng })}
               </p>
               {confirmedAttending === 'yes' && inviteToken && event.enable_qr_checkin !== false && (
                 <QrCodeBlock token={inviteToken} darkBg />
@@ -616,7 +621,7 @@ function StudentfestPage({
           ) : (
             <>
               <h2 className="text-xl font-black text-center text-white mb-6">
-                Anmälan
+                {t('rsvp.formTitle', { lng })}
               </h2>
               {error && (
                 <div className="mb-4 text-sm text-center px-4 py-3 rounded-xl bg-red-500/20 text-red-200">
@@ -626,7 +631,7 @@ function StudentfestPage({
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <div className={`flex flex-col gap-1${inviteToken ? ' hidden' : ''}`}>
                   <label className="text-xs font-bold uppercase tracking-widest" style={{ color: yellow }}>
-                    Namn
+                    {t('rsvp.name', { lng })}
                   </label>
                   <input
                     required={!inviteToken}
@@ -637,7 +642,7 @@ function StudentfestPage({
                 </div>
                 <div className={`flex flex-col gap-1${inviteToken ? ' hidden' : ''}`}>
                   <label className="text-xs font-bold uppercase tracking-widest" style={{ color: yellow }}>
-                    E-post
+                    {t('rsvp.email', { lng })}
                   </label>
                   <input
                     required={!inviteToken}
@@ -649,7 +654,7 @@ function StudentfestPage({
                 </div>
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-bold uppercase tracking-widest" style={{ color: yellow }}>
-                    Deltar du?
+                    {t('rsvp.attendingQuestion', { lng })}
                   </label>
                   <div className="flex flex-col gap-2">
                     {attendingOptions.map((opt) => (
@@ -696,7 +701,7 @@ function StudentfestPage({
                   style={{ background: yellow, color: '#002d5a' }}
                 >
                   {submitting && <Spinner className="w-4 h-4" />}
-                  Skicka anmälan
+                  {t('rsvp.submitButton', { lng })}
                 </button>
               </form>
             </>
@@ -720,6 +725,8 @@ function PartyPage({
   inviteToken?: string;
   inviteName?: string;
 }) {
+  const { t } = useTranslation();
+  const lng = event.event_language || 'sv';
   const [form, setForm] = useState<RsvpForm>({ name: inviteName || '', email: '', attending: 'yes' });
   const [confirmed, setConfirmed] = useState(false);
   const [confirmedAttending, setConfirmedAttending] = useState<AttendingValue>('yes');
@@ -739,11 +746,17 @@ function PartyPage({
       setConfirmedAttending(form.attending);
       setConfirmed(true);
     } catch (err: any) {
-      setError(err.message === '__capacity__' ? 'This party is full — sorry!' : err.message || 'Network error. Please try again.');
+      setError(err.message === '__capacity__' ? t('rsvp.capacityFull', { lng }) : err.message || t('rsvp.networkError', { lng }));
     } finally {
       setSubmitting(false);
     }
   }
+
+  const attendingOptions: { value: AttendingValue; label: string; color: string }[] = [
+    { value: 'yes', label: t('rsvp.optionYes', { lng }), color: '#a855f7' },
+    { value: 'maybe', label: t('rsvp.optionMaybe', { lng }), color: '#ec4899' },
+    { value: 'no', label: t('rsvp.optionNo', { lng }), color: '#f97316' },
+  ];
 
   const floatingEmojis = [
     { emoji: '🎉', top: '6%', left: '4%', size: 60, rotate: -15, opacity: 0.35 },
@@ -752,12 +765,6 @@ function PartyPage({
     { emoji: '🎊', top: '65%', left: '88%', size: 65, rotate: -20, opacity: 0.3 },
     { emoji: '🎉', top: '88%', left: '15%', size: 45, rotate: 5, opacity: 0.25 },
     { emoji: '🎈', top: '85%', left: '80%', size: 50, rotate: -10, opacity: 0.3 },
-  ];
-
-  const attendingOptions: { value: AttendingValue; label: string; color: string }[] = [
-    { value: 'yes', label: 'Hell yes! 🎉', color: '#a855f7' },
-    { value: 'maybe', label: 'Maybe 🤔', color: '#ec4899' },
-    { value: 'no', label: "Can't make it 😢", color: '#f97316' },
   ];
 
   return (
@@ -803,8 +810,8 @@ function PartyPage({
       {/* Details */}
       <div className="flex flex-col md:flex-row gap-4 justify-center px-6 md:px-12 max-w-3xl mx-auto w-full mb-12 relative">
         {[
-          { label: 'When', value: formatDateRange(event.event_date, event.end_date, event.timezone || 'Europe/Stockholm'), icon: '📅', border: '#f472b6' },
-          { label: 'Where', value: event.location, icon: '📍', border: '#c084fc' },
+          { label: t('rsvp.dateTime', { lng, defaultValue: 'When' }), value: formatDateRange(event.event_date, event.end_date, event.timezone || 'Europe/Stockholm'), icon: '📅', border: '#f472b6' },
+          { label: t('rsvp.location', { lng, defaultValue: 'Where' }), value: event.location, icon: '📍', border: '#c084fc' },
         ].map((item) => (
           <div
             key={item.label}
@@ -836,20 +843,20 @@ function PartyPage({
           {event.event_type === 'invite_only' && !inviteToken ? (
             <div className="text-center py-10">
               <div className="text-4xl mb-4">🔒</div>
-              <h3 className="text-xl font-black text-gray-900 mb-3">Invite Only</h3>
-              <p className="text-gray-500 text-sm">This is a private event. Please use your personal invitation link to RSVP.</p>
+              <h3 className="text-xl font-black text-gray-900 mb-3">{t('rsvp.inviteOnlyTitle', { lng })}</h3>
+              <p className="text-gray-500 text-sm">{t('rsvp.inviteOnlyDesc', { lng })}</p>
             </div>
           ) : confirmed ? (
             <div className="text-center py-8">
               <div className="text-6xl mb-4">🎊🎉</div>
               <h2 className="text-2xl font-black text-gray-900 mb-3">
                 {confirmedAttending === 'yes'
-                  ? "We'll see you there!"
+                  ? t('rsvp.confirmedYes', { lng })
                   : confirmedAttending === 'maybe'
-                  ? 'Hope you can make it!'
-                  : 'Sorry you can\'t make it!'}
+                  ? t('rsvp.confirmedMaybe', { lng })
+                  : t('rsvp.confirmedNo', { lng })}
               </h2>
-              <p className="text-gray-500 text-sm">Your RSVP is confirmed 🥳</p>
+              <p className="text-gray-500 text-sm">{t('rsvp.confirmedTitle', { lng })} 🥳</p>
               {confirmedAttending === 'yes' && inviteToken && event.enable_qr_checkin !== false && (
                 <QrCodeBlock token={inviteToken} />
               )}
@@ -857,7 +864,7 @@ function PartyPage({
           ) : (
             <>
               <h2 className="text-xl font-black text-center text-gray-900 mb-6">
-                Are you coming? 🎉
+                {t('rsvp.formTitle', { lng })} 🎉
               </h2>
               {error && (
                 <div className="mb-4 text-sm text-center px-4 py-3 rounded-2xl bg-red-100 text-red-600">
@@ -867,7 +874,7 @@ function PartyPage({
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <div className={`flex flex-col gap-1${inviteToken ? ' hidden' : ''}`}>
                   <label className="text-xs font-bold uppercase tracking-widest text-purple-500">
-                    Your Name
+                    {t('rsvp.name', { lng })}
                   </label>
                   <input
                     required={!inviteToken}
@@ -878,7 +885,7 @@ function PartyPage({
                 </div>
                 <div className={`flex flex-col gap-1${inviteToken ? ' hidden' : ''}`}>
                   <label className="text-xs font-bold uppercase tracking-widest text-pink-500">
-                    Email
+                    {t('rsvp.email', { lng })}
                   </label>
                   <input
                     required={!inviteToken}
@@ -890,7 +897,7 @@ function PartyPage({
                 </div>
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-bold uppercase tracking-widest text-orange-500">
-                    Your Answer
+                    {t('rsvp.attendingQuestion', { lng })}
                   </label>
                   <div className="flex flex-col gap-2">
                     {attendingOptions.map((opt) => (
@@ -932,7 +939,7 @@ function PartyPage({
                   className="mt-2 py-3 rounded-full text-sm font-black tracking-wide uppercase transition disabled:opacity-60 flex items-center justify-center gap-2 bg-white border-2 border-purple-500 text-purple-600 hover:bg-purple-50 shadow-md"
                 >
                   {submitting && <Spinner className="w-4 h-4 text-purple-500" />}
-                  Send RSVP 🎊
+                  {t('rsvp.submitButton', { lng })} 🎊
                 </button>
               </form>
             </>
@@ -956,6 +963,8 @@ function CorporatePage({
   inviteToken?: string;
   inviteName?: string;
 }) {
+  const { t } = useTranslation();
+  const lng = event.event_language || 'sv';
   const [form, setForm] = useState<RsvpForm>({ name: inviteName || '', email: '', attending: 'yes' });
   const [confirmed, setConfirmed] = useState(false);
   const [confirmedAttending, setConfirmedAttending] = useState<AttendingValue>('yes');
@@ -975,16 +984,16 @@ function CorporatePage({
       setConfirmedAttending(form.attending);
       setConfirmed(true);
     } catch (err: any) {
-      setError(err.message === '__capacity__' ? 'This event has reached its maximum capacity.' : err.message || 'Network error. Please try again.');
+      setError(err.message === '__capacity__' ? t('rsvp.capacityFull', { lng }) : err.message || t('rsvp.networkError', { lng }));
     } finally {
       setSubmitting(false);
     }
   }
 
   const attendingOptions: { value: AttendingValue; label: string }[] = [
-    { value: 'yes', label: 'Attending' },
-    { value: 'maybe', label: 'Tentative' },
-    { value: 'no', label: 'Not Attending' },
+    { value: 'yes', label: t('rsvp.optionYes', { lng }) },
+    { value: 'maybe', label: t('rsvp.optionMaybe', { lng }) },
+    { value: 'no', label: t('rsvp.optionNo', { lng }) },
   ];
 
   return (
@@ -1015,7 +1024,7 @@ function CorporatePage({
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-0.5">
-                  Date & Time
+                  {t('rsvp.dateTime', { lng, defaultValue: 'Date & Time' })}
                 </p>
                 <p className="text-sm font-semibold text-slate-800">
                   {formatDateRange(event.event_date, event.end_date, event.timezone || 'Europe/Stockholm')}
@@ -1028,7 +1037,7 @@ function CorporatePage({
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-0.5">
-                  Location
+                  {t('rsvp.location', { lng, defaultValue: 'Location' })}
                 </p>
                 <p className="text-sm font-semibold text-slate-800">{event.location}</p>
               </div>
@@ -1056,8 +1065,8 @@ function CorporatePage({
           {event.event_type === 'invite_only' && !inviteToken ? (
             <div className="text-center py-10 border border-slate-200 rounded-xl bg-slate-50">
               <div className="text-4xl mb-4">🔒</div>
-              <h3 className="text-base font-bold text-slate-900 mb-2">Invite Only</h3>
-              <p className="text-slate-500 text-sm">This is a private event. Please use your personal invitation link to RSVP.</p>
+              <h3 className="text-base font-bold text-slate-900 mb-2">{t('rsvp.inviteOnlyTitle', { lng })}</h3>
+              <p className="text-slate-500 text-sm">{t('rsvp.inviteOnlyDesc', { lng })}</p>
             </div>
           ) : confirmed ? (
             <div className="text-center py-8">
@@ -1065,14 +1074,14 @@ function CorporatePage({
                 ✓
               </div>
               <h2 className="text-xl font-bold text-slate-900 mb-2">
-                Thank you for your response
+                {t('rsvp.confirmedTitle', { lng })}
               </h2>
               <p className="text-slate-500 text-sm">
                 {confirmedAttending === 'yes'
-                  ? 'We look forward to seeing you at the event.'
+                  ? t('rsvp.confirmedYes', { lng })
                   : confirmedAttending === 'maybe'
-                  ? 'We have noted your tentative response.'
-                  : 'Thank you for letting us know.'}
+                  ? t('rsvp.confirmedMaybe', { lng })
+                  : t('rsvp.confirmedNo', { lng })}
               </p>
               {confirmedAttending === 'yes' && inviteToken && event.enable_qr_checkin !== false && (
                 <QrCodeBlock token={inviteToken} />
@@ -1080,7 +1089,7 @@ function CorporatePage({
             </div>
           ) : (
             <>
-              <h2 className="text-base font-bold text-slate-900 mb-5">RSVP</h2>
+              <h2 className="text-base font-bold text-slate-900 mb-5">{t('rsvp.formTitle', { lng })}</h2>
               {error && (
                 <div className="mb-4 text-sm px-4 py-3 rounded-xl bg-red-50 text-red-600 border border-red-100">
                   {error}
@@ -1089,7 +1098,7 @@ function CorporatePage({
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <div className={`flex flex-col gap-1${inviteToken ? ' hidden' : ''}`}>
                   <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                    Full Name
+                    {t('rsvp.name', { lng })}
                   </label>
                   <input
                     required={!inviteToken}
@@ -1100,7 +1109,7 @@ function CorporatePage({
                 </div>
                 <div className={`flex flex-col gap-1${inviteToken ? ' hidden' : ''}`}>
                   <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                    Email Address
+                    {t('rsvp.email', { lng })}
                   </label>
                   <input
                     required={!inviteToken}
@@ -1112,7 +1121,7 @@ function CorporatePage({
                 </div>
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                    Attendance
+                    {t('rsvp.attendingQuestion', { lng })}
                   </label>
                   <div className="flex flex-col gap-2">
                     {attendingOptions.map((opt) => (
@@ -1155,7 +1164,7 @@ function CorporatePage({
                   style={{ background: corpAccent }}
                 >
                   {submitting && <Spinner className="w-4 h-4" />}
-                  Submit Response
+                  {t('rsvp.submitButton', { lng })}
                 </button>
               </form>
             </>
